@@ -1,0 +1,28 @@
+{
+    "company": {
+        "name": "Sabin Dagami",
+        "address": "",
+        "phone": "",
+        "email": "",
+        "logo_path": "C:/Users/Aftershock/Downloads/n7CKdYawR9GOP273aiSWRw.png"
+    },
+    "defaults": {
+        "currency": "Rs",
+        "tax_rate": 0.0,
+        "payment_terms": 30,
+        "default_reorder_level": 10
+    },
+    "inventory": {
+        "low_stock_threshold": 10,
+        "enable_negative_stock": false
+    },
+    "notifications": {
+        "enable_low_stock_alerts": true,
+        "alert_check_interval": 5
+    },
+    "backup": {
+        "auto_backup": false,
+        "backup_interval": 7,
+        "backup_location": ""
+    }
+}

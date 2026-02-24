@@ -1,0 +1,36 @@
+Exception in Tkinter callback
+Traceback (most recent call last):
+  File "C:\Users\Aftershock\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 2068, in __call__
+    return self.func(*args)
+           ~~~~~~~~~^^^^^^^
+  File "c:\Users\Aftershock\Desktop\Inventory Management\src\views\sales.py", line 224, in <lambda> 
+    self.sales_history_tree.bind("<Double-1>", lambda e: self.view_sale_details())
+                                                         ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "c:\Users\Aftershock\Desktop\Inventory Management\src\views\sales.py", line 330, in view_sale_details
+    SaleDetailsDialog(self.parent, selected_sale)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\Aftershock\Desktop\Inventory Management\src\views\sales.py", line 961, in __init__ 
+    self.create_details_view()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "c:\Users\Aftershock\Desktop\Inventory Management\src\views\sales.py", line 988, in create_details_view
+    discount_amount = self.sale_data.get('discount', 0) or 0
+                      ^^^^^^^^^^^^^^^^^^
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+Exception in Tkinter callback
+Traceback (most recent call last):
+  File "C:\Users\Aftershock\AppData\Local\Programs\Python\Python313\Lib\tkinter\__init__.py", line 2068, in __call__
+    return self.func(*args)
+           ~~~~~~~~~^^^^^^^
+  File "c:\Users\Aftershock\Desktop\Inventory Management\src\views\sales.py", line 224, in <lambda> 
+    self.sales_history_tree.bind("<Double-1>", lambda e: self.view_sale_details())
+                                                         ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "c:\Users\Aftershock\Desktop\Inventory Management\src\views\sales.py", line 330, in view_sale_details
+    SaleDetailsDialog(self.parent, selected_sale)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\Aftershock\Desktop\Inventory Management\src\views\sales.py", line 961, in __init__ 
+    self.create_details_view()
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "c:\Users\Aftershock\Desktop\Inventory Management\src\views\sales.py", line 988, in create_details_view
+    discount_amount = self.sale_data.get('discount', 0) or 0
+                      ^^^^^^^^^^^^^^^^^^
+AttributeError: 'sqlite3.Row' object has no attribute 'get'

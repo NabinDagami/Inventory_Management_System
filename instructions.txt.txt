@@ -1,0 +1,150 @@
+Title: Build a Modern Windows Inventory, Sales & Purchase Management App
+Tech Stack: Python 3.x, CustomTkinter (CTk), SQLite3, Pillow (for images/icons), Matplotlib (for charts), ReportLab (for PDF)
+
+Core Features
+
+Inventory Management
+
+Products with Category & Brand
+
+Auto-generated SKU (e.g., CAT-BRAND-001)
+
+Dual Pricing: Normal & Workshop
+
+Stock tracking with reorder alerts
+
+Sales Module
+
+Create sales (Cash/Credit)
+
+Dynamic pricing based on customer type
+
+Add multiple products to cart
+
+Generate Invoice (PDF/Print)
+
+Update stock automatically
+
+Purchases Module
+
+Record purchases (Cash/Credit)
+
+Multiple product entries with cost price
+
+Auto-update stock
+
+Supplier credit balance tracking
+
+Customers & Suppliers
+
+Customers: Normal & Workshop
+
+Credit balance & contact info
+
+Suppliers: Name, contact, address, purchase history
+
+Reports
+
+Sales report (date range)
+
+Purchases report
+
+Stock report (low stock)
+
+Profit & loss report
+
+Customer & supplier ledger (credit history)
+
+User Authentication (Optional)
+
+Admin & Staff roles
+
+Login screen with CTk styling
+
+Professional UI/UX (CustomTkinter)
+
+Sidebar Navigation (collapsible)
+
+Dashboard
+
+Products
+
+Sales
+
+Purchases
+
+Reports
+
+Customers
+
+Suppliers
+
+Settings
+
+Top Bar:
+
+App title / Logo
+
+User profile
+
+Light/Dark theme toggle (built-in CTk feature)
+
+Dashboard Widgets:
+
+Total stock, Today’s sales, Purchases, Profit
+
+Low stock alerts
+
+Chart: Sales vs Purchases (Matplotlib embedded in CTkCanvas)
+
+Forms & Tables:
+
+CTkEntry, CTkOptionMenu, CTkTable (or custom table using CTkFrame + labels)
+
+Modal dialogs for add/edit (CTkToplevel)
+
+Search & filter in tables
+
+Database Schema (SQLite)
+
+(Same as we finalized earlier — supplier_id removed from products)
+
+categories: category_id, category_name
+
+brands: brand_id, brand_name
+
+products: product_id, name, category_id, brand_id, sku, stock, price_normal, price_workshop, reorder_level
+
+customers: customer_id, name, type (Normal/Workshop), contact, credit_balance
+
+suppliers: supplier_id, name, contact, address
+
+purchases & purchase_items
+
+sales & sale_items
+
+users (optional)
+
+Business Rules
+
+SKU auto-generated based on category & brand
+
+Stock increases on purchase, decreases on sale
+
+Customer type decides pricing
+
+Reorder alerts displayed on dashboard
+
+Credit sales/purchases update customer/supplier balance
+
+Output Requirements
+
+Full Python project using CustomTkinter (CTk)
+
+Modular code: /modules/products.py, /modules/sales.py, etc.
+
+SQLite database with migrations and sample data
+
+PDF invoice generation (ReportLab)
+
+Dark/Light theme support
