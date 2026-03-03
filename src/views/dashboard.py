@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.database import db
+from utils.format_utils import format_price_with_decimals, get_currency_symbol
 
 class Dashboard:
     def __init__(self, parent):
@@ -361,9 +362,9 @@ class Dashboard:
         normal_price = product['price_normal'] if product['price_normal'] else 0
         workshop_price = product['price_workshop'] if product['price_workshop'] else 0
         
-        self.cost_label.configure(text=f"Rs{cost_price:,.2f}")
-        self.normal_price_label.configure(text=f"Rs{normal_price:,.2f}")
-        self.workshop_price_label.configure(text=f"Rs{workshop_price:,.2f}")
+        self.cost_label.configure(text=format_price_with_decimals(cost_price))
+        self.normal_price_label.configure(text=format_price_with_decimals(normal_price))
+        self.workshop_price_label.configure(text=format_price_with_decimals(workshop_price))
         
         # Status
         is_active = product['is_active'] if product['is_active'] is not None else 1
@@ -444,7 +445,7 @@ class Dashboard:
         ax.fill_between(days, sales, alpha=0.3, color='#10B981')
         
         ax.set_title('Daily Sales', fontsize=12, pad=20)
-        ax.set_ylabel('Sales ($)')
+        ax.set_ylabel(f'Sales ({get_currency_symbol()})')
         ax.grid(True, alpha=0.3)
         
         # Style the chart
@@ -506,7 +507,7 @@ class Dashboard:
         bars2 = ax.bar([i + width/2 for i in x], purchases_data, width, label='Purchases', color='#3B82F6', alpha=0.8)
         
         ax.set_xlabel('Month')
-        ax.set_ylabel('Amount ($)')
+        ax.set_ylabel(f'Amount ({get_currency_symbol()})')
         ax.set_title('Sales vs Purchases Trend')
         ax.set_xticks(x)
         ax.set_xticklabels(months)
@@ -574,10 +575,10 @@ class Dashboard:
         
         # Sample activities
         activities = [
-            ("💰 Sale #001 - $250.00", "2 hours ago"),
-            ("📦 Low stock alert: Product ABC", "3 hours ago"),
+            (f"💰 Sale #001 - {format_price_with_decimals(250)}", "2 hours ago"),
+            ("� Low stock alert: Product ABC", "3 hours ago"),
             ("🛒 Purchase #PO001 received", "5 hours ago"),
-            ("👤 New customer: John Doe", "1 day ago"),
+            ("�👤 New customer: John Doe", "1 day ago"),
             ("📊 Monthly report generated", "2 days ago")
         ]
         
@@ -631,7 +632,7 @@ class Dashboard:
             total_customers = customers_result[0]['total_customers']
             
             # Update KPI cards
-            self.kpi_cards['sales'].value_label.configure(text=f"${total_sales:,.2f}")
+            self.kpi_cards['sales'].value_label.configure(text=format_price_with_decimals(total_sales))
             self.kpi_cards['products'].value_label.configure(text=str(total_products))
             self.kpi_cards['low_stock'].value_label.configure(text=str(low_stock_count))
             self.kpi_cards['customers'].value_label.configure(text=str(total_customers))

@@ -9,6 +9,7 @@ from datetime import datetime
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.database import db
+from utils.format_utils import format_price_with_decimals, get_currency_symbol
 
 
 class PaymentDialog:
@@ -22,13 +23,18 @@ class PaymentDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Record {payment_type.title()} Payment")
-        self.dialog.geometry("500x600")
+        self.dialog.geometry("500x700")
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
         
-        # Center the dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
+        # Center the dialog on screen
+        self.dialog.update_idletasks()
+        screen_width = self.dialog.winfo_screenwidth()
+        screen_height = self.dialog.winfo_screenheight()
+        x = (screen_width - 500) // 2
+        y = (screen_height - 550) // 2
+        self.dialog.geometry(f"500x550+{x}+{y}")
         
         self.create_form()
         
@@ -37,8 +43,8 @@ class PaymentDialog:
     
     def create_form(self):
         """Create payment form"""
-        # Main container
-        main_frame = ctk.CTkFrame(self.dialog, corner_radius=15)
+        # Main container - scrollable
+        main_frame = ctk.CTkScrollableFrame(self.dialog, corner_radius=15)
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
         
         # Header
@@ -59,16 +65,16 @@ class PaymentDialog:
         
         # Form fields container
         fields_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        fields_frame.pack(fill="both", expand=True, padx=15)
+        fields_frame.pack(fill="x", padx=15)
         
         # Customer/Supplier information display
         info_frame = ctk.CTkFrame(fields_frame, corner_radius=10)
         info_frame.pack(fill="x", pady=(0, 15))
         
         if self.payment_type == "customer" and self.customer_data:
-            info_text = f"Customer: {self.customer_data['name']}\nType: {self.customer_data['type']}\nCurrent Credit Balance: Rs{self.customer_data['credit_balance']:.2f}"
+            info_text = f"Customer: {self.customer_data['name']}\nType: {self.customer_data['type']}\nCurrent Credit Balance: {format_price_with_decimals(self.customer_data['credit_balance'])}"
         elif self.payment_type == "supplier" and self.supplier_data:
-            info_text = f"Supplier: {self.supplier_data['name']}\nCurrent Credit Balance: Rs{self.supplier_data['credit_balance']:.2f}"
+            info_text = f"Supplier: {self.supplier_data['name']}\nCurrent Credit Balance: {format_price_with_decimals(self.supplier_data['credit_balance'])}"
         else:
             info_text = "No customer/supplier selected"
             
@@ -86,7 +92,7 @@ class PaymentDialog:
         
         amount_label = ctk.CTkLabel(
             amount_frame,
-            text="💵 Payment Amount (Rs) *:",
+            text=f"💵 Payment Amount ({get_currency_symbol()}) *:",
             font=ctk.CTkFont(size=14, weight="bold")
         )
         amount_label.pack(anchor="w", padx=15, pady=(12, 8))
@@ -237,14 +243,14 @@ class PaymentDialog:
         if self.payment_type == "customer" and self.customer_data:
             if amount > self.customer_data['credit_balance']:
                 if not messagebox.askyesno("Confirm", 
-                    f"Payment amount (Rs{amount:.2f}) exceeds credit balance (Rs{self.customer_data['credit_balance']:.2f}).\n"
-                    "This will result in a credit balance for the customer. Continue?"):
+                        f"Payment amount ({format_price_with_decimals(amount)}) exceeds credit balance ({format_price_with_decimals(self.customer_data['credit_balance'])}).\n"
+                        "This will result in a credit balance for the customer. Continue?"):
                     return
         elif self.payment_type == "supplier" and self.supplier_data:
             if amount > self.supplier_data['credit_balance']:
                 if not messagebox.askyesno("Confirm", 
-                    f"Payment amount (Rs{amount:.2f}) exceeds credit balance (Rs{self.supplier_data['credit_balance']:.2f}).\n"
-                    "This will result in a credit balance for the supplier. Continue?"):
+                        f"Payment amount ({format_price_with_decimals(amount)}) exceeds credit balance ({format_price_with_decimals(self.supplier_data['credit_balance'])}).\n"
+                        "This will result in a credit balance for the supplier. Continue?"):
                     return
         
         try:
@@ -289,7 +295,7 @@ class PaymentDialog:
                 self.update_purchase_payments(supplier_id, amount)
             
             messagebox.showinfo("Success", 
-                f"Payment of Rs{amount:.2f} recorded successfully for {self.payment_type}!")
+                f"Payment of {format_price_with_decimals(amount)} recorded successfully for {self.payment_type}!")
             
             self.result = True
             self.dialog.destroy()

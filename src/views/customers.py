@@ -872,29 +872,59 @@ class CustomerStatementDialog:
         except Exception as e:
             print("Error loading sales for statement:", e)
 
-        # Load payments
+        # Load all transactions (sales and payments)
         try:
             payments = db.execute_query(
-                "SELECT p.payment_date, s.invoice_number, p.amount, p.notes, p.created_at"
+                "SELECT p.payment_date, p.reference_number, p.amount, p.notes, p.created_at, p.payment_type"
                 " FROM payments p"
-                " LEFT JOIN sales s ON p.reference_number = s.invoice_number"
-                " WHERE p.customer_id = ? AND p.payment_type = 'credit_sale'"
-                " ORDER BY p.created_at DESC",
+                " WHERE p.customer_id = ?"
+                " ORDER BY p.created_at ASC",  # Oldest first for running balance calculation
                 (cid,)
             )
+            
+            # Calculate running balance (start from 0 and track all transactions)
+            running_balance = 0
+            
+            # First pass: calculate running balances
+            transactions = []
             for p in payments:
-                remaining = "-"
-                try:
-                    if p['notes'] and p['notes'].startswith("remaining:"):
-                        remaining = format_price_with_decimals(float(p['notes'].split(':')[1]))
-                except Exception:
-                    pass
+                amount = p['amount']
+                payment_type = p['payment_type']
+                
+                # Determine if this adds to balance (sale) or reduces it (payment)
+                if payment_type in ('sale_cash', 'sale_credit', 'sale_credit_paid'):
+                    # It's a sale - adds to balance
+                    running_balance += amount
+                    trans_type = 'Sale'
+                else:
+                    # It's a payment - reduces balance
+                    running_balance -= amount
+                    trans_type = 'Payment'
+                
+                transactions.append({
+                    'date': p['payment_date'],
+                    'invoice': p['reference_number'] or "-",
+                    'amount': amount,
+                    'type': trans_type,
+                    'balance': running_balance,
+                    'created_at': p['created_at'],
+                    'notes': p['notes']
+                })
+            
+            # Display in reverse order (newest first)
+            for t in reversed(transactions):
+                # Format amount with + for sales, - for payments
+                if t['type'] == 'Sale':
+                    amount_str = f"+{format_price_with_decimals(t['amount'])}"
+                else:
+                    amount_str = f"-{format_price_with_decimals(t['amount'])}"
+                
                 self.pay_tree.insert("", "end", values=(
-                    p['payment_date'],
-                    p['invoice_number'] or "-",
-                    format_price_with_decimals(p['amount']),
-                    remaining,
-                    p['created_at']
+                    t['date'],
+                    t['invoice'],
+                    amount_str,
+                    format_price_with_decimals(t['balance']),
+                    t['created_at']
                 ))
         except Exception as e:
             print("Error loading payments for statement:", e)

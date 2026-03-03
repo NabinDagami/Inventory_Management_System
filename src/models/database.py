@@ -35,6 +35,32 @@ class Database:
                 )
             ''')
             
+            # Sub-categories table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS sub_categories (
+                    sub_category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sub_category_name VARCHAR(100) NOT NULL,
+                    category_id INTEGER NOT NULL,
+                    description TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (category_id) REFERENCES categories (category_id),
+                    UNIQUE(sub_category_name, category_id)
+                )
+            ''')
+            
+            # Sub-brands table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS sub_brands (
+                    sub_brand_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sub_brand_name VARCHAR(100) NOT NULL,
+                    brand_id INTEGER NOT NULL,
+                    description TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (brand_id) REFERENCES brands (brand_id),
+                    UNIQUE(sub_brand_name, brand_id)
+                )
+            ''')
+            
             # Products table
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS products (
@@ -42,7 +68,9 @@ class Database:
                     name VARCHAR(200) NOT NULL,
                     sku VARCHAR(50) UNIQUE NOT NULL,
                     category_id INTEGER,
+                    sub_category_id INTEGER,
                     brand_id INTEGER,
+                    sub_brand_id INTEGER,
                     description TEXT,
                     stock INTEGER DEFAULT 0,
                     price_normal DECIMAL(10,2) NOT NULL,
@@ -53,7 +81,9 @@ class Database:
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (category_id) REFERENCES categories (category_id),
-                    FOREIGN KEY (brand_id) REFERENCES brands (brand_id)
+                    FOREIGN KEY (sub_category_id) REFERENCES sub_categories (sub_category_id),
+                    FOREIGN KEY (brand_id) REFERENCES brands (brand_id),
+                    FOREIGN KEY (sub_brand_id) REFERENCES sub_brands (sub_brand_id)
                 )
             ''')
             

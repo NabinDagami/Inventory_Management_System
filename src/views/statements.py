@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.database import db
 import utils.simple_table_styles as table_styles
+from utils.format_utils import format_price_with_decimals
 
 class StatementsView:
     def __init__(self, parent):
@@ -20,7 +21,7 @@ class StatementsView:
     
     def format_price(self, price):
         """Format price with comma separators like inventory"""
-        return f"Rs {price:,.0f}"
+        return format_price_with_decimals(price)
     
     def create_statements_interface(self):
         """Create the statements management interface"""
@@ -198,9 +199,9 @@ class StatementsView:
                 sale['invoice_number'],
                 sale['sale_date'],
                 customer_name,
-                f"Rs{sale['total_amount']:.2f}",
-                f"Rs{sale['paid_amount']:.2f}",
-                f"Rs{balance:.2f}",
+                format_price_with_decimals(sale['total_amount']),
+                format_price_with_decimals(sale['paid_amount']),
+                format_price_with_decimals(balance),
                 status
             ))
     
@@ -226,9 +227,9 @@ class StatementsView:
                 credit['invoice_number'],
                 credit['sale_date'],
                 customer_name,
-                f"Rs{credit['total_amount']:.2f}",
-                f"Rs{credit['paid_amount']:.2f}",
-                f"Rs{balance:.2f}",
+                format_price_with_decimals(credit['total_amount']),
+                format_price_with_decimals(credit['paid_amount']),
+                format_price_with_decimals(balance),
                 "Credit"
             ))
     
@@ -254,9 +255,9 @@ class StatementsView:
                 payment['invoice_number'],
                 payment['sale_date'],
                 customer_name,
-                f"Rs{payment['total_amount']:.2f}",
-                f"Rs{payment['paid_amount']:.2f}",
-                f"Rs{balance:.2f}",
+                format_price_with_decimals(payment['total_amount']),
+                format_price_with_decimals(payment['paid_amount']),
+                format_price_with_decimals(balance),
                 payment['payment_method'].title()
             ))
     
@@ -294,9 +295,9 @@ class StatementsView:
                     item['invoice_number'],
                     item['sale_date'],
                     customer_name,
-                    f"Rs{item['total_amount']:.2f}",
-                    f"Rs{item['paid_amount']:.2f}",
-                    f"Rs{balance:.2f}",
+                    format_price_with_decimals(item['total_amount']),
+                    format_price_with_decimals(item['paid_amount']),
+                    format_price_with_decimals(balance),
                     status
                 ))
     
@@ -401,8 +402,8 @@ class StatementsView:
         paid_amount = sale['paid_amount'] or 0
         balance = total_amount - paid_amount
         
-        self.create_info_row(financial_frame, "Total Amount:", f"Rs{total_amount:,.2f}", color="#10B981")
-        self.create_info_row(financial_frame, "Paid Amount:", f"Rs{paid_amount:,.2f}", color="#3B82F6")
+        self.create_info_row(financial_frame, "Total Amount:", format_price_with_decimals(total_amount), color="#10B981")
+        self.create_info_row(financial_frame, "Paid Amount:", format_price_with_decimals(paid_amount), color="#3B82F6")
         
         # Show balance with color coding
         if balance > 0:
@@ -410,7 +411,7 @@ class StatementsView:
         else:
             balance_color = "#10B981"  # Green for paid
         
-        self.create_info_row(financial_frame, "Balance:", f"Rs{balance:,.2f}", color=balance_color)
+        self.create_info_row(financial_frame, "Balance:", format_price_with_decimals(balance), color=balance_color)
         
         # Notes Section (if available)
         if 'notes' in sale.keys() and sale['notes']:

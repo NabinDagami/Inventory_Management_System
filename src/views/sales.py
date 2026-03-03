@@ -1389,13 +1389,58 @@ class SalesView:
                     WHERE product_id = ?
                 """, (item['quantity'], item['product_id']))
             
+            # Record sale transaction in payments table for complete history
+            # Determine transaction type and notes based on payment status
+            if payment_method == 'cash':
+                # Cash sale - fully paid
+                transaction_type = 'sale_cash'
+                notes = f"Sale: Cash payment. Total: {total_amount:.2f}"
+            elif status == 'completed':
+                # Credit sale fully paid at time of purchase
+                transaction_type = 'sale_credit_paid'
+                notes = f"Sale: Credit fully paid. Total: {total_amount:.2f}"
+            else:
+                # Credit sale with balance remaining
+                transaction_type = 'sale_credit'
+                notes = f"Sale: Credit. Total: {total_amount:.2f}, Paid: {paid_amount:.2f}, Remaining: {total_amount - paid_amount:.2f}"
+            
+            db.execute_insert("""
+                INSERT INTO payments (payment_type, customer_id, amount, 
+                                    payment_method, reference_number, notes, payment_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                transaction_type,
+                customer_id,
+                total_amount,  # Record the full sale amount
+                payment_method,
+                invoice_number,
+                notes,
+                datetime.now().date()
+            ))
+            
+            # Record separate payment entry if there was an initial payment on credit sale
+            if payment_method == 'credit' and paid_amount > 0:
+                db.execute_insert("""
+                    INSERT INTO payments (payment_type, customer_id, amount, 
+                                        payment_method, reference_number, notes, payment_date)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    'payment',
+                    customer_id,
+                    paid_amount,
+                    payment_method,
+                    invoice_number,
+                    f"Payment on invoice. Remaining: {total_amount - paid_amount:.2f}",
+                    datetime.now().date()
+                ))
+            
             # Update customer credit balance if needed
             if payment_method == 'credit' and customer_id:
                 db.execute_update("""
                     UPDATE customers 
                     SET credit_balance = credit_balance + ?
                     WHERE customer_id = ?
-                """, (subtotal - paid_amount, customer_id))
+                """, (total_amount - paid_amount, customer_id))
             
             # Clear cart and refresh
             self.cart_items = []
