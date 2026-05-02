@@ -480,13 +480,27 @@ class CustomerDialog:
         
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("580x750")  # Further increased height to show all elements
+        self.dialog.geometry("580x750")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        self.dialog.resizable(True, True)  # Allow resizing so user can adjust if needed
+        self.dialog.resizable(True, True)
         
-        # Center the dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
+        # Center dialog on parent window
+        self.dialog.update_idletasks()
+        parent.update_idletasks()
+        
+        parent_x = parent.winfo_rootx()
+        parent_y = parent.winfo_rooty()
+        parent_width = parent.winfo_width()
+        parent_height = parent.winfo_height()
+        
+        dialog_width = 580
+        dialog_height = 750
+        
+        x = parent_x + (parent_width // 2) - (dialog_width // 2)
+        y = parent_y + (parent_height // 2) - (dialog_height // 2)
+        
+        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
         
         self.create_form()
         
@@ -728,9 +742,23 @@ class CustomerStatementDialog:
         self.dialog.resizable(True, True)
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        x = parent.winfo_rootx() + 40
-        y = parent.winfo_rooty() + 40
-        self.dialog.geometry("+%d+%d" % (x, y))
+        
+        # Center dialog on parent window
+        self.dialog.update_idletasks()
+        parent.update_idletasks()
+        
+        parent_x = parent.winfo_rootx()
+        parent_y = parent.winfo_rooty()
+        parent_width = parent.winfo_width()
+        parent_height = parent.winfo_height()
+        
+        dialog_width = 820
+        dialog_height = 620
+        
+        x = parent_x + (parent_width // 2) - (dialog_width // 2)
+        y = parent_y + (parent_height // 2) - (dialog_height // 2)
+        
+        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
 
         self._build_ui()
         self._load_data()

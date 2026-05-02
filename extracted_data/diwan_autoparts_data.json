@@ -1,0 +1,3537 @@
+{
+  "Dashboard": [
+    {
+      "s": "Diwan Autoparts"
+    },
+    {
+      "s": "s"
+    }
+  ],
+  "Others": [
+    {
+      "Items": "Brake Came (All Bike)",
+      "Price ": "180/250",
+      "Qty in Hand": null,
+      "Qty Sold": null,
+      "Available Stock  ": null,
+      "Status ": null
+    },
+    {
+      "Items": "Rocket Raincoat (Small Size)",
+      "Price ": "130/150",
+      "Qty in Hand": 5.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 5.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Thunder Raincoat (Middle Size)",
+      "Price ": "220/240",
+      "Qty in Hand": 5.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 5.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Eva Raincoat (Large Size)",
+      "Price ": "320/350",
+      "Qty in Hand": 5.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 5.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "All Fuse ",
+      "Price ": "15/pcs",
+      "Qty in Hand": null,
+      "Qty Sold": null,
+      "Available Stock  ": 0.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Tubless Gun",
+      "Price ": 350,
+      "Qty in Hand": 1.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 1.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Spray (W.D.40)",
+      "Price ": 350,
+      "Qty in Hand": 5.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 5.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Blancer (Pulsar 150)",
+      "Price ": "1300/1500",
+      "Qty in Hand": 3.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 3.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Brake Oil (Servo)",
+      "Price ": "230/280",
+      "Qty in Hand": 12.0,
+      "Qty Sold": 5.0,
+      "Available Stock  ": 7.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Brake Oil (Smart DOT4)",
+      "Price ": "180/250",
+      "Qty in Hand": 2.0,
+      "Qty Sold": 2.0,
+      "Available Stock  ": 0.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Back Light Bulb",
+      "Price ": "25/35",
+      "Qty in Hand": 50.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 50.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Side Light Bulb(big)",
+      "Price ": "30/35",
+      "Qty in Hand": 15.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 15.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Side Light Bulb(small-white)",
+      "Price ": "20/30",
+      "Qty in Hand": 23.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 23.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Side Light Bulb(small-red)",
+      "Price ": "20/30",
+      "Qty in Hand": 20.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 20.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Head Light Bulb (Auto Lamp)",
+      "Price ": "40/50",
+      "Qty in Hand": 8.0,
+      "Qty Sold": 2.0,
+      "Available Stock  ": 6.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Head Light Bulb (H7-Pulsar 220 \"2pin\")",
+      "Price ": "250/300",
+      "Qty in Hand": 12.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 12.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Head Light Bulb (H4-NS-200 \"3pin\")",
+      "Price ": "150/200",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Head Light Bulb (HS-Pulsar 150 \"3pin\")",
+      "Price ": "130/190",
+      "Qty in Hand": 14.0,
+      "Qty Sold": 2.0,
+      "Available Stock  ": 12.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Head Light Bulb (HS-Pulsar 150 \"3pin\" 40-45)",
+      "Price ": "200/250",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 2.0,
+      "Available Stock  ": 8.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Head Light Bulb (YBX)",
+      "Price ": "100/120",
+      "Qty in Hand": 7.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 6.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Bike Cover (Ramro)",
+      "Price ": 850,
+      "Qty in Hand": 2.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 2.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Bike Cover (Sasto)",
+      "Price ": 450,
+      "Qty in Hand": 5.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 5.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Brake Pipe (Pulsar 220-Front) \"75 cm\"",
+      "Price ": "680/800",
+      "Qty in Hand": 1.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 1.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Brake Pipe (Pulsar 220-Front) \"85 cm\"",
+      "Price ": "780/1000",
+      "Qty in Hand": 1.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 1.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Brake Pipe (Pulsar 220-Rear)",
+      "Price ": "800/1050",
+      "Qty in Hand": 2.0,
+      "Qty Sold": 2.0,
+      "Available Stock  ": 0.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Brake Spring",
+      "Price ": "35/40",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Dori ",
+      "Price ": 130,
+      "Qty in Hand": 5.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 5.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Grip Set Cover Rubber",
+      "Price ": "85/100",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Focus Light",
+      "Price ": 650,
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Double Stand Spring",
+      "Price ": "45/60",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Clutch Gasket (All Bike)",
+      "Price ": "35/50",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Magnet Gasket (All Bike)",
+      "Price ": "35/50",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Full Gasket (Pulsar 220)",
+      "Price ": "170/200",
+      "Qty in Hand": 2.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 1.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Full Gasket (Pulsar 150)",
+      "Price ": "170/200",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Full Gasket (Dio NM)",
+      "Price ": "180/220",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Full Gasket (FZ)",
+      "Price ": "170/200",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Full Gasket (Unicorn)",
+      "Price ": "170/200",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Full Gasket (Shine)",
+      "Price ": "170/200",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Flasher with Buzzer",
+      "Price ": "90/120",
+      "Qty in Hand": 18.0,
+      "Qty Sold": 3.0,
+      "Available Stock  ": 15.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Half-Gasket (All Bike/Scooter)",
+      "Price ": "80/150",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Coolent (ABS)",
+      "Price ": "100/150",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 3.0,
+      "Available Stock  ": 7.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Grip Set (Pulsar)",
+      "Price ": "170/230",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Grip (Pulsar-Bajaj)",
+      "Price ": "300/400",
+      "Qty in Hand": 5.0,
+      "Qty Sold": 2.0,
+      "Available Stock  ": 3.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Grip Set (Shine/Unicorn)",
+      "Price ": "170/200",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 3.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Grip Set (FZ)",
+      "Price ": "170/200",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Grip per pc (FZV2)",
+      "Price ": "80/100",
+      "Qty in Hand": 5.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 5.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Grip per pc (RTR)",
+      "Price ": "80/100",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 2.0,
+      "Available Stock  ": 2.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Handle Gotti (Unicorn/Pulsar)",
+      "Price ": "25/30 per set ",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Handle Gotti (FZ)",
+      "Price ": "60/70 per set ",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Grease (Small)",
+      "Price ": "130/180",
+      "Qty in Hand": 5.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 5.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Grease (Half-Kg Servo)",
+      "Price ": "350/400",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 3.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Grease (Half-Kg Sasto)",
+      "Price ": "230/300",
+      "Qty in Hand": 3.0,
+      "Qty Sold": 3.0,
+      "Available Stock  ": 0.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Grease (1 Kg- Sasto)",
+      "Price ": "450/600",
+      "Qty in Hand": 3.0,
+      "Qty Sold": 3.0,
+      "Available Stock  ": 0.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Horn (Hero)",
+      "Price ": "200/280",
+      "Qty in Hand": 12.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 12.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Handle Bar (Pulsar 150)",
+      "Price ": 550,
+      "Qty in Hand": 1.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 0.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Handle Bar (Pulsar 220) per set",
+      "Price ": 850,
+      "Qty in Hand": 3.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 3.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Handle Bar (Pulsar 220 bajaj) per set",
+      "Price ": 1300,
+      "Qty in Hand": 3.0,
+      "Qty Sold": 2.0,
+      "Available Stock  ": 1.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Handle Bar (Unicorn)",
+      "Price ": 550,
+      "Qty in Hand": 1.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 0.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Handle Bar (FZ)",
+      "Price ": 550,
+      "Qty in Hand": 1.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 1.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Handle Bar (Splender)",
+      "Price ": 450,
+      "Qty in Hand": 1.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 1.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Handle Bar (Shine)",
+      "Price ": 550,
+      "Qty in Hand": 1.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 1.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Head Light Glass (Pulsar 150)",
+      "Price ": "230/300",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Head Light Glass (Pulsar 220)",
+      "Price ": "390/450",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Legguard (Pulsar 220)",
+      "Price ": "1400/1550",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Legguard (Pulsar 150 UG5)",
+      "Price ": "1320/1450",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Legguard (Pulsar 150 UG6)",
+      "Price ": "1450/1650",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Legguard (FZS)",
+      "Price ": "1000/1100",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Legguard (FSV2)",
+      "Price ": "1100/1300",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Legguard (Shine)",
+      "Price ": "1050/1300",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Legguard (Unicorn)",
+      "Price ": "1450/1650",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Legguard (RTR NM)",
+      "Price ": "1650/1800",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "On/Off Switch",
+      "Price ": "130/160",
+      "Qty in Hand": 20.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 20.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Rain Coat (Suit ma)",
+      "Price ": 2300,
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Silencer Cover (Pulsar 150)",
+      "Price ": "360/400",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Silencer Cover (Grazzia)",
+      "Price ": "210/300",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Silencer Cover (Dio NM)",
+      "Price ": "110/150",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Side Cover (Pulsar) per set",
+      "Price ": "950/1100",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Side Cover (Shine) per set ",
+      "Price ": "950/1100",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Shock Oil (Bullet-175 ml)",
+      "Price ": "60/80",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Side Stand Pata ",
+      "Price ": "180/200",
+      "Qty in Hand": 5.0,
+      "Qty Sold": 3.0,
+      "Available Stock  ": 2.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Tail Pannel (Pulsar)",
+      "Price ": 1100,
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Chainlock (Pulsar 150)",
+      "Price ": "60/100",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Chainlock (Pulsar 220)",
+      "Price ": "70/100",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 2.0,
+      "Available Stock  ": 8.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Chainlock (FZ/RTR)",
+      "Price ": "60/100",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 2.0,
+      "Available Stock  ": 8.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Chainlock (Shine)",
+      "Price ": "45/70",
+      "Qty in Hand": 5.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 5.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Chainlock (Bullet)",
+      "Price ": "70/100",
+      "Qty in Hand": 2.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 1.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Gear Rubber",
+      "Price ": 70,
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Rear Brake switch (Pul-M)",
+      "Price ": "130/200",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Rear Brake switch (FZ-M)",
+      "Price ": "105/130",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Front Brake Switch (FZ)",
+      "Price ": "160/200",
+      "Qty in Hand": 5.0,
+      "Qty Sold": 3.0,
+      "Available Stock  ": 2.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Front Brake Switch (Pul)",
+      "Price ": "100/150",
+      "Qty in Hand": 5.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Makhi/Inner (Acc+Clutch)",
+      "Price ": "25/35",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "scooter switch (Starting)",
+      "Price ": "50/80",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "scooter switch (Horn)",
+      "Price ": "50/80",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "scooter switch (Sidelight)",
+      "Price ": "50/80",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 3.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "scooter switch (Head Dim ON/OFF)",
+      "Price ": "50/80",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "scooter switch (Light ON/OFF)",
+      "Price ": "50/80",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 4.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Hanger bush",
+      "Price ": "50/80",
+      "Qty in Hand": 4.0,
+      "Qty Sold": 4.0,
+      "Available Stock  ": 0.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Disk Lock",
+      "Price ": 350,
+      "Qty in Hand": 5.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 1.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Gear Oil (Motul)",
+      "Price ": "200/300",
+      "Qty in Hand": 7.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 6.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Jaali/Eye (Pul 220)",
+      "Price ": "150/set",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 9.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Rear Shock Bush (Dio)",
+      "Price ": "35/pcs",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Rear Shock Bush (Pulsar)",
+      "Price ": "35/pcs",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Wax",
+      "Price ": "120/150",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Distill Water",
+      "Price ": "15/20",
+      "Qty in Hand": null,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 0.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Acid ",
+      "Price ": "50/60",
+      "Qty in Hand": null,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 0.0,
+      "Status ": "Reorder"
+    },
+    {
+      "Items": "Shock Bush (Pulsar)",
+      "Price ": "35/45",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Front Brake Switch (Pul)",
+      "Price ": "100/130",
+      "Qty in Hand": 20.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 20.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Rear Brakee Switch (FZ)",
+      "Price ": "130/150",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 1.0,
+      "Available Stock  ": 9.0,
+      "Status ": "Available"
+    },
+    {
+      "Items": "Rear Shock Bush (Dio)",
+      "Price ": "35/45",
+      "Qty in Hand": 10.0,
+      "Qty Sold": 0.0,
+      "Available Stock  ": 10.0,
+      "Status ": "Available"
+    }
+  ],
+  "Acc Cable ": [
+    {
+      " ": "Acc Cable "
+    },
+    {
+      " ": "Company "
+    },
+    {
+      " ": "BAJAJ"
+    },
+    {
+      " ": "HONDA"
+    },
+    {
+      " ": "Yamaha "
+    },
+    {
+      " ": "TVS"
+    },
+    {
+      " ": "Hero "
+    },
+    {
+      " ": "Royal Enfield"
+    },
+    {
+      " ": "Suzuki"
+    }
+  ],
+  "Air Filter": [
+    {
+      "e": "Air Filter"
+    },
+    {
+      "e": "Company "
+    },
+    {
+      "e": "BAJAJ"
+    },
+    {
+      "e": "Honda"
+    },
+    {
+      "e": "Yamaha"
+    },
+    {
+      "e": "TVS"
+    },
+    {
+      "e": "Hero "
+    },
+    {
+      "e": "Royal Enfield"
+    },
+    {
+      "e": "Suzuki"
+    }
+  ],
+  "Brake Shoe ": [
+    {
+      " ": "Brake Shoe"
+    },
+    {
+      " ": "Company "
+    },
+    {
+      " ": "ABS"
+    },
+    {
+      " ": "ASK "
+    },
+    {
+      " ": "Superjit"
+    }
+  ],
+  "Bearing ": [
+    {
+      " ": "Bearing"
+    },
+    {
+      " ": "Company "
+    },
+    {
+      " ": "H/F"
+    },
+    {
+      " ": "Pollysu"
+    },
+    {
+      " ": "Mgf"
+    }
+  ],
+  "Brake Pad-Disk Pad": [
+    {
+      "Brake Pad": "Bikes names"
+    },
+    {
+      "Brake Pad": "Pulsar/220/ NS-200/FZ/Gladiator/R15V3/Bullet/ Enticer (Front) "
+    },
+    {
+      "Brake Pad": "Pulsar/220/ NS-200/FZ/Gladiator/R15V3/Enticer (Fron-Superjit) "
+    },
+    {
+      "Brake Pad": "Pulsar/220/ NS-200 (Rear) "
+    },
+    {
+      "Brake Pad": "Pulsar/220/NS-200 (Rear- ASK)"
+    },
+    {
+      "Brake Pad": "Pulsar/220/NS-200 (Rear- Superjit)"
+    },
+    {
+      "Brake Pad": "Pulsar NM/220-NM/Twin-Disk (Rear)"
+    },
+    {
+      "Brake Pad": "Pulsar NM/220-NM/Twin-Disk (Rear-Superjit)"
+    },
+    {
+      "Brake Pad": "Pulsar (O.Disk)"
+    },
+    {
+      "Brake Pad": "Unicorn/ Gixxer/ShineNM (Front)"
+    },
+    {
+      "Brake Pad": "Shine OM (Front)"
+    },
+    {
+      "Brake Pad": "Grazzia"
+    },
+    {
+      "Brake Pad": "Soluto/SZR/Ray Z/FZ OM(Rear)"
+    },
+    {
+      "Brake Pad": "FZ250/FZV2/V3 (Rear)"
+    },
+    {
+      "Brake Pad": "FZ 250 rear (Superjit)"
+    },
+    {
+      "Brake Pad": "CBZ/RTR-series/X-pluse/Impluse (Front-Superjit)"
+    },
+    {
+      "Brake Pad": "CBZ/RTR-series/X-pluse/Impluse (Front)"
+    },
+    {
+      "Brake Pad": "RTR-series/X-pluse/Impluse (Rear-Superjit)"
+    },
+    {
+      "Brake Pad": "RTR-series (Rear)"
+    },
+    {
+      "Brake Pad": "Dazzler/ Unicorn/Gixxer/Xpluse (Rear-Superjit)"
+    },
+    {
+      "Brake Pad": "Dazzler/ Unicorn/Gixxer/Xpluse (Rear)"
+    },
+    {
+      "Brake Pad": "R15 (Front)"
+    },
+    {
+      "Brake Pad": "R15(Rear)/Xtrm double disk (Rear)"
+    },
+    {
+      "Brake Pad": "R15/Xtrm double disk (Rear-Superjit)"
+    },
+    {
+      "Brake Pad": "NTRQ/Jupiter (Superjit)"
+    },
+    {
+      "Brake Pad": "XR/XL"
+    },
+    {
+      "Brake Pad": "GN"
+    },
+    {
+      "Brake Pad": "Vespa"
+    },
+    {
+      "Brake Pad": "Gixxer (Sasto- RR)"
+    },
+    {
+      "Brake Pad": "Aprilla/ Gixxer (Superjit- FR)"
+    },
+    {
+      "Brake Pad": "Beneli"
+    },
+    {
+      "Brake Pad": "NTRQ (Sasto ma)"
+    },
+    {
+      "Brake Pad": "Shine/Hornet NM (Front- Superjit)"
+    },
+    {
+      "Brake Pad": "GS"
+    },
+    {
+      "Brake Pad": "Grazzia/Activa"
+    },
+    {
+      "Brake Pad": "Duke Front"
+    },
+    {
+      "Brake Pad": "Cross Fire "
+    }
+  ],
+  "Chainkit": [
+    {
+      "Chainkit": "Bike Names"
+    },
+    {
+      "Chainkit": "Pulsar 150"
+    },
+    {
+      "Chainkit": "Pulsar 150 Twin Disk"
+    },
+    {
+      "Chainkit": "Pulsar 220"
+    },
+    {
+      "Chainkit": "NS 200 "
+    },
+    {
+      "Chainkit": "Avenger 220"
+    },
+    {
+      "Chainkit": "Avenger 150 Street"
+    },
+    {
+      "Chainkit": "Discover 100"
+    },
+    {
+      "Chainkit": "Discover 125 ST"
+    },
+    {
+      "Chainkit": "Discover UPG/135"
+    },
+    {
+      "Chainkit": "Discover 150"
+    },
+    {
+      "Chainkit": "FZ"
+    },
+    {
+      "Chainkit": "FZ V2/V3, rear disc"
+    },
+    {
+      "Chainkit": "FZ 250"
+    },
+    {
+      "Chainkit": "MT 15"
+    },
+    {
+      "Chainkit": "R15 V3"
+    },
+    {
+      "Chainkit": "R15 V1"
+    },
+    {
+      "Chainkit": "Gladiator"
+    },
+    {
+      "Chainkit": "SZR"
+    },
+    {
+      "Chainkit": "Enticer"
+    },
+    {
+      "Chainkit": "Alba/Libero"
+    },
+    {
+      "Chainkit": "Unicorn/CBZ XTM"
+    },
+    {
+      "Chainkit": "Unicorn 160"
+    },
+    {
+      "Chainkit": "Shine"
+    },
+    {
+      "Chainkit": "Hornet"
+    },
+    {
+      "Chainkit": "IMPLUSE/XR 150"
+    },
+    {
+      "Chainkit": "Splender "
+    },
+    {
+      "Chainkit": "Super Splender"
+    },
+    {
+      "Chainkit": "X-pluse 200"
+    },
+    {
+      "Chainkit": "Hornet"
+    },
+    {
+      "Chainkit": "RTR 160 4V"
+    },
+    {
+      "Chainkit": "RTR 180/160 OM"
+    },
+    {
+      "Chainkit": "Raidar"
+    },
+    {
+      "Chainkit": "RTR 200"
+    },
+    {
+      "Chainkit": "Gixxer"
+    },
+    {
+      "Chainkit": "KTM 200"
+    },
+    {
+      "Chainkit": "KTM 200  (6-Holes)"
+    }
+  ],
+  "Clutch Plate": [
+    {
+      "Clutch Plate": "Company "
+    },
+    {
+      "Clutch Plate": "Endurance"
+    },
+    {
+      "Clutch Plate": "F.C.C."
+    },
+    {
+      "Clutch Plate": "Honda "
+    },
+    {
+      "Clutch Plate": "ASK"
+    }
+  ],
+  "Clutch Shoe-Chain exhauster": [
+    {
+      "Clutch Shoe   ": "Bike Names"
+    },
+    {
+      "Clutch Shoe   ": "Duro "
+    },
+    {
+      "Clutch Shoe   ": "TVS/Pep"
+    },
+    {
+      "Clutch Shoe   ": "Ray/Fashino"
+    },
+    {
+      "Clutch Shoe   ": "Dio HET (Honda Activa)"
+    },
+    {
+      "Clutch Shoe   ": "Dio OM"
+    },
+    {
+      "Clutch Shoe   ": "Dio NM"
+    },
+    {
+      "Clutch Shoe   ": "Dio NM"
+    },
+    {
+      "Clutch Shoe   ": "Dio-G.1"
+    },
+    {
+      "Clutch Shoe   ": "Dio-G.2"
+    },
+    {
+      "Clutch Shoe   ": "Pleasure"
+    },
+    {
+      "Clutch Shoe   ": "Ray/Fashino"
+    },
+    {
+      "Clutch Shoe   ": "NTRQ"
+    },
+    {
+      "Clutch Shoe   ": "Dio OM (Honda- 14H23)"
+    },
+    {
+      "Clutch Shoe   ": "Chain Exchauster "
+    },
+    {
+      "Clutch Shoe   ": "Bike Names"
+    },
+    {
+      "Clutch Shoe   ": "Pulsar 150"
+    },
+    {
+      "Clutch Shoe   ": "Pulsar 220"
+    },
+    {
+      "Clutch Shoe   ": "Splender /HH"
+    },
+    {
+      "Clutch Shoe   ": "Shine"
+    },
+    {
+      "Clutch Shoe   ": "Unicorn"
+    },
+    {
+      "Clutch Shoe   ": "FZ"
+    },
+    {
+      "Clutch Shoe   ": "Gladiator"
+    }
+  ],
+  "Clutch Cable ": [
+    {
+      "Clutch Cable": "Company "
+    },
+    {
+      "Clutch Cable": "BAJAJ"
+    },
+    {
+      "Clutch Cable": "HONDA"
+    },
+    {
+      "Clutch Cable": "Yamaha "
+    },
+    {
+      "Clutch Cable": "TVS"
+    },
+    {
+      "Clutch Cable": "Hero "
+    },
+    {
+      "Clutch Cable": "Royal Enfield"
+    },
+    {
+      "Clutch Cable": "Suzuki"
+    }
+  ],
+  "Choke Cable-Clutch Yoke": [
+    {
+      "Choke Cable ": "Bike Names"
+    },
+    {
+      "Choke Cable ": "FZ"
+    },
+    {
+      "Choke Cable ": "Platina"
+    },
+    {
+      "Choke Cable ": "Libra/Alba"
+    },
+    {
+      "Choke Cable ": "Shine"
+    },
+    {
+      "Choke Cable ": "Dio OM (combo)"
+    },
+    {
+      "Choke Cable ": "Dio NM"
+    },
+    {
+      "Choke Cable ": "Gladiator/Entincer"
+    },
+    {
+      "Choke Cable ": "CBZ XTM/Uni"
+    },
+    {
+      "Choke Cable ": "Clutch Yoke"
+    },
+    {
+      "Choke Cable ": "Bike Names"
+    },
+    {
+      "Choke Cable ": "UG3 (Pul150/180/220)"
+    },
+    {
+      "Choke Cable ": "UG4 (Pul150/180/220)"
+    },
+    {
+      "Choke Cable ": "Combo (Scooter)"
+    },
+    {
+      "Choke Cable ": "Dio old "
+    },
+    {
+      "Choke Cable ": "Ray Series"
+    },
+    {
+      "Choke Cable ": "Unicorn/CBZ XTM"
+    },
+    {
+      "Choke Cable ": "Shine"
+    },
+    {
+      "Choke Cable ": "RTR"
+    },
+    {
+      "Choke Cable ": "Splender"
+    },
+    {
+      "Choke Cable ": "FZ/RX/Fashino"
+    }
+  ],
+  "Clucth Switch-C.D.I": [
+    {
+      "Clutch Switch ": "Bike Names",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "UG4 (Bajaj)",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "Pul (7609k Minda) ",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "FZ",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "C.D.I",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "Bike Names",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "UG4 (DJ-64)",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "Pul (DH 56)",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "Pul 220 (DK-81)",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "Pul 150 (DH-72)",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "Pul (DJ-98)",
+      " ": null
+    },
+    {
+      "Clutch Switch ": "Pul (DH-04)",
+      " ": null
+    }
+  ],
+  "Drum Rubber": [
+    {
+      "6": "Drumpper Rubber "
+    },
+    {
+      "6": "Bike Names"
+    },
+    {
+      "6": "FZ/RX/Alba"
+    },
+    {
+      "6": "KB4s/Caliber/100cc"
+    },
+    {
+      "6": "Splender"
+    },
+    {
+      "6": "Sup-Splender"
+    },
+    {
+      "6": "Gixxer"
+    },
+    {
+      "6": "Unicorn/XTM"
+    },
+    {
+      "6": "Shine"
+    },
+    {
+      "6": "FZ 250"
+    },
+    {
+      "6": "Avenger/NS 200"
+    },
+    {
+      "6": "Pulsar 150/180/220"
+    },
+    {
+      "6": "RTR"
+    },
+    {
+      "6": "Bullet 350"
+    }
+  ],
+  "Daya form": [
+    {
+      "Daya Form": "Bike Names"
+    },
+    {
+      "Daya Form": "FZ"
+    },
+    {
+      "Daya Form": "Pulsar 220"
+    },
+    {
+      "Daya Form": "Pulsar 150"
+    },
+    {
+      "Daya Form": "Unicorn/Shine"
+    },
+    {
+      "Daya Form": "NS-200"
+    },
+    {
+      "Daya Form": "RTR 180/ Pul 180"
+    }
+  ],
+  "Disc Caliber": [
+    {
+      "Disc Cabiler": "Bike Names"
+    },
+    {
+      "Disc Cabiler": "Pulsar 150/180/220 (Front)"
+    },
+    {
+      "Disc Cabiler": "Pulsar 220 "
+    },
+    {
+      "Disc Cabiler": "Unicorn"
+    },
+    {
+      "Disc Cabiler": "Shine "
+    },
+    {
+      "Disc Cabiler": "FZ"
+    },
+    {
+      "Disc Cabiler": "RTR"
+    }
+  ],
+  "Dipper Switch": [
+    {
+      "2": "Company"
+    },
+    {
+      "2": "Bajaj"
+    },
+    {
+      "2": "Honda"
+    },
+    {
+      "2": "Yamaha"
+    }
+  ],
+  "Front Spocket": [
+    {
+      "Front Spocket ": "Bike Names"
+    },
+    {
+      "Front Spocket ": "Super-Splender"
+    },
+    {
+      "Front Spocket ": "Splender (I-smart)"
+    },
+    {
+      "Front Spocket ": "RTR 200"
+    },
+    {
+      "Front Spocket ": "RTR 160"
+    },
+    {
+      "Front Spocket ": "Pulsar 150"
+    },
+    {
+      "Front Spocket ": "Pulsar 220/Duke"
+    },
+    {
+      "Front Spocket ": "Discover 100/125/135"
+    },
+    {
+      "Front Spocket ": "Unicorn/XR"
+    },
+    {
+      "Front Spocket ": "FZ/YBX/CRUX/Enticer"
+    },
+    {
+      "Front Spocket ": "SZR"
+    },
+    {
+      "Front Spocket ": "Gixxer"
+    },
+    {
+      "Front Spocket ": "X-pluse/Karizma/CBZ Star"
+    },
+    {
+      "Front Spocket ": "FZ 250"
+    },
+    {
+      "Front Spocket ": "Shine"
+    }
+  ],
+  "Gear Lever-Gear  Sharf": [
+    {
+      "Gear Lever ": "Bike Names"
+    },
+    {
+      "Gear Lever ": "Sup-Splender"
+    },
+    {
+      "Gear Lever ": "Pulsar 220"
+    },
+    {
+      "Gear Lever ": "NS-200"
+    },
+    {
+      "Gear Lever ": "Pulsar 150 "
+    },
+    {
+      "Gear Lever ": "RTR OM"
+    },
+    {
+      "Gear Lever ": "FZ"
+    },
+    {
+      "Gear Lever ": "Unicorn"
+    },
+    {
+      "Gear Lever ": "Shine"
+    },
+    {
+      "Gear Lever ": "Gladiator"
+    },
+    {
+      "Gear Lever ": "RTR 160/180"
+    },
+    {
+      "Gear Lever ": "RTR 200 "
+    },
+    {
+      "Gear Lever ": "Splender /Sup-Spl"
+    },
+    {
+      "Gear Lever ": "NS-200 NM/160 NS NM"
+    },
+    {
+      "Gear Lever ": "NS-200 (Bajaj-Company)"
+    },
+    {
+      "Gear Lever ": "Gear Sharf"
+    },
+    {
+      "Gear Lever ": "Bike Names"
+    },
+    {
+      "Gear Lever ": "Pulsar 150 (Palto)"
+    },
+    {
+      "Gear Lever ": "Hero Honda "
+    },
+    {
+      "Gear Lever ": "Shine"
+    },
+    {
+      "Gear Lever ": "NS-200"
+    },
+    {
+      "Gear Lever ": "Pulsar 150 (Bajaj)"
+    },
+    {
+      "Gear Lever ": "Unicorn"
+    },
+    {
+      "Gear Lever ": "CT 100"
+    },
+    {
+      "Gear Lever ": "Pulsar 220"
+    }
+  ],
+  "Head Show-Head Light Assemble": [
+    {
+      "Head Show ": "Bike Names"
+    },
+    {
+      "Head Show ": "Pulsar 150/180/200"
+    },
+    {
+      "Head Show ": "Shime "
+    },
+    {
+      "Head Show ": "Shime T.2"
+    },
+    {
+      "Head Show ": "Unicorn "
+    },
+    {
+      "Head Show ": "CBZ XTM"
+    },
+    {
+      "Head Show ": "RTR 160"
+    },
+    {
+      "Head Show ": "Splender"
+    },
+    {
+      "Head Show ": "T.2 150 (Wister)"
+    },
+    {
+      "Head Show ": "Head Light Assemble"
+    },
+    {
+      "Head Show ": "Bike Names"
+    },
+    {
+      "Head Show ": "Pulsar 150/180/200 (Jainsons)"
+    },
+    {
+      "Head Show ": "Pulsar 150/180/200 (Lumux)"
+    },
+    {
+      "Head Show ": "Pulsar 150 (Golo-Jainsons)"
+    },
+    {
+      "Head Show ": "UG3 (Minda)"
+    },
+    {
+      "Head Show ": "RX-100 (Jainsons)"
+    },
+    {
+      "Head Show ": "Splender Plus "
+    }
+  ],
+  "Half-Excel": [
+    {
+      "Half Axel ": "Bike Names"
+    },
+    {
+      "Half Axel ": "Pulsar 150/180/200"
+    },
+    {
+      "Half Axel ": "Unicorn "
+    },
+    {
+      "Half Axel ": "YBX"
+    },
+    {
+      "Half Axel ": "Super-Splender"
+    },
+    {
+      "Half Axel ": "Glamour"
+    },
+    {
+      "Half Axel ": "Splender/I-smart"
+    },
+    {
+      "Half Axel ": "Shine"
+    },
+    {
+      "Half Axel ": "RTR"
+    },
+    {
+      "Half Axel ": "CBZ XTM"
+    }
+  ],
+  "Ingnation Swtich-Switch set": [
+    {
+      "Ignation Switch ": "Bike Names"
+    },
+    {
+      "Ignation Switch ": "1278Z (Shine/Unicorn)"
+    },
+    {
+      "Ignation Switch ": "1248Z (Pulsar 220)"
+    },
+    {
+      "Ignation Switch ": "1248HZ (NS-200)"
+    },
+    {
+      "Ignation Switch ": "1226BZ (Pulsar 150-\"2pin\")"
+    },
+    {
+      "Ignation Switch ": "1226Z (Pulsar 150-\"4pin\")"
+    },
+    {
+      "Ignation Switch ": "0139Z (Avenger 220-\"4pin\")"
+    },
+    {
+      "Ignation Switch ": "2178BZ (Avenger 220-\"4pin\")"
+    },
+    {
+      "Ignation Switch ": "1101Z (Splender)"
+    },
+    {
+      "Ignation Switch ": "1101DZ (Super-Splender)"
+    },
+    {
+      "Ignation Switch ": "1154BZ (RTR)"
+    },
+    {
+      "Ignation Switch ": "11015Z (XTM/Impluse)"
+    },
+    {
+      "Ignation Switch ": "1238AZ (FZ)"
+    },
+    {
+      "Ignation Switch ": "1247BZ (R15)"
+    },
+    {
+      "Ignation Switch ": "1226BZ (XCD)"
+    },
+    {
+      "Ignation Switch ": "1232NZ (Aviator)"
+    },
+    {
+      "Ignation Switch ": "2247EZ (Pleasure)"
+    },
+    {
+      "Ignation Switch ": "2166KZ  (E) (Dio-N/M)"
+    },
+    {
+      "Ignation Switch ": "2166CZ (E) (Dio-O/M)"
+    },
+    {
+      "Ignation Switch ": "1126EZ (CRUX)"
+    },
+    {
+      "Ignation Switch ": "1309KZ (Avenger- 2pin)"
+    },
+    {
+      "Ignation Switch ": "7298A (FZ)"
+    },
+    {
+      "Ignation Switch ": "7808 (Unicorn)"
+    },
+    {
+      "Ignation Switch ": "Ignation Switch Set"
+    },
+    {
+      "Ignation Switch ": "Bike Names"
+    },
+    {
+      "Ignation Switch ": "FC-r987 (E) (Pulsar)"
+    },
+    {
+      "Ignation Switch ": "KT-2233Z (FZ)"
+    },
+    {
+      "Ignation Switch ": "KT-2184HZ €"
+    }
+  ],
+  "Kick Lever": [
+    {
+      "Kick Lever": "Bike Names"
+    },
+    {
+      "Kick Lever": "Dio N/M"
+    },
+    {
+      "Kick Lever": "Splender/Passion"
+    },
+    {
+      "Kick Lever": "Pulsar 150/180 "
+    },
+    {
+      "Kick Lever": "Shine"
+    },
+    {
+      "Kick Lever": "Pleasure "
+    },
+    {
+      "Kick Lever": "YBX"
+    },
+    {
+      "Kick Lever": "Discover"
+    }
+  ],
+  "Lever Set ": [
+    {
+      "Lever Set ": "Bike Names"
+    },
+    {
+      "Lever Set ": "UG3 (Clutch)"
+    },
+    {
+      "Lever Set ": "UG3 (Brake)"
+    },
+    {
+      "Lever Set ": "UG4 (Clutch)"
+    },
+    {
+      "Lever Set ": "UG4 (Brake))"
+    },
+    {
+      "Lever Set ": "Discover/Platina"
+    },
+    {
+      "Lever Set ": "RTR/MT (Clutch)"
+    },
+    {
+      "Lever Set ": "RTR/MT (Brake)"
+    },
+    {
+      "Lever Set ": "FZ (Clutch)"
+    },
+    {
+      "Lever Set ": "FZ (Brake)"
+    },
+    {
+      "Lever Set ": "R15"
+    },
+    {
+      "Lever Set ": "Shine/Passion/Pro(Clutch)"
+    },
+    {
+      "Lever Set ": "Shine/Passion/Pro(Brake)"
+    },
+    {
+      "Lever Set ": "Unicorn/XTM/CBZ/Hunk (Clutch)"
+    },
+    {
+      "Lever Set ": "Unicorn/XTM/CBZ/Hunk (Brake)"
+    },
+    {
+      "Lever Set ": "Dio OM (RH)"
+    },
+    {
+      "Lever Set ": "Dio OM (LH)"
+    },
+    {
+      "Lever Set ": "Dio NM (RH)"
+    },
+    {
+      "Lever Set ": "Dio-Combo (per pcs)"
+    },
+    {
+      "Lever Set ": "Splender (Clutch)"
+    }
+  ],
+  "Mirror": [
+    {
+      "Mirror ": "Bike Names"
+    },
+    {
+      "Mirror ": "Pulsar 220(RH)"
+    },
+    {
+      "Mirror ": "Pulsar 220(LH)"
+    },
+    {
+      "Mirror ": "Pulsar 150/180/Platina (RH)"
+    },
+    {
+      "Mirror ": "Pulsar 150/180/Platina (LH)"
+    },
+    {
+      "Mirror ": "NS-200 (RH)"
+    },
+    {
+      "Mirror ": "NS-200 (LH)"
+    },
+    {
+      "Mirror ": "FZ OM (RH)"
+    },
+    {
+      "Mirror ": "FZ OM (LH)"
+    },
+    {
+      "Mirror ": "Dio NM (RH)"
+    },
+    {
+      "Mirror ": "Dio NM (LH)"
+    },
+    {
+      "Mirror ": "Shine (RH)"
+    },
+    {
+      "Mirror ": "Shine (LH)"
+    },
+    {
+      "Mirror ": "Avenger Black (RH)"
+    },
+    {
+      "Mirror ": "Avenger Black (LH)"
+    },
+    {
+      "Mirror ": "Gixxer (RH)"
+    },
+    {
+      "Mirror ": "Gixxer (LH)"
+    },
+    {
+      "Mirror ": "RTR 200 (RH)"
+    },
+    {
+      "Mirror ": "RTR 200 LH)"
+    },
+    {
+      "Mirror ": "Pulsar 220 (RH)"
+    },
+    {
+      "Mirror ": "Pulsar 220 (LH)"
+    },
+    {
+      "Mirror ": "NS 200 (RH)"
+    },
+    {
+      "Mirror ": "NS 200 (LH)"
+    },
+    {
+      "Mirror ": "Ray OM (RH)"
+    },
+    {
+      "Mirror ": "Ray OM (LH)"
+    },
+    {
+      "Mirror ": "FZ 250 (RH)"
+    },
+    {
+      "Mirror ": "FZ 250 (LH)"
+    },
+    {
+      "Mirror ": "XR (RH)"
+    },
+    {
+      "Mirror ": "XR (LH)"
+    },
+    {
+      "Mirror ": "R15 (RH)"
+    },
+    {
+      "Mirror ": "R15 (LH)"
+    },
+    {
+      "Mirror ": "Avenger-Chrome (RH)"
+    },
+    {
+      "Mirror ": "Avenger-Chrome (LH)"
+    },
+    {
+      "Mirror ": "Ray (RH)"
+    },
+    {
+      "Mirror ": "Ray LH)"
+    },
+    {
+      "Mirror ": "Splender (RH)"
+    },
+    {
+      "Mirror ": "Splender (LH)"
+    },
+    {
+      "Mirror ": "Unicorn OM (RH)"
+    },
+    {
+      "Mirror ": "Unicorn OM (LH)"
+    },
+    {
+      "Mirror ": "Fashino (RH)"
+    },
+    {
+      "Mirror ": "Fashino (LH)"
+    },
+    {
+      "Mirror ": "Avenger (RH)"
+    },
+    {
+      "Mirror ": "Avenger (LH)"
+    },
+    {
+      "Mirror ": "NTRQ (RH)"
+    },
+    {
+      "Mirror ": "NTRQ (LH)"
+    },
+    {
+      "Mirror ": "Shine (RH)"
+    },
+    {
+      "Mirror ": "Shine (LH)"
+    },
+    {
+      "Mirror ": "Sup-Splender/Sup-Plus (RH)"
+    },
+    {
+      "Mirror ": "Sup-Splender/Sup-Plus (LH)"
+    },
+    {
+      "Mirror ": "NTRQ (RH)"
+    },
+    {
+      "Mirror ": "NTRQ (LH)"
+    },
+    {
+      "Mirror ": "Gixxer (RH)"
+    },
+    {
+      "Mirror ": "Gixxer (LH)"
+    },
+    {
+      "Mirror ": "FZ 250 (RH))"
+    },
+    {
+      "Mirror ": "FZ 250 (LH))"
+    },
+    {
+      "Mirror ": "FZ (RH)"
+    },
+    {
+      "Mirror ": "FZ (LH)"
+    },
+    {
+      "Mirror ": "Dio NM (RH)"
+    },
+    {
+      "Mirror ": "DIo NM (LH)"
+    },
+    {
+      "Mirror ": "Shine (RH)"
+    },
+    {
+      "Mirror ": "Shine (LH)"
+    },
+    {
+      "Mirror ": "Splender (RH)"
+    },
+    {
+      "Mirror ": "Splender (LH)"
+    },
+    {
+      "Mirror ": "Super Splender (RH)"
+    },
+    {
+      "Mirror ": "Unicorn NM (RH)"
+    },
+    {
+      "Mirror ": "Unicorn NM (LH)"
+    },
+    {
+      "Mirror ": "Ray OM (RH)"
+    },
+    {
+      "Mirror ": "Ray OM (LH)"
+    },
+    {
+      "Mirror ": "Pulsar 150 (RH)"
+    },
+    {
+      "Mirror ": "Pulsar 150 (LH)"
+    },
+    {
+      "Mirror ": "NTRQ (RH)"
+    },
+    {
+      "Mirror ": "NTRQ (LH)"
+    },
+    {
+      "Mirror ": "Avenger Chrome (RH)"
+    },
+    {
+      "Mirror ": "Avenger Chrome (LH)"
+    },
+    {
+      "Mirror ": "RTR 200 (RH)"
+    },
+    {
+      "Mirror ": "RTR 200 (LH)"
+    },
+    {
+      "Mirror ": "Bullet (RH)"
+    },
+    {
+      "Mirror ": "Bullet (LH)"
+    },
+    {
+      "Mirror ": "NS-200 (RH) "
+    },
+    {
+      "Mirror ": "NS-200 (LH) "
+    },
+    {
+      "Mirror ": "Avenger (Black LH)"
+    },
+    {
+      "Mirror ": "Avenger (Black RH)"
+    },
+    {
+      "Mirror ": "Enticer (RH) "
+    },
+    {
+      "Mirror ": "Enticer (LH) "
+    },
+    {
+      "Mirror ": "Duke OM (RH)"
+    },
+    {
+      "Mirror ": "Duke OM (LH)"
+    }
+  ],
+  "Front+Rear Master Cylinder": [
+    {
+      "Front Master Cylinder ": "Bike Names"
+    },
+    {
+      "Front Master Cylinder ": "Pulsar/Gixxer/FZ/Avenger"
+    },
+    {
+      "Front Master Cylinder ": "Unicorn/Shine/XTM/Enticer"
+    },
+    {
+      "Front Master Cylinder ": "RTR"
+    },
+    {
+      "Front Master Cylinder ": "FZ "
+    },
+    {
+      "Front Master Cylinder ": "Pulsar (Endorance)"
+    },
+    {
+      "Front Master Cylinder ": "Rear Master Cylinder "
+    },
+    {
+      "Front Master Cylinder ": "Bike Names"
+    },
+    {
+      "Front Master Cylinder ": "Pulsar 220(Endurance) "
+    },
+    {
+      "Front Master Cylinder ": "Pulsar 220(Bajaj)"
+    }
+  ],
+  "Male-Female; Male-Female Assemb": [
+    {
+      "Male-Female": "Bike Names"
+    },
+    {
+      "Male-Female": "UG3-150 (Bajaj)"
+    },
+    {
+      "Male-Female": "UG3-150 (Bajaj)"
+    },
+    {
+      "Male-Female": "UG3-220"
+    },
+    {
+      "Male-Female": "UG4-150"
+    },
+    {
+      "Male-Female": "UG4-220"
+    },
+    {
+      "Male-Female": "UG6"
+    },
+    {
+      "Male-Female": "Discover 125 ST"
+    },
+    {
+      "Male-Female": "Discover 150"
+    },
+    {
+      "Male-Female": "Discover 135/125"
+    },
+    {
+      "Male-Female": "NS-200"
+    },
+    {
+      "Male-Female": "NS-200 (F.C.C)"
+    },
+    {
+      "Male-Female": "Unicorn 160/ NM (F.C.C.)"
+    },
+    {
+      "Male-Female": "Unicorn "
+    },
+    {
+      "Male-Female": "Shine"
+    },
+    {
+      "Male-Female": "Splender "
+    },
+    {
+      "Male-Female": "Super-Splender"
+    },
+    {
+      "Male-Female": "Hornet"
+    },
+    {
+      "Male-Female": "RTR 160"
+    },
+    {
+      "Male-Female": "RTR 200"
+    },
+    {
+      "Male-Female": "FZ"
+    },
+    {
+      "Male-Female": "R15"
+    },
+    {
+      "Male-Female": "YBX/Libero/RX-100"
+    },
+    {
+      "Male-Female": "Paltina/CD-100/KB4S"
+    },
+    {
+      "Male-Female": "Gixxer"
+    },
+    {
+      "Male-Female": "Male-Female Assemble"
+    },
+    {
+      "Male-Female": "Bike Names"
+    },
+    {
+      "Male-Female": "Pulsar 220 (F.C.C.)"
+    },
+    {
+      "Male-Female": "UG4-Pulsar 150 (F.C.C.)"
+    },
+    {
+      "Male-Female": "NS-200 (F.C.C.)"
+    },
+    {
+      "Male-Female": "Unicorn (F.C.C.)"
+    },
+    {
+      "Male-Female": "Pulsar 220 (King)"
+    },
+    {
+      "Male-Female": "FZ (F.C.C.)"
+    },
+    {
+      "Male-Female": "Shine (F.C.C.)"
+    },
+    {
+      "Male-Female": "FZ (King)"
+    }
+  ],
+  "Mobil": [
+    {
+      "Mobil": "Company Names"
+    },
+    {
+      "Mobil": "Servo (Cing-1000 ml)"
+    },
+    {
+      "Mobil": "Servo (BS6-1200 ml)"
+    },
+    {
+      "Mobil": "Castrol (GTX)"
+    },
+    {
+      "Mobil": "Castrol (Activo)"
+    },
+    {
+      "Mobil": "Motul (1000 ml)"
+    },
+    {
+      "Mobil": "Motul (1200 ml)"
+    },
+    {
+      "Mobil": "Petronus (BULLET)"
+    },
+    {
+      "Mobil": "Mobil Filter"
+    },
+    {
+      "Mobil": "Bike Names"
+    },
+    {
+      "Mobil": "FZ "
+    },
+    {
+      "Mobil": "NS-200"
+    },
+    {
+      "Mobil": "Bullet "
+    },
+    {
+      "Mobil": "Bullet O Ring"
+    },
+    {
+      "Mobil": "RTR/Gixxer"
+    },
+    {
+      "Mobil": "FZ250/MT/R15"
+    }
+  ],
+  "One Way Bearing ": [
+    {
+      "One Way Bearing Set": "Company Names"
+    },
+    {
+      "One Way Bearing Set": "Pulsar (Big)"
+    },
+    {
+      "One Way Bearing Set": "Pulsar (Small)"
+    },
+    {
+      "One Way Bearing Set": "Unicorn"
+    },
+    {
+      "One Way Bearing Set": "RTR 200"
+    },
+    {
+      "One Way Bearing Set": "Splender Pro"
+    },
+    {
+      "One Way Bearing Set": "Passion Pro"
+    },
+    {
+      "One Way Bearing Set": "One  Way Bearing Gotti (Pul EE10)"
+    }
+  ],
+  "Oil Seal": [
+    {
+      "Oil Seal": "Bikes names"
+    },
+    {
+      "Oil Seal": "Pulsar 220/Avenger (SFN)"
+    },
+    {
+      "Oil Seal": "Pulsar 150 (UR-THA)"
+    },
+    {
+      "Oil Seal": "Pulsar 150/Unicorn (SFN)"
+    },
+    {
+      "Oil Seal": "Pulsar 150/Unicorn (Bajaj)"
+    },
+    {
+      "Oil Seal": "Shine/Splender/Super Splender"
+    },
+    {
+      "Oil Seal": "YBX/Enitcer "
+    },
+    {
+      "Oil Seal": "Hornet (UR-THA)"
+    },
+    {
+      "Oil Seal": "FZ/RTR (SFN)"
+    },
+    {
+      "Oil Seal": "FZ/RTR (UR-THA)"
+    },
+    {
+      "Oil Seal": "Dio NM"
+    },
+    {
+      "Oil Seal": "Dio OM"
+    },
+    {
+      "Oil Seal": "SZR/RTR"
+    },
+    {
+      "Oil Seal": "Gixxer (UR-THA)"
+    }
+  ],
+  "Plug-Plug Cap": [
+    {
+      "Plug": "Bikes names"
+    },
+    {
+      "Plug": "Pulsar/Unicorn/Shine/FZ/Dio (BS6)"
+    },
+    {
+      "Plug": "Splender (BS6)"
+    },
+    {
+      "Plug": "Bullet/Tractor (F7TC-RP/ LML)"
+    },
+    {
+      "Plug": "CBZ (D8TC-RP)/ Xplus/ Alba"
+    },
+    {
+      "Plug": "RX 100 (E6TC)"
+    },
+    {
+      "Plug": "Pulsar (Pollysu)"
+    },
+    {
+      "Plug": "Splender (Pollysu)"
+    },
+    {
+      "Plug": "CBZ/ Alba/Xplus"
+    },
+    {
+      "Plug": "Pulsar (Champion)"
+    },
+    {
+      "Plug": "Bullet (Champion)"
+    },
+    {
+      "Plug": "Splender/Sup-Splender  (Champion)"
+    },
+    {
+      "Plug": "Plug Cap"
+    },
+    {
+      "Plug": "Bikes names"
+    },
+    {
+      "Plug": "Splender"
+    },
+    {
+      "Plug": "Pulsar"
+    },
+    {
+      "Plug": "Unicorn "
+    },
+    {
+      "Plug": "FZ"
+    }
+  ],
+  "Petrol Tap": [
+    {
+      "Petrol Tap": "Bikes names"
+    },
+    {
+      "Petrol Tap": "Pulsar (Without LocK)"
+    },
+    {
+      "Petrol Tap": "Pulsar (With LocK)"
+    },
+    {
+      "Petrol Tap": "NS-200"
+    },
+    {
+      "Petrol Tap": "Discover"
+    },
+    {
+      "Petrol Tap": "FZ"
+    },
+    {
+      "Petrol Tap": "Unicorn (Without Lock)"
+    },
+    {
+      "Petrol Tap": "Unicorn (With Lock)"
+    },
+    {
+      "Petrol Tap": "Splender/Shine (With Lock)"
+    },
+    {
+      "Petrol Tap": "Splender/Shine (Without Lock)"
+    },
+    {
+      "Petrol Tap": "Super-Splender (Without Lock)"
+    },
+    {
+      "Petrol Tap": "Super-Splender (With Lock)"
+    },
+    {
+      "Petrol Tap": "Gixxer"
+    },
+    {
+      "Petrol Tap": "YBZ"
+    },
+    {
+      "Petrol Tap": "Vespa"
+    },
+    {
+      "Petrol Tap": "Ray"
+    },
+    {
+      "Petrol Tap": "Fashino"
+    },
+    {
+      "Petrol Tap": "Dio"
+    }
+  ],
+  "Rektifire": [
+    {
+      "Rektifire": "Bikes names"
+    },
+    {
+      "Rektifire": "Pulsar (DK 39)"
+    },
+    {
+      "Rektifire": "Puslar (DJ 02)"
+    },
+    {
+      "Rektifire": "Pulsar (DK 01)"
+    },
+    {
+      "Rektifire": "Splender/Unicorn/Super-Splender/Dio (31M1)"
+    },
+    {
+      "Rektifire": "UG3 (DJ 64)"
+    },
+    {
+      "Rektifire": "UG4 (DJ 02C)"
+    },
+    {
+      "Rektifire": "NS 200 (JL 01)"
+    },
+    {
+      "Rektifire": "Pul 150 (DH-72)"
+    },
+    {
+      "Rektifire": "FZ (YM 82)"
+    },
+    {
+      "Rektifire": "Gladiator (H196)"
+    }
+  ],
+  "Rocker": [
+    {
+      "Rocker ": "Bikes names"
+    },
+    {
+      "Rocker ": "Pulsar 150"
+    },
+    {
+      "Rocker ": "Discover 150"
+    },
+    {
+      "Rocker ": "Shine"
+    },
+    {
+      "Rocker ": "Dio OM"
+    },
+    {
+      "Rocker ": "Dio NM"
+    },
+    {
+      "Rocker ": "R15"
+    },
+    {
+      "Rocker ": "YBX"
+    },
+    {
+      "Rocker ": "Ray"
+    },
+    {
+      "Rocker ": "FZ"
+    },
+    {
+      "Rocker ": "Splender "
+    },
+    {
+      "Rocker ": "RTR "
+    }
+  ],
+  "Rear Axel": [
+    {
+      "Rear Axel": "Bikes names"
+    },
+    {
+      "Rear Axel": "Pulsar 150"
+    },
+    {
+      "Rear Axel": "Pulsar 220"
+    },
+    {
+      "Rear Axel": "Shine"
+    },
+    {
+      "Rear Axel": "Unicorn "
+    },
+    {
+      "Rear Axel": "Splender "
+    },
+    {
+      "Rear Axel": "RTR"
+    },
+    {
+      "Rear Axel": "FZ"
+    }
+  ],
+  "Self-Carbon": [
+    {
+      "Self Carbon ": "Bikes names"
+    },
+    {
+      "Self Carbon ": "Pulsar 150"
+    },
+    {
+      "Self Carbon ": "Pulsar 150 (Varroc)"
+    },
+    {
+      "Self Carbon ": "Pulsar 220"
+    },
+    {
+      "Self Carbon ": "Pulsar 220 (Mesto)"
+    },
+    {
+      "Self Carbon ": "Avenger"
+    },
+    {
+      "Self Carbon ": "Dio (Mesto)"
+    },
+    {
+      "Self Carbon ": "FZ"
+    },
+    {
+      "Self Carbon ": "FZ (Mesto)"
+    },
+    {
+      "Self Carbon ": "FZ (Varocc-EE47)"
+    },
+    {
+      "Self Carbon ": "Gixxer"
+    },
+    {
+      "Self Carbon ": "Uni/Sup/Spl (Varroc)"
+    },
+    {
+      "Self Carbon ": "Ray"
+    },
+    {
+      "Self Carbon ": "Pul 150 (Mebesto)"
+    }
+  ],
+  "Side Light": [
+    {
+      "Side Light ": "Bikes names"
+    },
+    {
+      "Side Light ": "Pulsar 150/180/200/220"
+    },
+    {
+      "Side Light ": "Pulsar 150 (Yellow)"
+    },
+    {
+      "Side Light ": "FZ (White)"
+    },
+    {
+      "Side Light ": "FZ (Yellow)"
+    },
+    {
+      "Side Light ": "Shine"
+    },
+    {
+      "Side Light ": "Shine NM"
+    },
+    {
+      "Side Light ": "Unicorn "
+    },
+    {
+      "Side Light ": "Splender Plus(Red)"
+    },
+    {
+      "Side Light ": "Splender Pro (White)"
+    },
+    {
+      "Side Light ": "Super-Splender (White)"
+    },
+    {
+      "Side Light ": "Super-Splender (Yellow)"
+    },
+    {
+      "Side Light ": "Enitcer/Bullet/Boxer (Yellow)"
+    },
+    {
+      "Side Light ": "Enitcer/Bullet/Boxer (White)"
+    },
+    {
+      "Side Light ": "RTR"
+    },
+    {
+      "Side Light ": "RTR-200 (Front- Jainson)"
+    },
+    {
+      "Side Light ": "RTR-200 (Rear- Jainson)"
+    },
+    {
+      "Side Light ": "NS-200 (Rear)"
+    },
+    {
+      "Side Light ": "Xpluse"
+    }
+  ],
+  "Side Stand": [
+    {
+      "Side Stand ": "Bikes names"
+    },
+    {
+      "Side Stand ": "Pulsar 150"
+    },
+    {
+      "Side Stand ": "Pulsar 220"
+    },
+    {
+      "Side Stand ": "Pulsar 220 (Mebesto)"
+    },
+    {
+      "Side Stand ": "Discover "
+    },
+    {
+      "Side Stand ": "Dio NM"
+    },
+    {
+      "Side Stand ": "Splender"
+    },
+    {
+      "Side Stand ": "Splender (Mebesto)"
+    },
+    {
+      "Side Stand ": "CBZ"
+    },
+    {
+      "Side Stand ": "Shine/Unicorn "
+    },
+    {
+      "Side Stand ": "FZ"
+    },
+    {
+      "Side Stand ": "RTR"
+    },
+    {
+      "Side Stand ": "Libero/Gladiator"
+    },
+    {
+      "Side Stand ": "Ray Series "
+    }
+  ],
+  "Speedo Meter Cable ": [
+    {
+      "Speedo Meter Cable": "Bikes names"
+    },
+    {
+      "Speedo Meter Cable": "Pulsar 150  (Censor)"
+    },
+    {
+      "Speedo Meter Cable": "Pulsar 220 (Censor)"
+    },
+    {
+      "Speedo Meter Cable": "FZ (Censor)"
+    },
+    {
+      "Speedo Meter Cable": "Unicorn/Shine Gotti (Censor)"
+    },
+    {
+      "Speedo Meter Cable": "Avenger 220/Discover 100"
+    },
+    {
+      "Speedo Meter Cable": "Pulsar OM"
+    },
+    {
+      "Speedo Meter Cable": "Dio OM"
+    },
+    {
+      "Speedo Meter Cable": "Dio NM"
+    },
+    {
+      "Speedo Meter Cable": "Unicorn/Shine/Super-Splender "
+    },
+    {
+      "Speedo Meter Cable": "Libero/Alba/YBX"
+    },
+    {
+      "Speedo Meter Cable": "Enticer/Gladiator"
+    },
+    {
+      "Speedo Meter Cable": "Splender "
+    },
+    {
+      "Speedo Meter Cable": "Fashino "
+    },
+    {
+      "Speedo Meter Cable": "Ray NM"
+    },
+    {
+      "Speedo Meter Cable": "SZR"
+    },
+    {
+      "Speedo Meter Cable": "DK201098 (Bajaj)"
+    },
+    {
+      "Speedo Meter Cable": "Speedo Meter Gotti "
+    },
+    {
+      "Speedo Meter Cable": "Bikes names"
+    },
+    {
+      "Speedo Meter Cable": "Discover"
+    },
+    {
+      "Speedo Meter Cable": "Dio OM"
+    },
+    {
+      "Speedo Meter Cable": "Dio NM"
+    },
+    {
+      "Speedo Meter Cable": "Alba/YBX/Libero/RX-100"
+    },
+    {
+      "Speedo Meter Cable": "Splender"
+    },
+    {
+      "Speedo Meter Cable": "Shine/Super-Splender"
+    },
+    {
+      "Speedo Meter Cable": "Pleasure"
+    }
+  ],
+  "Shock Rod ": [
+    {
+      "Shock Rod": "Bikes names"
+    },
+    {
+      "Shock Rod": "Pulsar 150  (UG-3 Jainson)"
+    },
+    {
+      "Shock Rod": "Pulsar 150 (UG-3 Endurance)"
+    },
+    {
+      "Shock Rod": "Pulsar 150 (UG-4  Jainson)"
+    },
+    {
+      "Shock Rod": "Pulsar 150 (UG-4 ABN)"
+    },
+    {
+      "Shock Rod": "Pulsar 150 (UG-4 Endurance)"
+    },
+    {
+      "Shock Rod": "Pulsar 220 (Jainson)"
+    },
+    {
+      "Shock Rod": "Pulsar 220 (Ebdurance)"
+    },
+    {
+      "Shock Rod": "FZ (Jainson)"
+    },
+    {
+      "Shock Rod": "FZ (Endurance)"
+    },
+    {
+      "Shock Rod": "Shine (Jainsons)"
+    },
+    {
+      "Shock Rod": "Shine (Endurance)"
+    },
+    {
+      "Shock Rod": "Splender (Jainson)"
+    },
+    {
+      "Shock Rod": "XTM (Jainson)"
+    },
+    {
+      "Shock Rod": "RTR (Jainson)"
+    },
+    {
+      "Shock Rod": "Dio NM"
+    },
+    {
+      "Shock Rod": "Pul (UG4-DAT)"
+    },
+    {
+      "Shock Rod": "Pul 220 (DAT)"
+    },
+    {
+      "Shock Rod": "Rear Shock (Endurance)"
+    },
+    {
+      "Shock Rod": "Bikes names"
+    },
+    {
+      "Shock Rod": "Pulsar 220"
+    },
+    {
+      "Shock Rod": "Pulsar 150"
+    },
+    {
+      "Shock Rod": "Pulsar 135/RTR"
+    },
+    {
+      "Shock Rod": "FZ (Mono)"
+    },
+    {
+      "Shock Rod": "SHINE"
+    },
+    {
+      "Shock Rod": "Dio (Mono)"
+    }
+  ],
+  "Suspention Bush": [
+    {
+      "Suspention Bush": "Bikes names"
+    },
+    {
+      "Suspention Bush": "Pulsar 220"
+    },
+    {
+      "Suspention Bush": "Pulsar 150/CBZ"
+    },
+    {
+      "Suspention Bush": "Unicorn "
+    },
+    {
+      "Suspention Bush": "CBZ XTM"
+    },
+    {
+      "Suspention Bush": "SZR"
+    },
+    {
+      "Suspention Bush": "FZ"
+    },
+    {
+      "Suspention Bush": "RTR"
+    },
+    {
+      "Suspention Bush": "Shine"
+    },
+    {
+      "Suspention Bush": "FZV2/FZ250 "
+    },
+    {
+      "Suspention Bush": "R15"
+    },
+    {
+      "Suspention Bush": "Dio"
+    },
+    {
+      "Suspention Bush": "Splender "
+    }
+  ],
+  "Self-Cutout- Relay": [
+    {
+      "Self-Cutout ": "Bikes names"
+    },
+    {
+      "Self-Cutout ": "Pulsar 220 (Pulsar BJ41)"
+    },
+    {
+      "Self-Cutout ": "Dio/Activa (KI44)"
+    },
+    {
+      "Self-Cutout ": "Unicorn/Shine/FZ (Varroc)"
+    },
+    {
+      "Self-Cutout ": "FZ"
+    },
+    {
+      "Self-Cutout ": "Pulsar 220 (Bajaj packing)"
+    },
+    {
+      "Self-Cutout ": "Self-Relay "
+    },
+    {
+      "Self-Cutout ": "Bikes names"
+    },
+    {
+      "Self-Cutout ": "Pulsar-4pin (Thulo 'BJ 42')"
+    },
+    {
+      "Self-Cutout ": "Pulsar (BJ 26)"
+    },
+    {
+      "Self-Cutout ": "Pulsar-4pin (BJ 62)"
+    },
+    {
+      "Self-Cutout ": "Pulsar-5pin (BJ 63)"
+    },
+    {
+      "Self-Cutout ": "FZ (YM 50)"
+    },
+    {
+      "Self-Cutout ": "Self-Switch (SW-0686-Shine-RH)"
+    },
+    {
+      "Self-Cutout ": "Self-Switch (Scooter-Varroc)"
+    }
+  ],
+  "Seat Cover": [
+    {
+      "Seat Cover": "Bikes names"
+    },
+    {
+      "Seat Cover": "XR 150/190"
+    },
+    {
+      "Seat Cover": "Aviator"
+    },
+    {
+      "Seat Cover": "NTRQ"
+    },
+    {
+      "Seat Cover": "RTR 160"
+    },
+    {
+      "Seat Cover": "RTR 160 4V"
+    },
+    {
+      "Seat Cover": "RTR 200 4V"
+    },
+    {
+      "Seat Cover": "Avenger "
+    },
+    {
+      "Seat Cover": "Grazzia "
+    },
+    {
+      "Seat Cover": "FZ V2 double "
+    },
+    {
+      "Seat Cover": "FZ V3 "
+    },
+    {
+      "Seat Cover": "NS-200"
+    },
+    {
+      "Seat Cover": "Pulsar 220"
+    },
+    {
+      "Seat Cover": "Pulsar 150"
+    },
+    {
+      "Seat Cover": "Pulsar 150 (Fire)"
+    },
+    {
+      "Seat Cover": "FZ"
+    },
+    {
+      "Seat Cover": "Gladiator"
+    },
+    {
+      "Seat Cover": "Enticer "
+    },
+    {
+      "Seat Cover": "Alba/Libero"
+    },
+    {
+      "Seat Cover": "FZ 250"
+    },
+    {
+      "Seat Cover": "Ray OM"
+    },
+    {
+      "Seat Cover": "Ray ZR FI"
+    },
+    {
+      "Seat Cover": "Ray ZR"
+    },
+    {
+      "Seat Cover": "Unicorn"
+    },
+    {
+      "Seat Cover": "Shine"
+    },
+    {
+      "Seat Cover": "Pleasure"
+    },
+    {
+      "Seat Cover": "Dio NM"
+    },
+    {
+      "Seat Cover": "Dio NM (BS6)"
+    },
+    {
+      "Seat Cover": "Dio OM"
+    },
+    {
+      "Seat Cover": "Splender"
+    },
+    {
+      "Seat Cover": "Super Splender OM"
+    },
+    {
+      "Seat Cover": "Super Splender NM"
+    },
+    {
+      "Seat Cover": "CBZ XTM (Single)"
+    },
+    {
+      "Seat Cover": "CBZ XTM (Double)"
+    },
+    {
+      "Seat Cover": "YBX"
+    },
+    {
+      "Seat Cover": "Aprilla"
+    },
+    {
+      "Seat Cover": "Xpluse"
+    },
+    {
+      "Seat Cover": "Gixxer"
+    }
+  ],
+  "Shock Spring": [
+    {
+      "Shock Spring": "Bikes names"
+    },
+    {
+      "Shock Spring": "Pulsar 220"
+    },
+    {
+      "Shock Spring": "Pulsar 150"
+    },
+    {
+      "Shock Spring": "UG3"
+    },
+    {
+      "Shock Spring": "Unicorn"
+    },
+    {
+      "Shock Spring": "Splender "
+    },
+    {
+      "Shock Spring": "FZ"
+    },
+    {
+      "Shock Spring": "Shine "
+    }
+  ],
+  "Top ": [
+    {
+      "Top": "Bikes names"
+    },
+    {
+      "Top": "Pulsar 150/180/200"
+    },
+    {
+      "Top": "Pulsar 220/Avenger"
+    },
+    {
+      "Top": "FZ"
+    },
+    {
+      "Top": "Unicorn "
+    },
+    {
+      "Top": "Shine"
+    },
+    {
+      "Top": "Splender"
+    },
+    {
+      "Top": "RTR"
+    },
+    {
+      "Top": "Dio "
+    }
+  ],
+  "Tube": [
+    {
+      "Tube": "Bikes names"
+    },
+    {
+      "Tube": "3.18/2.75.18"
+    },
+    {
+      "Tube": "3.17/2.75.17"
+    },
+    {
+      "Tube": "3.50.10"
+    },
+    {
+      "Tube": "3.50.8"
+    },
+    {
+      "Tube": "100.90.18/90.90.18"
+    },
+    {
+      "Tube": "100.90.17/90.90.17"
+    },
+    {
+      "Tube": "90.90.12"
+    },
+    {
+      "Tube": "130.90.15"
+    },
+    {
+      "Tube": "300/19"
+    },
+    {
+      "Tube": "300/21"
+    },
+    {
+      "Tube": "Tubeless Gun "
+    },
+    {
+      "Tube": "Tubeless Stick"
+    },
+    {
+      "Tube": "Puncher Sticker"
+    }
+  ],
+  "Tanky Cap": [
+    {
+      "Tanky Cap": "Bike Names"
+    },
+    {
+      "Tanky Cap": "Pulsar BS 4 (7170A)"
+    },
+    {
+      "Tanky Cap": "Pulsar BS3 (7170)"
+    },
+    {
+      "Tanky Cap": "AS/NS-200"
+    },
+    {
+      "Tanky Cap": "FZ"
+    },
+    {
+      "Tanky Cap": "Shine "
+    },
+    {
+      "Tanky Cap": "Unicorn/CBZ XTM"
+    },
+    {
+      "Tanky Cap": "YBX/CRUX/YBR"
+    },
+    {
+      "Tanky Cap": "Libero"
+    },
+    {
+      "Tanky Cap": "Discover"
+    },
+    {
+      "Tanky Cap": "Pulsar 150"
+    },
+    {
+      "Tanky Cap": "Pulsar UG 3 (FC- 4987Z \"E\")"
+    },
+    {
+      "Tanky Cap": "Shine/Unicorn"
+    },
+    {
+      "Tanky Cap": "Pulsar 220 NM-BS6 (FC4946FZ \"E\")"
+    },
+    {
+      "Tanky Cap": "Pulsar 150 (S.P.)"
+    },
+    {
+      "Tanky Cap": "Pulsar 150 (DEUS-0438P)"
+    },
+    {
+      "Tanky Cap": "Tanky Set"
+    },
+    {
+      "Tanky Cap": "Bike Name"
+    },
+    {
+      "Tanky Cap": "KT-2184HZ € (Pul 220)"
+    }
+  ],
+  "Timing Pad": [
+    {
+      "Timing Pad": "Bikes names"
+    },
+    {
+      "Timing Pad": "Pulsar 150"
+    },
+    {
+      "Timing Pad": "Pulsar 220"
+    },
+    {
+      "Timing Pad": "Pulsar 150 (Bajaj)"
+    },
+    {
+      "Timing Pad": "Karizma"
+    },
+    {
+      "Timing Pad": "Dio NM"
+    },
+    {
+      "Timing Pad": "Discover"
+    }
+  ],
+  "Tyres": [
+    {
+      "Tyres (MRF)": "Bikes Tyre Sizes"
+    },
+    {
+      "Tyres (MRF)": "140/60/17 (Rear)"
+    },
+    {
+      "Tyres (MRF)": "140/70/17 (Rear)"
+    },
+    {
+      "Tyres (MRF)": "130/70/17 (Rear)"
+    },
+    {
+      "Tyres (MRF)": "130/90/15 "
+    },
+    {
+      "Tyres (MRF)": "120/80/17 (Rear)"
+    },
+    {
+      "Tyres (MRF)": "120/80/18 (Rear)"
+    },
+    {
+      "Tyres (MRF)": "120/70/14"
+    },
+    {
+      "Tyres (MRF)": "110/80/17 "
+    },
+    {
+      "Tyres (MRF)": "110/80/12"
+    },
+    {
+      "Tyres (MRF)": "110/70/17"
+    },
+    {
+      "Tyres (MRF)": "100/80/17 (Rear)"
+    },
+    {
+      "Tyres (MRF)": "100/80/17 (Front)"
+    },
+    {
+      "Tyres (MRF)": "100/90/17 (Rear)"
+    },
+    {
+      "Tyres (MRF)": "100/90/18 (Rear)"
+    },
+    {
+      "Tyres (MRF)": "90/100/10"
+    },
+    {
+      "Tyres (MRF)": "90/90/19"
+    },
+    {
+      "Tyres (MRF)": "90/90/12"
+    },
+    {
+      "Tyres (MRF)": "90/90/17"
+    },
+    {
+      "Tyres (MRF)": "80/100/17 (Front)"
+    },
+    {
+      "Tyres (MRF)": "80/100/18 (Front)"
+    },
+    {
+      "Tyres (MRF)": "80/100/18 (Rear)"
+    },
+    {
+      "Tyres (MRF)": "3.18 (NGP-Rear)"
+    },
+    {
+      "Tyres (MRF)": "3.18 (Non-Tubeless-Rear)"
+    },
+    {
+      "Tyres (MRF)": "2.75/18 (Front)"
+    },
+    {
+      "Tyres (MRF)": "2.75/18 (NGP-Rear)"
+    },
+    {
+      "Tyres (MRF)": "2.75/17 (Front)"
+    },
+    {
+      "Tyres (MRF)": "90/100/10"
+    }
+  ],
+  "Helmet": [
+    {
+      "Helmet ": "Helmet Name"
+    },
+    {
+      "Helmet ": "BEAST"
+    },
+    {
+      "Helmet ": "BABY SHARK"
+    },
+    {
+      "Helmet ": "VFX"
+    },
+    {
+      "Helmet ": "BULLET (HALF-Normal)"
+    },
+    {
+      "Helmet ": "BULLET (HALF-Leather)"
+    },
+    {
+      "Helmet ": "DASSHING (BLACK+RED)"
+    },
+    {
+      "Helmet ": "SBA-21 (BLACk+BLUE)"
+    },
+    {
+      "Helmet ": "90/100/10"
+    }
+  ],
+  "Weigh-Roller": [
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Scooter Name"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Dio OM/Activa OM"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Dio HET"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Dio NM/Activa NM (HET)"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "NTRQ"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Ray NM"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Ray OM"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Aprilla"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Link Bush"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Tama Bush"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Green Bush"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Varrator(Kachaura- F.C.C.) \"Pleasure\" "
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Varrator(Kachaura- F.C.C.) \"G1\" "
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Varratoe(Kachaura-F.C.C.) \"G2\""
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Varrator (Kachaura- Aprillia)"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Varrator(Kachaura- F.C.C.) \"Ray\" "
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Varrator (Kachaura-Geenuie)"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Varrator (Kachaura- Company) \"NTRQ\""
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Varrator (kanchaura-ABN) \"G.2\""
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Rear Roller Hub (Dio-NM ASK)"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Clutch Kachaura (Dio NM)"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "Hanger bush "
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "R. Shock bush (Dio)"
+    },
+    {
+      "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub ": "90/100/10"
+    }
+  ]
+}

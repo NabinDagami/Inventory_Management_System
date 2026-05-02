@@ -390,13 +390,27 @@ class SupplierDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("580x700")  # Increased size to show all elements
+        self.dialog.geometry("580x700")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        self.dialog.resizable(True, True)  # Allow resizing
+        self.dialog.resizable(True, True)
         
-        # Center dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 100, parent.winfo_rooty() + 50))
+        # Center dialog on parent window
+        self.dialog.update_idletasks()
+        parent.update_idletasks()
+        
+        parent_x = parent.winfo_rootx()
+        parent_y = parent.winfo_rooty()
+        parent_width = parent.winfo_width()
+        parent_height = parent.winfo_height()
+        
+        dialog_width = 580
+        dialog_height = 700
+        
+        x = parent_x + (parent_width // 2) - (dialog_width // 2)
+        y = parent_y + (parent_height // 2) - (dialog_height // 2)
+        
+        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
         
         # Create form
         self.create_form(supplier_data)

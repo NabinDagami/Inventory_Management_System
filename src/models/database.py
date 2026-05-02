@@ -63,29 +63,45 @@ class Database:
             
             # Products table
             cursor.execute('''
-                CREATE TABLE IF NOT EXISTS products (
-                    product_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name VARCHAR(200) NOT NULL,
-                    sku VARCHAR(50) UNIQUE NOT NULL,
-                    category_id INTEGER,
-                    sub_category_id INTEGER,
-                    brand_id INTEGER,
-                    sub_brand_id INTEGER,
-                    description TEXT,
-                    stock INTEGER DEFAULT 0,
-                    price_normal DECIMAL(10,2) NOT NULL,
-                    price_workshop DECIMAL(10,2) NOT NULL,
-                    cost_price DECIMAL(10,2) NOT NULL,
-                    reorder_level INTEGER DEFAULT 10,
-                    is_active BOOLEAN DEFAULT 1,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (category_id) REFERENCES categories (category_id),
-                    FOREIGN KEY (sub_category_id) REFERENCES sub_categories (sub_category_id),
-                    FOREIGN KEY (brand_id) REFERENCES brands (brand_id),
-                    FOREIGN KEY (sub_brand_id) REFERENCES sub_brands (sub_brand_id)
-                )
-            ''')
+                 CREATE TABLE IF NOT EXISTS products (
+                     product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     name VARCHAR(200) NOT NULL,
+                     sku VARCHAR(50) UNIQUE NOT NULL,
+                     category_id INTEGER,
+                     sub_category_id INTEGER,
+                     brand_id INTEGER,
+                     sub_brand_id INTEGER,
+                     description TEXT,
+                     stock INTEGER DEFAULT 0,
+                     qty_sold INTEGER DEFAULT 0,
+                     available_stock INTEGER GENERATED ALWAYS AS (stock - qty_sold) STORED,
+                     price_normal DECIMAL(10,2) NOT NULL,
+                     price_workshop DECIMAL(10,2) NOT NULL,
+                     cost_price DECIMAL(10,2) NOT NULL,
+                     reorder_level INTEGER DEFAULT 10,
+                     is_active BOOLEAN DEFAULT 1,
+                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                     FOREIGN KEY (category_id) REFERENCES categories (category_id),
+                     FOREIGN KEY (sub_category_id) REFERENCES sub_categories (sub_category_id),
+                     FOREIGN KEY (brand_id) REFERENCES brands (brand_id),
+                     FOREIGN KEY (sub_brand_id) REFERENCES sub_brands (sub_brand_id)
+                 )
+             ''')
+            
+            # Add qty_sold column if it doesn't exist (for existing databases)
+            try:
+                cursor.execute("ALTER TABLE products ADD COLUMN qty_sold INTEGER DEFAULT 0")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            # Add available_stock as a regular column for compatibility
+            # We'll calculate it in code as (stock - qty_sold)
+            # Using a regular column instead of generated column for broader compatibility
+            try:
+                cursor.execute("ALTER TABLE products ADD COLUMN available_stock INTEGER DEFAULT 0")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
             
             # Customers table
             cursor.execute('''

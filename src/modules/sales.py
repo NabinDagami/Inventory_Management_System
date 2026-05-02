@@ -38,4 +38,687 @@ class SalesModule:
         customer_label = ctk.CTkLabel(header_frame, text="Customer:", font=ctk.CTkFont(size=14, weight="bold"))
         customer_label.pack(side="left", padx=(10, 5), pady=10)
         
-        self.customer_var = tk.StringVar(value="Walk-in Customer")\n        self.customer_dropdown = ctk.CTkOptionMenu(\n            header_frame, \n            variable=self.customer_var,\n            command=self.on_customer_selected,\n            width=200\n        )\n        self.customer_dropdown.pack(side=\"left\", padx=5, pady=10)\n        \n        # Payment method\n        payment_label = ctk.CTkLabel(header_frame, text=\"Payment:\", font=ctk.CTkFont(size=14, weight=\"bold\"))\n        payment_label.pack(side=\"left\", padx=(20, 5), pady=10)\n        \n        self.payment_var = tk.StringVar(value=\"Cash\")\n        payment_dropdown = ctk.CTkOptionMenu(\n            header_frame,\n            variable=self.payment_var,\n            values=[\"Cash\", \"Credit\"],\n            width=100\n        )\n        payment_dropdown.pack(side=\"left\", padx=5, pady=10)\n        \n        # Content area with two columns\n        content_frame = ctk.CTkFrame(main_frame)\n        content_frame.pack(fill=\"both\", expand=True, padx=10, pady=(0, 10))\n        content_frame.grid_columnconfigure(0, weight=1)\n        content_frame.grid_columnconfigure(1, weight=1)\n        \n        # Left side - Product selection\n        self.create_product_selection(content_frame)\n        \n        # Right side - Cart and total\n        self.create_cart_section(content_frame)\n    \n    def create_product_selection(self, parent):\n        \"\"\"Create product selection area\"\"\"\n        product_frame = ctk.CTkFrame(parent)\n        product_frame.grid(row=0, column=0, sticky=\"nsew\", padx=(0, 5), pady=5)\n        \n        # Title\n        title_label = ctk.CTkLabel(\n            product_frame, \n            text=\"📦 Select Products\", \n            font=ctk.CTkFont(size=16, weight=\"bold\")\n        )\n        title_label.pack(pady=10)\n        \n        # Search box\n        search_frame = ctk.CTkFrame(product_frame)\n        search_frame.pack(fill=\"x\", padx=10, pady=5)\n        \n        search_label = ctk.CTkLabel(search_frame, text=\"Search:\")\n        search_label.pack(side=\"left\", padx=5)\n        \n        self.search_var = tk.StringVar()\n        self.search_var.trace('w', self.filter_products)\n        search_entry = ctk.CTkEntry(\n            search_frame, \n            textvariable=self.search_var,\n            placeholder_text=\"Product name or SKU...\"\n        )\n        search_entry.pack(side=\"left\", fill=\"x\", expand=True, padx=5)\n        \n        # Products table\n        products_table_frame = ctk.CTkFrame(product_frame)\n        products_table_frame.pack(fill=\"both\", expand=True, padx=10, pady=5)\n        \n        # Create treeview for products\n        columns = (\"SKU\", \"Name\", \"Stock\", \"Normal Price\", \"Workshop Price\")\n        self.products_tree = ttk.Treeview(products_table_frame, columns=columns, show=\"headings\", height=15)\n        \n        # Define headings\n        for col in columns:\n            self.products_tree.heading(col, text=col)\n            self.products_tree.column(col, width=120)\n        \n        # Scrollbar for products\n        products_scrollbar = ttk.Scrollbar(products_table_frame, orient=\"vertical\", command=self.products_tree.yview)\n        self.products_tree.configure(yscrollcommand=products_scrollbar.set)\n        \n        self.products_tree.pack(side=\"left\", fill=\"both\", expand=True)\n        products_scrollbar.pack(side=\"right\", fill=\"y\")\n        \n        # Add to cart button\n        add_button = ctk.CTkButton(\n            product_frame,\n            text=\"➕ Add to Cart\",\n            command=self.add_to_cart,\n            font=ctk.CTkFont(size=14, weight=\"bold\"),\n            height=40\n        )\n        add_button.pack(pady=10)\n        \n        # Bind double-click to add to cart\n        self.products_tree.bind(\"<Double-1>\", lambda e: self.add_to_cart())\n    \n    def create_cart_section(self, parent):\n        \"\"\"Create shopping cart section\"\"\"\n        cart_frame = ctk.CTkFrame(parent)\n        cart_frame.grid(row=0, column=1, sticky=\"nsew\", padx=(5, 0), pady=5)\n        \n        # Title\n        title_label = ctk.CTkLabel(\n            cart_frame, \n            text=\"🛒 Shopping Cart\", \n            font=ctk.CTkFont(size=16, weight=\"bold\")\n        )\n        title_label.pack(pady=10)\n        \n        # Cart items table\n        cart_table_frame = ctk.CTkFrame(cart_frame)\n        cart_table_frame.pack(fill=\"both\", expand=True, padx=10, pady=5)\n        \n        # Create treeview for cart\n        cart_columns = (\"Product\", \"Qty\", \"Price\", \"Total\")\n        self.cart_tree = ttk.Treeview(cart_table_frame, columns=cart_columns, show=\"headings\", height=12)\n        \n        # Define headings\n        for col in cart_columns:\n            self.cart_tree.heading(col, text=col)\n            if col == \"Product\":\n                self.cart_tree.column(col, width=150)\n            else:\n                self.cart_tree.column(col, width=80)\n        \n        # Scrollbar for cart\n        cart_scrollbar = ttk.Scrollbar(cart_table_frame, orient=\"vertical\", command=self.cart_tree.yview)\n        self.cart_tree.configure(yscrollcommand=cart_scrollbar.set)\n        \n        self.cart_tree.pack(side=\"left\", fill=\"both\", expand=True)\n        cart_scrollbar.pack(side=\"right\", fill=\"y\")\n        \n        # Cart actions\n        actions_frame = ctk.CTkFrame(cart_frame)\n        actions_frame.pack(fill=\"x\", padx=10, pady=5)\n        \n        remove_button = ctk.CTkButton(\n            actions_frame,\n            text=\"❌ Remove Item\",\n            command=self.remove_from_cart,\n            width=120,\n            height=30\n        )\n        remove_button.pack(side=\"left\", padx=5)\n        \n        clear_button = ctk.CTkButton(\n            actions_frame,\n            text=\"🗑️ Clear Cart\",\n            command=self.clear_cart,\n            width=120,\n            height=30\n        )\n        clear_button.pack(side=\"left\", padx=5)\n        \n        # Totals section\n        totals_frame = ctk.CTkFrame(cart_frame)\n        totals_frame.pack(fill=\"x\", padx=10, pady=10)\n        \n        self.subtotal_label = ctk.CTkLabel(\n            totals_frame, \n            text=\"Subtotal: $0.00\",\n            font=ctk.CTkFont(size=14)\n        )\n        self.subtotal_label.pack(pady=2)\n        \n        self.total_label = ctk.CTkLabel(\n            totals_frame, \n            text=\"Total: $0.00\",\n            font=ctk.CTkFont(size=16, weight=\"bold\")\n        )\n        self.total_label.pack(pady=2)\n        \n        # Process sale button\n        process_button = ctk.CTkButton(\n            cart_frame,\n            text=\"💰 Process Sale\",\n            command=self.process_sale,\n            font=ctk.CTkFont(size=16, weight=\"bold\"),\n            height=50,\n            fg_color=\"green\",\n            hover_color=\"darkgreen\"\n        )\n        process_button.pack(fill=\"x\", padx=10, pady=10)\n    \n    def load_customers(self):\n        \"\"\"Load customers for dropdown\"\"\"\n        try:\n            customers = db.execute_query(\"SELECT customer_id, name, type FROM customers WHERE is_active = 1\")\n            customer_values = [\"Walk-in Customer\"]\n            self.customers_data = {\"Walk-in Customer\": {\"customer_id\": None, \"type\": \"Normal\"}}\n            \n            for customer in customers:\n                display_name = f\"{customer['name']} ({customer['type']})\"\n                customer_values.append(display_name)\n                self.customers_data[display_name] = {\n                    \"customer_id\": customer['customer_id'],\n                    \"type\": customer['type']\n                }\n            \n            self.customer_dropdown.configure(values=customer_values)\n            \n        except Exception as e:\n            print(f\"Error loading customers: {e}\")\n            messagebox.showerror(\"Error\", f\"Failed to load customers: {e}\")\n    \n    def load_products(self):\n        \"\"\"Load products for selection\"\"\"\n        try:\n            query = \"\"\"\n                SELECT p.product_id, p.sku, p.name, p.stock, p.price_normal, \n                       p.price_workshop, p.reorder_level\n                FROM products p\n                WHERE p.is_active = 1 AND p.stock > 0\n                ORDER BY p.name\n            \"\"\"\n            products = db.execute_query(query)\n            \n            # Clear existing items\n            for item in self.products_tree.get_children():\n                self.products_tree.delete(item)\n            \n            # Add products to tree\n            for product in products:\n                # Show stock status\n                stock_display = f\"{product['stock']}\"\n                if product['stock'] <= product['reorder_level']:\n                    stock_display += \" ⚠️\"\n                \n                self.products_tree.insert(\"\", \"end\", values=(\n                    product['sku'],\n                    product['name'],\n                    stock_display,\n                    f\"${product['price_normal']:.2f}\",\n                    f\"${product['price_workshop']:.2f}\"\n                ))\n            \n            self.all_products = products\n            \n        except Exception as e:\n            print(f\"Error loading products: {e}\")\n            messagebox.showerror(\"Error\", f\"Failed to load products: {e}\")\n    \n    def filter_products(self, *args):\n        \"\"\"Filter products based on search\"\"\"\n        search_term = self.search_var.get().lower()\n        \n        # Clear tree\n        for item in self.products_tree.get_children():\n            self.products_tree.delete(item)\n        \n        # Filter and add matching products\n        for product in self.all_products:\n            if (search_term in product['name'].lower() or \n                search_term in product['sku'].lower()):\n                \n                stock_display = f\"{product['stock']}\"\n                if product['stock'] <= product['reorder_level']:\n                    stock_display += \" ⚠️\"\n                \n                self.products_tree.insert(\"\", \"end\", values=(\n                    product['sku'],\n                    product['name'],\n                    stock_display,\n                    f\"${product['price_normal']:.2f}\",\n                    f\"${product['price_workshop']:.2f}\"\n                ))\n    \n    def on_customer_selected(self, customer_name):\n        \"\"\"Handle customer selection\"\"\"\n        self.current_customer = self.customers_data.get(customer_name)\n        self.update_cart_display()\n    \n    def add_to_cart(self):\n        \"\"\"Add selected product to cart\"\"\"\n        selection = self.products_tree.selection()\n        if not selection:\n            messagebox.showwarning(\"Warning\", \"Please select a product first.\")\n            return\n        \n        # Get product details\n        item_values = self.products_tree.item(selection[0], 'values')\n        sku = item_values[0]\n        \n        # Find product in data\n        product = None\n        for p in self.all_products:\n            if p['sku'] == sku:\n                product = p\n                break\n        \n        if not product:\n            messagebox.showerror(\"Error\", \"Product not found.\")\n            return\n        \n        # Ask for quantity\n        quantity_dialog = QuantityDialog(self.parent, product['stock'])\n        quantity = quantity_dialog.get_quantity()\n        \n        if quantity and quantity > 0:\n            if quantity > product['stock']:\n                messagebox.showerror(\"Error\", \"Insufficient stock available.\")\n                return\n            \n            # Check if product already in cart\n            existing_item = None\n            for item in self.cart_items:\n                if item['product_id'] == product['product_id']:\n                    existing_item = item\n                    break\n            \n            if existing_item:\n                # Update quantity\n                new_quantity = existing_item['quantity'] + quantity\n                if new_quantity > product['stock']:\n                    messagebox.showerror(\"Error\", \"Total quantity would exceed stock.\")\n                    return\n                existing_item['quantity'] = new_quantity\n            else:\n                # Add new item\n                cart_item = {\n                    'product_id': product['product_id'],\n                    'sku': product['sku'],\n                    'name': product['name'],\n                    'quantity': quantity,\n                    'price_normal': product['price_normal'],\n                    'price_workshop': product['price_workshop'],\n                    'stock': product['stock']\n                }\n                self.cart_items.append(cart_item)\n            \n            self.update_cart_display()\n    \n    def remove_from_cart(self):\n        \"\"\"Remove selected item from cart\"\"\"\n        selection = self.cart_tree.selection()\n        if not selection:\n            messagebox.showwarning(\"Warning\", \"Please select an item to remove.\")\n            return\n        \n        # Get selected item index\n        item_index = self.cart_tree.index(selection[0])\n        \n        # Remove from cart\n        if 0 <= item_index < len(self.cart_items):\n            self.cart_items.pop(item_index)\n            self.update_cart_display()\n    \n    def clear_cart(self):\n        \"\"\"Clear all items from cart\"\"\"\n        if self.cart_items:\n            if messagebox.askyesno(\"Confirm\", \"Clear all items from cart?\"):\n                self.cart_items = []\n                self.update_cart_display()\n    \n    def update_cart_display(self):\n        \"\"\"Update cart display and totals\"\"\"\n        # Clear cart tree\n        for item in self.cart_tree.get_children():\n            self.cart_tree.delete(item)\n        \n        subtotal = 0\n        customer_type = self.current_customer['type'] if self.current_customer else 'Normal'\n        \n        # Add items to cart tree\n        for item in self.cart_items:\n            # Determine price based on customer type\n            if customer_type == 'Workshop':\n                unit_price = item['price_workshop']\n            else:\n                unit_price = item['price_normal']\n            \n            total_price = unit_price * item['quantity']\n            subtotal += total_price\n            \n            self.cart_tree.insert(\"\", \"end\", values=(\n                item['name'][:20] + \"...\" if len(item['name']) > 20 else item['name'],\n                item['quantity'],\n                f\"${unit_price:.2f}\",\n                f\"${total_price:.2f}\"\n            ))\n        \n        # Update totals\n        self.subtotal_label.configure(text=f\"Subtotal: ${subtotal:.2f}\")\n        self.total_label.configure(text=f\"Total: ${subtotal:.2f}\")\n    \n    def process_sale(self):\n        \"\"\"Process the sale transaction\"\"\"\n        if not self.cart_items:\n            messagebox.showwarning(\"Warning\", \"Cart is empty. Add items first.\")\n            return\n        \n        try:\n            # Generate invoice number\n            invoice_number = self.generate_invoice_number()\n            \n            # Calculate totals\n            customer_type = self.current_customer['type'] if self.current_customer else 'Normal'\n            subtotal = 0\n            \n            for item in self.cart_items:\n                if customer_type == 'Workshop':\n                    unit_price = item['price_workshop']\n                else:\n                    unit_price = item['price_normal']\n                subtotal += unit_price * item['quantity']\n            \n            # Create sale record\n            customer_id = self.current_customer['customer_id'] if self.current_customer else None\n            payment_method = self.payment_var.get().lower()\n            \n            sale_id = db.execute_insert(\"\"\"\n                INSERT INTO sales (invoice_number, customer_id, sale_date, payment_method,\n                                 subtotal, total_amount, paid_amount, status)\n                VALUES (?, ?, ?, ?, ?, ?, ?, ?)\n            \"\"\", (\n                invoice_number,\n                customer_id,\n                datetime.now().date(),\n                payment_method,\n                subtotal,\n                subtotal,\n                subtotal if payment_method == 'cash' else 0,\n                'completed'\n            ))\n            \n            # Add sale items and update stock\n            for item in self.cart_items:\n                if customer_type == 'Workshop':\n                    unit_price = item['price_workshop']\n                else:\n                    unit_price = item['price_normal']\n                \n                total_price = unit_price * item['quantity']\n                \n                # Add sale item\n                db.execute_insert(\"\"\"\n                    INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total)\n                    VALUES (?, ?, ?, ?, ?)\n                \"\"\", (\n                    sale_id,\n                    item['product_id'],\n                    item['quantity'],\n                    unit_price,\n                    total_price\n                ))\n                \n                # Update stock\n                db.execute_update(\"\"\"\n                    UPDATE products \n                    SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP\n                    WHERE product_id = ?\n                \"\"\", (item['quantity'], item['product_id']))\n                \n                # Record stock movement\n                db.execute_insert(\"\"\"\n                    INSERT INTO stock_movements \n                    (product_id, movement_type, quantity, reference_id, reference_type)\n                    VALUES (?, ?, ?, ?, ?)\n                \"\"\", (\n                    item['product_id'],\n                    'sale',\n                    -item['quantity'],\n                    sale_id,\n                    'sale'\n                ))\n            \n            # Update customer credit balance if needed\n            if payment_method == 'credit' and customer_id:\n                db.execute_update(\"\"\"\n                    UPDATE customers \n                    SET credit_balance = credit_balance + ?\n                    WHERE customer_id = ?\n                \"\"\", (subtotal, customer_id))\n            \n            # Generate and show invoice\n            self.generate_invoice(sale_id, invoice_number)\n            \n            # Clear cart and refresh\n            self.cart_items = []\n            self.update_cart_display()\n            self.load_products()\n            \n            messagebox.showinfo(\"Success\", f\"Sale completed successfully!\\nInvoice: {invoice_number}\")\n            \n        except Exception as e:\n            print(f\"Error processing sale: {e}\")\n            messagebox.showerror(\"Error\", f\"Failed to process sale: {e}\")\n    \n    def generate_invoice_number(self):\n        \"\"\"Generate unique invoice number\"\"\"\n        today = datetime.now()\n        base_number = f\"INV-{today.strftime('%Y%m%d')}\"\n        \n        # Find next number for today\n        query = \"SELECT COUNT(*) as count FROM sales WHERE invoice_number LIKE ?\"\n        result = db.execute_query(query, (f\"{base_number}-%\",))\n        count = result[0]['count'] if result else 0\n        \n        return f\"{base_number}-{count + 1:03d}\"\n    \n    def generate_invoice(self, sale_id, invoice_number):\n        \"\"\"Generate PDF invoice\"\"\"\n        try:\n            # Get sale details\n            sale_query = \"\"\"\n                SELECT s.*, c.name as customer_name, c.type as customer_type\n                FROM sales s\n                LEFT JOIN customers c ON s.customer_id = c.customer_id\n                WHERE s.id = ?\n            \"\"\"\n            sale_data = db.execute_query(sale_query, (sale_id,))[0]\n            \n            # Get sale items\n            items_query = \"\"\"\n                SELECT si.*, p.name as product_name, p.sku\n                FROM sale_items si\n                JOIN products p ON si.product_id = p.product_id\n                WHERE si.sale_id = ?\n            \"\"\"\n            items_data = db.execute_query(items_query, (sale_id,))\n            \n            # Create PDF\n            filename = f\"reports/invoice_{invoice_number}.pdf\"\n            os.makedirs(\"reports\", exist_ok=True)\n            \n            doc = SimpleDocTemplate(filename, pagesize=letter)\n            styles = getSampleStyleSheet()\n            story = []\n            \n            # Header\n            story.append(Paragraph(\"<b>INVENTORY PRO</b>\", styles['Title']))\n            story.append(Paragraph(\"Sales Invoice\", styles['Heading2']))\n            story.append(Spacer(1, 12))\n            \n            # Invoice details\n            invoice_info = [\n                [\"Invoice Number:\", invoice_number],\n                [\"Date:\", sale_data['sale_date']],\n                [\"Customer:\", sale_data['customer_name'] or 'Walk-in Customer'],\n                [\"Payment Method:\", sale_data['payment_method'].title()]\n            ]\n            \n            info_table = Table(invoice_info, colWidths=[2*inch, 3*inch])\n            info_table.setStyle(TableStyle([\n                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),\n                ('FONTSIZE', (0, 0), (-1, -1), 10),\n                ('LEFTPADDING', (0, 0), (-1, -1), 0),\n            ]))\n            story.append(info_table)\n            story.append(Spacer(1, 20))\n            \n            # Items table\n            items_table_data = [[\"SKU\", \"Product\", \"Qty\", \"Price\", \"Total\"]]\n            \n            for item in items_data:\n                items_table_data.append([\n                    item['sku'],\n                    item['product_name'],\n                    str(item['quantity']),\n                    f\"${item['unit_price']:.2f}\",\n                    f\"${item['total']:.2f}\"\n                ])\n            \n            # Add totals\n            items_table_data.append([\"\", \"\", \"\", \"Subtotal:\", f\"${sale_data['subtotal']:.2f}\"])\n            items_table_data.append([\"\", \"\", \"\", \"<b>Total:</b>\", f\"<b>${sale_data['total_amount']:.2f}</b>\"])\n            \n            items_table = Table(items_table_data, colWidths=[1*inch, 2.5*inch, 0.7*inch, 1*inch, 1*inch])\n            items_table.setStyle(TableStyle([\n                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),\n                ('FONTSIZE', (0, 0), (-1, -1), 10),\n                ('GRID', (0, 0), (-1, -3), 1, colors.black),\n                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),\n                ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),\n                ('LEFTPADDING', (0, 0), (-1, -1), 5),\n                ('RIGHTPADDING', (0, 0), (-1, -1), 5),\n            ]))\n            \n            story.append(items_table)\n            story.append(Spacer(1, 30))\n            \n            # Footer\n            story.append(Paragraph(\"Thank you for your business!\", styles['Normal']))\n            \n            # Build PDF\n            doc.build(story)\n            \n            # Ask if user wants to open the PDF\n            if messagebox.askyesno(\"Invoice Generated\", f\"Invoice saved as {filename}\\n\\nWould you like to open it?\"):\n                os.startfile(filename)\n            \n        except Exception as e:\n            print(f\"Error generating invoice: {e}\")\n            messagebox.showerror(\"Error\", f\"Failed to generate invoice: {e}\")\n\n\nclass QuantityDialog:\n    def __init__(self, parent, max_quantity):\n        self.parent = parent\n        self.max_quantity = max_quantity\n        self.quantity = None\n        \n        # Create dialog\n        self.dialog = ctk.CTkToplevel(parent)\n        self.dialog.title(\"Enter Quantity\")\n        self.dialog.geometry(\"300x150\")\n        self.dialog.transient(parent)\n        self.dialog.grab_set()\n        \n        # Center the dialog\n        self.dialog.geometry(\"+%d+%d\" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))\n        \n        # Create widgets\n        self.create_widgets()\n        \n        # Focus on entry\n        self.quantity_entry.focus()\n    \n    def create_widgets(self):\n        # Label\n        label = ctk.CTkLabel(\n            self.dialog, \n            text=f\"Enter quantity (Max: {self.max_quantity}):\",\n            font=ctk.CTkFont(size=14)\n        )\n        label.pack(pady=20)\n        \n        # Entry\n        self.quantity_var = tk.StringVar(value=\"1\")\n        self.quantity_entry = ctk.CTkEntry(\n            self.dialog,\n            textvariable=self.quantity_var,\n            width=100,\n            justify=\"center\"\n        )\n        self.quantity_entry.pack(pady=10)\n        \n        # Buttons\n        button_frame = ctk.CTkFrame(self.dialog)\n        button_frame.pack(pady=10)\n        \n        ok_button = ctk.CTkButton(\n            button_frame,\n            text=\"OK\",\n            command=self.ok_clicked,\n            width=80\n        )\n        ok_button.pack(side=\"left\", padx=5)\n        \n        cancel_button = ctk.CTkButton(\n            button_frame,\n            text=\"Cancel\",\n            command=self.cancel_clicked,\n            width=80\n        )\n        cancel_button.pack(side=\"left\", padx=5)\n        \n        # Bind Enter key\n        self.dialog.bind('<Return>', lambda e: self.ok_clicked())\n    \n    def ok_clicked(self):\n        try:\n            quantity = int(self.quantity_var.get())\n            if quantity <= 0:\n                messagebox.showerror(\"Error\", \"Quantity must be greater than 0\")\n                return\n            if quantity > self.max_quantity:\n                messagebox.showerror(\"Error\", f\"Quantity cannot exceed {self.max_quantity}\")\n                return\n            \n            self.quantity = quantity\n            self.dialog.destroy()\n            \n        except ValueError:\n            messagebox.showerror(\"Error\", \"Please enter a valid number\")\n    \n    def cancel_clicked(self):\n        self.dialog.destroy()\n    \n    def get_quantity(self):\n        self.dialog.wait_window()\n        return self.quantity
+        self.customer_var = tk.StringVar(value="Walk-in Customer")
+        self.customer_dropdown = ctk.CTkOptionMenu(
+            header_frame, 
+            variable=self.customer_var,
+            command=self.on_customer_selected,
+            width=200
+        )
+        self.customer_dropdown.pack(side="left", padx=5, pady=10)
+        
+        # Payment method
+        payment_label = ctk.CTkLabel(header_frame, text="Payment:", font=ctk.CTkFont(size=14, weight="bold"))
+        payment_label.pack(side="left", padx=(20, 5), pady=10)
+        
+        self.payment_var = tk.StringVar(value="Cash")
+        payment_dropdown = ctk.CTkOptionMenu(
+            header_frame,
+            variable=self.payment_var,
+            values=["Cash", "Credit"],
+            width=100
+        )
+        payment_dropdown.pack(side="left", padx=5, pady=10)
+        
+        # Content area with two columns
+        content_frame = ctk.CTkFrame(main_frame)
+        content_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        content_frame.grid_columnconfigure(0, weight=1)
+        content_frame.grid_columnconfigure(1, weight=1)
+        
+        # Left side - Product selection
+        self.create_product_selection(content_frame)
+        
+        # Right side - Cart and total
+        self.create_cart_section(content_frame)
+    
+    def create_product_selection(self, parent):
+        """Create product selection area"""
+        product_frame = ctk.CTkFrame(parent)
+        product_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=5)
+        
+        # Title
+        title_label = ctk.CTkLabel(
+            product_frame, 
+            text="📦 Select Products", 
+            font=ctk.CTkFont(size=16, weight="bold")
+        )
+        title_label.pack(pady=10)
+        
+        # Search box
+        search_frame = ctk.CTkFrame(product_frame)
+        search_frame.pack(fill="x", padx=10, pady=5)
+        
+        search_label = ctk.CTkLabel(search_frame, text="Search:")
+        search_label.pack(side="left", padx=5)
+        
+        self.search_var = tk.StringVar()
+        self.search_var.trace('w', self.filter_products)
+        search_entry = ctk.CTkEntry(
+            search_frame, 
+            textvariable=self.search_var,
+            placeholder_text="Product name or SKU..."
+        )
+        search_entry.pack(side="left", fill="x", expand=True, padx=5)
+        
+        # Products table
+        products_table_frame = ctk.CTkFrame(product_frame)
+        products_table_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        # Create treeview for products
+        columns = ("SKU", "Name", "Stock", "Normal Price", "Workshop Price")
+        self.products_tree = ttk.Treeview(products_table_frame, columns=columns, show="headings", height=15)
+        
+        # Define headings
+        for col in columns:
+            self.products_tree.heading(col, text=col)
+            self.products_tree.column(col, width=120)
+        
+        # Scrollbar for products
+        products_scrollbar = ttk.Scrollbar(products_table_frame, orient="vertical", command=self.products_tree.yview)
+        self.products_tree.configure(yscrollcommand=products_scrollbar.set)
+        
+        self.products_tree.pack(side="left", fill="both", expand=True)
+        products_scrollbar.pack(side="right", fill="y")
+        
+        # Add to cart button
+        add_button = ctk.CTkButton(
+            product_frame,
+            text="➕ Add to Cart",
+            command=self.add_to_cart,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            height=40
+        )
+        add_button.pack(pady=10)
+        
+        # Bind double-click to add to cart
+        self.products_tree.bind("<Double-1>", lambda e: self.add_to_cart())
+    
+    def create_cart_section(self, parent):
+        """Create shopping cart section"""
+        cart_frame = ctk.CTkFrame(parent)
+        cart_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0), pady=5)
+        
+        # Title
+        title_label = ctk.CTkLabel(
+            cart_frame, 
+            text="🛒 Shopping Cart", 
+            font=ctk.CTkFont(size=16, weight="bold")
+        )
+        title_label.pack(pady=10)
+        
+        # Cart items table
+        cart_table_frame = ctk.CTkFrame(cart_frame)
+        cart_table_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        
+        # Create treeview for cart
+        cart_columns = ("Product", "Qty", "Price", "Total")
+        self.cart_tree = ttk.Treeview(cart_table_frame, columns=cart_columns, show="headings", height=12)
+        
+        # Define headings
+        for col in cart_columns:
+            self.cart_tree.heading(col, text=col)
+            if col == "Product":
+                self.cart_tree.column(col, width=150)
+            else:
+                self.cart_tree.column(col, width=80)
+        
+        # Scrollbar for cart
+        cart_scrollbar = ttk.Scrollbar(cart_table_frame, orient="vertical", command=self.cart_tree.yview)
+        self.cart_tree.configure(yscrollcommand=cart_scrollbar.set)
+        
+        self.cart_tree.pack(side="left", fill="both", expand=True)
+        cart_scrollbar.pack(side="right", fill="y")
+        
+        # Cart actions
+        actions_frame = ctk.CTkFrame(cart_frame)
+        actions_frame.pack(fill="x", padx=10, pady=5)
+        
+        remove_button = ctk.CTkButton(
+            actions_frame,
+            text="❌ Remove Item",
+            command=self.remove_from_cart,
+            width=120,
+            height=30
+        )
+        remove_button.pack(side="left", padx=5)
+        
+        clear_button = ctk.CTkButton(
+            actions_frame,
+            text="🗑️ Clear Cart",
+            command=self.clear_cart,
+            width=120,
+            height=30
+        )
+        clear_button.pack(side="left", padx=5)
+        
+        # Totals section
+        totals_frame = ctk.CTkFrame(cart_frame)
+        totals_frame.pack(fill="x", padx=10, pady=10)
+        
+        self.subtotal_label = ctk.CTkLabel(
+            totals_frame, 
+            text="Subtotal: $0.00",
+            font=ctk.CTkFont(size=14)
+        )
+        self.subtotal_label.pack(pady=2)
+        
+        self.total_label = ctk.CTkLabel(
+            totals_frame, 
+            text="Total: $0.00",
+            font=ctk.CTkFont(size=16, weight="bold")
+        )
+        self.total_label.pack(pady=2)
+        
+        # Process sale button
+        process_button = ctk.CTkButton(
+            cart_frame,
+            text="💰 Process Sale",
+            command=self.process_sale,
+            font=ctk.CTkFont(size=16, weight="bold"),
+            height=50,
+            fg_color="green",
+            hover_color="darkgreen"
+        )
+        process_button.pack(fill="x", padx=10, pady=10)
+    
+    def load_customers(self):
+        """Load customers for dropdown"""
+        try:
+            customers = db.execute_query("SELECT customer_id, name, type FROM customers WHERE is_active = 1")
+            customer_values = ["Walk-in Customer"]
+            self.customers_data = {"Walk-in Customer": {"customer_id": None, "type": "Normal"}}
+            
+            for customer in customers:
+                display_name = f"{customer['name']} ({customer['type']})"
+                customer_values.append(display_name)
+                self.customers_data[display_name] = {
+                    "customer_id": customer['customer_id'],
+                    "type": customer['type']
+                }
+            
+            self.customer_dropdown.configure(values=customer_values)
+            
+        except Exception as e:
+            print(f"Error loading customers: {e}")
+            messagebox.showerror("Error", f"Failed to load customers: {e}")
+    
+    def load_products(self):
+        """Load products for selection"""
+        try:
+            query = """
+                SELECT p.product_id, p.sku, p.name, p.stock, p.price_normal, 
+                       p.price_workshop, p.reorder_level
+                FROM products p
+                WHERE p.is_active = 1 AND p.stock > 0
+                ORDER BY p.name
+            """
+            products = db.execute_query(query)
+            
+            # Clear existing items
+            for item in self.products_tree.get_children():
+                self.products_tree.delete(item)
+            
+            # Add products to tree
+            for product in products:
+                # Show stock status
+                stock_display = f"{product['stock']}"
+                if product['stock'] <= product['reorder_level']:
+                    stock_display += " ⚠️"
+                
+                self.products_tree.insert("", "end", values=(
+                    product['sku'],
+                    product['name'],
+                    stock_display,
+                    f"${product['price_normal']:.2f}",
+                    f"${product['price_workshop']:.2f}"
+                ))
+            
+            self.all_products = products
+            
+        except Exception as e:
+            print(f"Error loading products: {e}")
+            messagebox.showerror("Error", f"Failed to load products: {e}")
+    
+    def filter_products(self, *args):
+        """Filter products based on search"""
+        search_term = self.search_var.get().lower()
+        
+        # Clear tree
+        for item in self.products_tree.get_children():
+            self.products_tree.delete(item)
+        
+        # Filter and add matching products
+        for product in self.all_products:
+            if (search_term in product['name'].lower() or 
+                search_term in product['sku'].lower()):
+                
+                stock_display = f"{product['stock']}"
+                if product['stock'] <= product['reorder_level']:
+                    stock_display += " ⚠️"
+                
+                self.products_tree.insert("", "end", values=(
+                    product['sku'],
+                    product['name'],
+                    stock_display,
+                    f"${product['price_normal']:.2f}",
+                    f"${product['price_workshop']:.2f}"
+                ))
+    
+    def on_customer_selected(self, customer_name):
+        """Handle customer selection"""
+        self.current_customer = self.customers_data.get(customer_name)
+        self.update_cart_display()
+    
+    def add_to_cart(self):
+        """Add selected product to cart"""
+        selection = self.products_tree.selection()
+        if not selection:
+            messagebox.showwarning("Warning", "Please select a product first.")
+            return
+        
+        # Get product details
+        item_values = self.products_tree.item(selection[0], 'values')
+        sku = item_values[0]
+        
+        # Find product in data
+        product = None
+        for p in self.all_products:
+            if p['sku'] == sku:
+                product = p
+                break
+        
+        if not product:
+            messagebox.showerror("Error", "Product not found.")
+            return
+        
+        # Ask for quantity
+        quantity_dialog = QuantityDialog(self.parent, product['stock'])
+        quantity = quantity_dialog.get_quantity()
+        
+        if quantity and quantity > 0:
+            if quantity > product['stock']:
+                messagebox.showerror("Error", "Insufficient stock available.")
+                return
+            
+            # Check if product already in cart
+            existing_item = None
+            for item in self.cart_items:
+                if item['product_id'] == product['product_id']:
+                    existing_item = item
+                    break
+            
+            if existing_item:
+                # Update quantity
+                new_quantity = existing_item['quantity'] + quantity
+                if new_quantity > product['stock']:
+                    messagebox.showerror("Error", "Total quantity would exceed stock.")
+                    return
+                existing_item['quantity'] = new_quantity
+            else:
+                # Add new item
+                cart_item = {
+                    'product_id': product['product_id'],
+                    'sku': product['sku'],
+                    'name': product['name'],
+                    'quantity': quantity,
+                    'price_normal': product['price_normal'],
+                    'price_workshop': product['price_workshop'],
+                    'stock': product['stock']
+                }
+                self.cart_items.append(cart_item)
+            
+            self.update_cart_display()
+    
+    def remove_from_cart(self):
+        """Remove selected item from cart"""
+        selection = self.cart_tree.selection()
+        if not selection:
+            messagebox.showwarning("Warning", "Please select an item to remove.")
+            return
+        
+        # Get selected item index
+        item_index = self.cart_tree.index(selection[0])
+        
+        # Remove from cart
+        if 0 <= item_index < len(self.cart_items):
+            self.cart_items.pop(item_index)
+            self.update_cart_display()
+    
+    def clear_cart(self):
+        """Clear all items from cart"""
+        if self.cart_items:
+            if messagebox.askyesno("Confirm", "Clear all items from cart?"):
+                self.cart_items = []
+                self.update_cart_display()
+    
+    def update_cart_display(self):
+        """Update cart display and totals"""
+        # Clear cart tree
+        for item in self.cart_tree.get_children():
+            self.cart_tree.delete(item)
+        
+        subtotal = 0
+        customer_type = self.current_customer['type'] if self.current_customer else 'Normal'
+        
+        # Add items to cart tree
+        for item in self.cart_items:
+            # Determine price based on customer type
+            if customer_type == 'Workshop':
+                unit_price = item['price_workshop']
+            else:
+                unit_price = item['price_normal']
+            
+            total_price = unit_price * item['quantity']
+            subtotal += total_price
+            
+            self.cart_tree.insert("", "end", values=(
+                item['name'][:20] + "..." if len(item['name']) > 20 else item['name'],
+                item['quantity'],
+                f"${unit_price:.2f}",
+                f"${total_price:.2f}"
+            ))
+        
+        # Update totals
+        self.subtotal_label.configure(text=f"Subtotal: ${subtotal:.2f}")
+        self.total_label.configure(text=f"Total: ${subtotal:.2f}")
+    
+    def process_sale(self):
+        """Process the sale transaction"""
+        if not self.cart_items:
+            messagebox.showwarning("Warning", "Cart is empty. Add items first.")
+            return
+        
+        try:
+            # Generate invoice number
+            invoice_number = self.generate_invoice_number()
+            
+            # Calculate totals
+            customer_type = self.current_customer['type'] if self.current_customer else 'Normal'
+            subtotal = 0
+            
+            for item in self.cart_items:
+                if customer_type == 'Workshop':
+                    unit_price = item['price_workshop']
+                else:
+                    unit_price = item['price_normal']
+                subtotal += unit_price * item['quantity']
+            
+            # Create sale record
+            customer_id = self.current_customer['customer_id'] if self.current_customer else None
+            payment_method = self.payment_var.get().lower()
+            
+            sale_id = db.execute_insert("""
+                INSERT INTO sales (invoice_number, customer_id, sale_date, payment_method,
+                                 subtotal, total_amount, paid_amount, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                invoice_number,
+                customer_id,
+                datetime.now().date(),
+                payment_method,
+                subtotal,
+                subtotal,
+                subtotal if payment_method == 'cash' else 0,
+                'completed'
+            ))
+            
+            # Add sale items and update stock
+            for item in self.cart_items:
+                if customer_type == 'Workshop':
+                    unit_price = item['price_workshop']
+                else:
+                    unit_price = item['price_normal']
+                
+                total_price = unit_price * item['quantity']
+                
+                # Add sale item
+                db.execute_insert("""
+                    INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (
+                    sale_id,
+                    item['product_id'],
+                    item['quantity'],
+                    unit_price,
+                    total_price
+                ))
+                
+                # Update stock and qty_sold
+                db.execute_update("""
+                    UPDATE products 
+                    SET stock = stock - ?, 
+                        qty_sold = qty_sold + ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE product_id = ?
+                """, (item['quantity'], item['quantity'], item['product_id']))
+                
+                # Record stock movement
+                db.execute_insert("""
+                    INSERT INTO stock_movements 
+                    (product_id, movement_type, quantity, reference_id, reference_type)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (
+                    item['product_id'],
+                    'sale',
+                    -item['quantity'],
+                    sale_id,
+                    'sale'
+                ))
+            
+            # Update customer credit balance if needed
+            if payment_method == 'credit' and customer_id:
+                db.execute_update("""
+                    UPDATE customers 
+                    SET credit_balance = credit_balance + ?
+                    WHERE customer_id = ?
+                """, (subtotal, customer_id))
+            
+            # Generate and show invoice
+            self.generate_invoice(sale_id, invoice_number)
+            
+            # Clear cart and refresh
+            self.cart_items = []
+            self.update_cart_display()
+            self.load_products()
+            
+            messagebox.showinfo("Success", f"Sale completed successfully!\nInvoice: {invoice_number}")
+            
+        except Exception as e:
+            print(f"Error processing sale: {e}")
+            messagebox.showerror("Error", f"Failed to process sale: {e}")
+    
+    def generate_invoice_number(self):
+        """Generate unique invoice number"""
+        today = datetime.now()
+        base_number = f"INV-{today.strftime('%Y%m%d')}"
+        
+        # Find next number for today
+        query = "SELECT COUNT(*) as count FROM sales WHERE invoice_number LIKE ?"
+        result = db.execute_query(query, (f"{base_number}-%",))
+        count = result[0]['count'] if result else 0
+        
+        return f"{base_number}-{count + 1:03d}"
+    
+    def generate_invoice(self, sale_id, invoice_number):
+        """Generate PDF invoice"""
+        try:
+            # Get sale details
+            sale_query = """
+                SELECT s.*, c.name as customer_name, c.type as customer_type
+                FROM sales s
+                LEFT JOIN customers c ON s.customer_id = c.customer_id
+                WHERE s.id = ?
+            """
+            sale_data = db.execute_query(sale_query, (sale_id,))[0]
+            
+            # Get sale items
+            items_query = """
+                SELECT si.*, p.name as product_name, p.sku
+                FROM sale_items si
+                JOIN products p ON si.product_id = p.product_id
+                WHERE si.sale_id = ?
+            """
+            items_data = db.execute_query(items_query, (sale_id,))
+            
+            # Create PDF
+            filename = f"reports/invoice_{invoice_number}.pdf"
+            os.makedirs("reports", exist_ok=True)
+            
+            doc = SimpleDocTemplate(filename, pagesize=letter)
+            styles = getSampleStyleSheet()
+            story = []
+            
+            # Header
+            story.append(Paragraph("<b>INVENTORY PRO</b>", styles['Title']))
+            story.append(Paragraph("Sales Invoice", styles['Heading2']))
+            story.append(Spacer(1, 12))
+            
+            # Invoice details
+            invoice_info = [
+                ["Invoice Number:", invoice_number],
+                ["Date:", sale_data['sale_date']],
+                ["Customer:", sale_data['customer_name'] or 'Walk-in Customer'],
+                ["Payment Method:", sale_data['payment_method'].title()]
+            ]
+            
+            info_table = Table(invoice_info, colWidths=[2*inch, 3*inch])
+            info_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ]))
+            story.append(info_table)
+            story.append(Spacer(1, 20))
+            
+            # Items table
+            items_table_data = [["SKU", "Product", "Qty", "Price", "Total"]]
+            
+            for item in items_data:
+                items_table_data.append([
+                    item['sku'],
+                    item['product_name'],
+                    str(item['quantity']),
+                    f"${item['unit_price']:.2f}",
+                    f"${item['total']:.2f}"
+                ])
+            
+            # Add totals
+            items_table_data.append(["", "", "", "Subtotal:", f"${sale_data['subtotal']:.2f}"])
+            items_table_data.append(["", "", "", "<b>Total:</b>", f"<b>${sale_data['total_amount']:.2f}</b>"])
+            
+            items_table = Table(items_table_data, colWidths=[1*inch, 2.5*inch, 0.7*inch, 1*inch, 1*inch])
+            items_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('GRID', (0, 0), (-1, -3), 1, colors.black),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 5),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+            ]))
+            
+            story.append(items_table)
+            story.append(Spacer(1, 30))
+            
+            # Footer
+            story.append(Paragraph("Thank you for your business!", styles['Normal']))
+            
+            # Build PDF
+            doc.build(story)
+            
+            # Ask if user wants to open the PDF
+            if messagebox.askyesno("Invoice Generated", f"Invoice saved as {filename}\n\nWould you like to open it?"):
+                os.startfile(filename)
+            
+        except Exception as e:
+            print(f"Error generating invoice: {e}")
+            messagebox.showerror("Error", f"Failed to generate invoice: {e}")
+
+
+class QuantityDialog:
+    def __init__(self, parent, max_quantity):
+        self.parent = parent
+        self.max_quantity = max_quantity
+        self.quantity = None
+        
+        # Create dialog
+        self.dialog = ctk.CTkToplevel(parent)
+        self.dialog.title("Enter Quantity")
+        self.dialog.geometry("300x150")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+        
+        # Center the dialog
+        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
+        
+        # Create widgets
+        self.create_widgets()
+        
+        # Focus on entry
+        self.quantity_entry.focus()
+    
+    def create_widgets(self):
+        # Label
+        label = ctk.CTkLabel(
+            self.dialog, 
+            text=f"Enter quantity (Max: {self.max_quantity}):",
+            font=ctk.CTkFont(size=14)
+        )
+        label.pack(pady=20)
+        
+        # Entry
+        self.quantity_var = tk.StringVar(value="1")
+        self.quantity_entry = ctk.CTkEntry(
+            self.dialog,
+            textvariable=self.quantity_var,
+            width=100,
+            justify="center"
+        )
+        self.quantity_entry.pack(pady=10)
+        
+        # Buttons
+        button_frame = ctk.CTkFrame(self.dialog)
+        button_frame.pack(pady=10)
+        
+        ok_button = ctk.CTkButton(
+            button_frame,
+            text="OK",
+            command=self.ok_clicked,
+            width=80
+        )
+        ok_button.pack(side="left", padx=5)
+        
+        cancel_button = ctk.CTkButton(
+            button_frame,
+            text="Cancel",
+            command=self.cancel_clicked,
+            width=80
+        )
+        cancel_button.pack(side="left", padx=5)
+        
+        # Bind Enter key
+        self.dialog.bind('<Return>', lambda e: self.ok_clicked())
+    
+    def ok_clicked(self):
+        try:
+            quantity = int(self.quantity_var.get())
+            if quantity <= 0:
+                messagebox.showerror("Error", "Quantity must be greater than 0")
+                return
+            if quantity > self.max_quantity:
+                messagebox.showerror("Error", f"Quantity cannot exceed {self.max_quantity}")
+                return
+            
+            self.quantity = quantity
+            self.dialog.destroy()
+            
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid number")
+    
+    def cancel_clicked(self):
+        self.dialog.destroy()
+    
+    def get_quantity(self):
+        self.dialog.wait_window()
+        return self.quantity

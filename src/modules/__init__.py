@@ -1,1 +1,1 @@
-# Modules package for Inventory Pro
+# modules package

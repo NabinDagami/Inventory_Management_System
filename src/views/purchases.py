@@ -884,13 +884,27 @@ class AddProductDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Add {product['name']} to Purchase Order")
-        self.dialog.geometry("500x500")  # Increased height for better visibility
+        self.dialog.geometry("500x500")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        self.dialog.resizable(False, False)  # Make dialog non-resizable
+        self.dialog.resizable(False, False)
         
-        # Center dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 100, parent.winfo_rooty() + 50))
+        # Center dialog on parent window
+        self.dialog.update_idletasks()
+        parent.update_idletasks()
+        
+        parent_x = parent.winfo_rootx()
+        parent_y = parent.winfo_rooty()
+        parent_width = parent.winfo_width()
+        parent_height = parent.winfo_height()
+        
+        dialog_width = 500
+        dialog_height = 500
+        
+        x = parent_x + (parent_width // 2) - (dialog_width // 2)
+        y = parent_y + (parent_height // 2) - (dialog_height // 2)
+        
+        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
         
         self.create_dialog_content()
         

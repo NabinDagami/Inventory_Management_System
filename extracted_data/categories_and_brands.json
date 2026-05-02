@@ -1,0 +1,725 @@
+{
+  "category_summary": {
+    "Dashboard": {
+      "item_count": 2,
+      "brands": []
+    },
+    "Others": {
+      "item_count": 110,
+      "brands": [
+        "Bajaj",
+        "Bullet",
+        "Dio",
+        "FZ",
+        "Hero",
+        "Nm",
+        "Pulsar",
+        "RTR",
+        "Ray",
+        "Shine",
+        "Unicorn",
+        "V2",
+        "X"
+      ]
+    },
+    "Acc Cable ": {
+      "item_count": 9,
+      "brands": [
+        "Bajaj",
+        "Hero",
+        "Honda",
+        "Om",
+        "Royal Enfield",
+        "Suzuki",
+        "TVS",
+        "Yamaha"
+      ]
+    },
+    "Air Filter": {
+      "item_count": 9,
+      "brands": [
+        "Bajaj",
+        "Hero",
+        "Honda",
+        "Om",
+        "Royal Enfield",
+        "Suzuki",
+        "TVS",
+        "Yamaha"
+      ]
+    },
+    "Brake Shoe ": {
+      "item_count": 5,
+      "brands": [
+        "Om",
+        "Superjit"
+      ]
+    },
+    "Bearing ": {
+      "item_count": 5,
+      "brands": [
+        "Om"
+      ]
+    },
+    "Brake Pad-Disk Pad": {
+      "item_count": 37,
+      "brands": [
+        "Activa",
+        "Bullet",
+        "CBZ",
+        "Duke",
+        "Enticer",
+        "FZ",
+        "Gixxer",
+        "Gladiator",
+        "Jupiter",
+        "NTRQ",
+        "Nm",
+        "Om",
+        "Pulsar",
+        "RTR",
+        "Ray",
+        "Shine",
+        "Superjit",
+        "Unicorn",
+        "V2",
+        "V3",
+        "X"
+      ]
+    },
+    "Chainkit": {
+      "item_count": 37,
+      "brands": [
+        "Avenger",
+        "CBZ",
+        "Discover",
+        "Enticer",
+        "FZ",
+        "Gixxer",
+        "Gladiator",
+        "KTM",
+        "Om",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Twin Disk",
+        "Unicorn",
+        "V2",
+        "V3",
+        "X"
+      ]
+    },
+    "Clutch Plate": {
+      "item_count": 5,
+      "brands": [
+        "Endurance",
+        "F.C.C.",
+        "Honda",
+        "Om"
+      ]
+    },
+    "Clutch Shoe-Chain exhauster": {
+      "item_count": 23,
+      "brands": [
+        "Activa",
+        "Dio",
+        "FZ",
+        "Gladiator",
+        "Honda",
+        "NTRQ",
+        "Nm",
+        "Om",
+        "Pulsar",
+        "Ray",
+        "Shine",
+        "TVS",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Clutch Cable ": {
+      "item_count": 8,
+      "brands": [
+        "Bajaj",
+        "Hero",
+        "Honda",
+        "Om",
+        "Royal Enfield",
+        "Suzuki",
+        "TVS",
+        "Yamaha"
+      ]
+    },
+    "Choke Cable-Clutch Yoke": {
+      "item_count": 21,
+      "brands": [
+        "CBZ",
+        "Dio",
+        "FZ",
+        "Gladiator",
+        "Nm",
+        "Om",
+        "Platina",
+        "RTR",
+        "Ray",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Clucth Switch-C.D.I": {
+      "item_count": 12,
+      "brands": [
+        "Bajaj",
+        "FZ"
+      ]
+    },
+    "Drum Rubber": {
+      "item_count": 14,
+      "brands": [
+        "Avenger",
+        "Bullet",
+        "FZ",
+        "Gixxer",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Daya form": {
+      "item_count": 7,
+      "brands": [
+        "FZ",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn"
+      ]
+    },
+    "Disc Caliber": {
+      "item_count": 7,
+      "brands": [
+        "FZ",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn"
+      ]
+    },
+    "Dipper Switch": {
+      "item_count": 4,
+      "brands": [
+        "Bajaj",
+        "Honda",
+        "Om",
+        "Yamaha"
+      ]
+    },
+    "Front Spocket": {
+      "item_count": 15,
+      "brands": [
+        "CBZ",
+        "Crux",
+        "Discover",
+        "Duke",
+        "Enticer",
+        "FZ",
+        "Gixxer",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Gear Lever-Gear  Sharf": {
+      "item_count": 25,
+      "brands": [
+        "Bajaj",
+        "FZ",
+        "Gladiator",
+        "Hero",
+        "Honda",
+        "Nm",
+        "Om",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn"
+      ]
+    },
+    "Head Show-Head Light Assemble": {
+      "item_count": 17,
+      "brands": [
+        "CBZ",
+        "Jainson",
+        "Pulsar",
+        "RTR",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Half-Excel": {
+      "item_count": 10,
+      "brands": [
+        "CBZ",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Ingnation Swtich-Switch set": {
+      "item_count": 28,
+      "brands": [
+        "Avenger",
+        "Crux",
+        "Dio",
+        "FZ",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Kick Lever": {
+      "item_count": 8,
+      "brands": [
+        "Dio",
+        "Discover",
+        "Passion",
+        "Pulsar",
+        "Shine",
+        "X"
+      ]
+    },
+    "Lever Set ": {
+      "item_count": 20,
+      "brands": [
+        "CBZ",
+        "Dio",
+        "Discover",
+        "FZ",
+        "Nm",
+        "Om",
+        "Passion",
+        "Platina",
+        "RTR",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Mirror": {
+      "item_count": 86,
+      "brands": [
+        "Avenger",
+        "Bullet",
+        "Dio",
+        "Duke",
+        "Enticer",
+        "FZ",
+        "Gixxer",
+        "NTRQ",
+        "Nm",
+        "Om",
+        "Platina",
+        "Pulsar",
+        "RTR",
+        "Ray",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Front+Rear Master Cylinder": {
+      "item_count": 10,
+      "brands": [
+        "Avenger",
+        "Bajaj",
+        "Endorance",
+        "Endurance",
+        "Enticer",
+        "FZ",
+        "Gixxer",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Male-Female; Male-Female Assemb": {
+      "item_count": 35,
+      "brands": [
+        "Bajaj",
+        "Discover",
+        "F.C.C.",
+        "FZ",
+        "Gixxer",
+        "Nm",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Mobil": {
+      "item_count": 16,
+      "brands": [
+        "Bullet",
+        "FZ",
+        "Gixxer",
+        "Om",
+        "RTR",
+        "X"
+      ]
+    },
+    "One Way Bearing ": {
+      "item_count": 8,
+      "brands": [
+        "Om",
+        "Passion",
+        "Pulsar",
+        "RTR",
+        "Unicorn"
+      ]
+    },
+    "Oil Seal": {
+      "item_count": 14,
+      "brands": [
+        "Avenger",
+        "Bajaj",
+        "Dio",
+        "FZ",
+        "Gixxer",
+        "Nm",
+        "Om",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Plug-Plug Cap": {
+      "item_count": 18,
+      "brands": [
+        "Bullet",
+        "CBZ",
+        "Dio",
+        "FZ",
+        "LML",
+        "Pulsar",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Petrol Tap": {
+      "item_count": 18,
+      "brands": [
+        "Dio",
+        "Discover",
+        "FZ",
+        "Gixxer",
+        "Pulsar",
+        "Ray",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Rektifire": {
+      "item_count": 11,
+      "brands": [
+        "Dio",
+        "FZ",
+        "Gladiator",
+        "Pulsar",
+        "Unicorn"
+      ]
+    },
+    "Rocker": {
+      "item_count": 12,
+      "brands": [
+        "Dio",
+        "Discover",
+        "FZ",
+        "Nm",
+        "Om",
+        "Pulsar",
+        "RTR",
+        "Ray",
+        "Shine",
+        "X"
+      ]
+    },
+    "Rear Axel": {
+      "item_count": 8,
+      "brands": [
+        "FZ",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn"
+      ]
+    },
+    "Self-Carbon": {
+      "item_count": 14,
+      "brands": [
+        "Avenger",
+        "Dio",
+        "FZ",
+        "Gixxer",
+        "Mesto",
+        "Pulsar",
+        "Ray",
+        "Varroc",
+        "X"
+      ]
+    },
+    "Side Light": {
+      "item_count": 19,
+      "brands": [
+        "Bullet",
+        "FZ",
+        "Jainson",
+        "Nm",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Side Stand": {
+      "item_count": 14,
+      "brands": [
+        "CBZ",
+        "Dio",
+        "Discover",
+        "FZ",
+        "Gladiator",
+        "Nm",
+        "Pulsar",
+        "RTR",
+        "Ray",
+        "Shine",
+        "Unicorn"
+      ]
+    },
+    "Speedo Meter Cable ": {
+      "item_count": 26,
+      "brands": [
+        "Avenger",
+        "Bajaj",
+        "Dio",
+        "Discover",
+        "Enticer",
+        "FZ",
+        "Gladiator",
+        "Nm",
+        "Om",
+        "Pulsar",
+        "Ray",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Shock Rod ": {
+      "item_count": 26,
+      "brands": [
+        "ABN",
+        "Dio",
+        "Ebdurance",
+        "Endurance",
+        "FZ",
+        "Jainson",
+        "Nm",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "X"
+      ]
+    },
+    "Suspention Bush": {
+      "item_count": 13,
+      "brands": [
+        "CBZ",
+        "Dio",
+        "FZ",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn",
+        "V2",
+        "X"
+      ]
+    },
+    "Self-Cutout- Relay": {
+      "item_count": 15,
+      "brands": [
+        "Activa",
+        "Bajaj",
+        "Dio",
+        "FZ",
+        "Pulsar",
+        "Shine",
+        "Unicorn",
+        "Varroc"
+      ]
+    },
+    "Seat Cover": {
+      "item_count": 38,
+      "brands": [
+        "Avenger",
+        "CBZ",
+        "Dio",
+        "Enticer",
+        "FZ",
+        "Gixxer",
+        "Gladiator",
+        "NTRQ",
+        "Nm",
+        "Om",
+        "Pulsar",
+        "RTR",
+        "Ray",
+        "Shine",
+        "Unicorn",
+        "V2",
+        "V3",
+        "X"
+      ]
+    },
+    "Shock Spring": {
+      "item_count": 8,
+      "brands": [
+        "FZ",
+        "Pulsar",
+        "Shine",
+        "Unicorn"
+      ]
+    },
+    "Top ": {
+      "item_count": 9,
+      "brands": [
+        "Avenger",
+        "Dio",
+        "FZ",
+        "Pulsar",
+        "RTR",
+        "Shine",
+        "Unicorn"
+      ]
+    },
+    "Tube": {
+      "item_count": 14,
+      "brands": []
+    },
+    "Tanky Cap": {
+      "item_count": 19,
+      "brands": [
+        "CBZ",
+        "Crux",
+        "Discover",
+        "FZ",
+        "Nm",
+        "Pulsar",
+        "Shine",
+        "Unicorn",
+        "X"
+      ]
+    },
+    "Timing Pad": {
+      "item_count": 7,
+      "brands": [
+        "Bajaj",
+        "Dio",
+        "Discover",
+        "Nm",
+        "Pulsar"
+      ]
+    },
+    "Tyres": {
+      "item_count": 28,
+      "brands": []
+    },
+    "Helmet": {
+      "item_count": 9,
+      "brands": [
+        "Bullet",
+        "X"
+      ]
+    },
+    "Weigh-Roller": {
+      "item_count": 24,
+      "brands": [
+        "ABN",
+        "Activa",
+        "Dio",
+        "F.C.C.",
+        "NTRQ",
+        "Nm",
+        "Om",
+        "Ray"
+      ]
+    }
+  },
+  "all_brands": [
+    "ABN",
+    "Activa",
+    "Avenger",
+    "Bajaj",
+    "Bullet",
+    "CBZ",
+    "Crux",
+    "Dio",
+    "Discover",
+    "Duke",
+    "Ebdurance",
+    "Endorance",
+    "Endurance",
+    "Enticer",
+    "F.C.C.",
+    "FZ",
+    "Gixxer",
+    "Gladiator",
+    "Hero",
+    "Honda",
+    "Jainson",
+    "Jupiter",
+    "KTM",
+    "LML",
+    "Mesto",
+    "NTRQ",
+    "Nm",
+    "Om",
+    "Passion",
+    "Platina",
+    "Pulsar",
+    "RTR",
+    "Ray",
+    "Royal Enfield",
+    "Shine",
+    "Superjit",
+    "Suzuki",
+    "TVS",
+    "Twin Disk",
+    "Unicorn",
+    "V2",
+    "V3",
+    "Varroc",
+    "X",
+    "Yamaha"
+  ],
+  "total_categories": 51,
+  "total_items": 957
+}

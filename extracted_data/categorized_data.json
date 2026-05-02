@@ -1,0 +1,810 @@
+{
+  "metadata": {
+    "total_categories": 51,
+    "total_items": 957,
+    "total_brands": 37
+  },
+  "categories": {
+    "Dashboard": {
+      "total_items": 2,
+      "fields": [
+        "s"
+      ],
+      "brands": []
+    },
+    "Others": {
+      "total_items": 110,
+      "fields": [
+        "Items",
+        "Price ",
+        "Qty in Hand",
+        "Qty Sold",
+        "Available Stock  ",
+        "Status "
+      ],
+      "brands": []
+    },
+    "Acc Cable ": {
+      "total_items": 9,
+      "fields": [
+        " "
+      ],
+      "brands": []
+    },
+    "Air Filter": {
+      "total_items": 9,
+      "fields": [
+        "e"
+      ],
+      "brands": []
+    },
+    "Brake Shoe ": {
+      "total_items": 5,
+      "fields": [
+        " "
+      ],
+      "brands": []
+    },
+    "Bearing ": {
+      "total_items": 5,
+      "fields": [
+        " "
+      ],
+      "brands": []
+    },
+    "Brake Pad-Disk Pad": {
+      "total_items": 37,
+      "fields": [
+        "Brake Pad"
+      ],
+      "brands": []
+    },
+    "Chainkit": {
+      "total_items": 37,
+      "fields": [
+        "Chainkit"
+      ],
+      "brands": []
+    },
+    "Clutch Plate": {
+      "total_items": 5,
+      "fields": [
+        "Clutch Plate"
+      ],
+      "brands": []
+    },
+    "Clutch Shoe-Chain exhauster": {
+      "total_items": 23,
+      "fields": [
+        "Clutch Shoe   "
+      ],
+      "brands": []
+    },
+    "Clutch Cable ": {
+      "total_items": 8,
+      "fields": [
+        "Clutch Cable"
+      ],
+      "brands": []
+    },
+    "Choke Cable-Clutch Yoke": {
+      "total_items": 21,
+      "fields": [
+        "Choke Cable "
+      ],
+      "brands": []
+    },
+    "Clucth Switch-C.D.I": {
+      "total_items": 12,
+      "fields": [
+        "Clutch Switch ",
+        " "
+      ],
+      "brands": []
+    },
+    "Drum Rubber": {
+      "total_items": 14,
+      "fields": [
+        "6"
+      ],
+      "brands": []
+    },
+    "Daya form": {
+      "total_items": 7,
+      "fields": [
+        "Daya Form"
+      ],
+      "brands": []
+    },
+    "Disc Caliber": {
+      "total_items": 7,
+      "fields": [
+        "Disc Cabiler"
+      ],
+      "brands": []
+    },
+    "Dipper Switch": {
+      "total_items": 4,
+      "fields": [
+        "2"
+      ],
+      "brands": []
+    },
+    "Front Spocket": {
+      "total_items": 15,
+      "fields": [
+        "Front Spocket "
+      ],
+      "brands": []
+    },
+    "Gear Lever-Gear  Sharf": {
+      "total_items": 25,
+      "fields": [
+        "Gear Lever "
+      ],
+      "brands": []
+    },
+    "Head Show-Head Light Assemble": {
+      "total_items": 17,
+      "fields": [
+        "Head Show "
+      ],
+      "brands": []
+    },
+    "Half-Excel": {
+      "total_items": 10,
+      "fields": [
+        "Half Axel "
+      ],
+      "brands": []
+    },
+    "Ingnation Swtich-Switch set": {
+      "total_items": 28,
+      "fields": [
+        "Ignation Switch "
+      ],
+      "brands": []
+    },
+    "Kick Lever": {
+      "total_items": 8,
+      "fields": [
+        "Kick Lever"
+      ],
+      "brands": []
+    },
+    "Lever Set ": {
+      "total_items": 20,
+      "fields": [
+        "Lever Set "
+      ],
+      "brands": []
+    },
+    "Mirror": {
+      "total_items": 86,
+      "fields": [
+        "Mirror "
+      ],
+      "brands": []
+    },
+    "Front+Rear Master Cylinder": {
+      "total_items": 10,
+      "fields": [
+        "Front Master Cylinder "
+      ],
+      "brands": []
+    },
+    "Male-Female; Male-Female Assemb": {
+      "total_items": 35,
+      "fields": [
+        "Male-Female"
+      ],
+      "brands": []
+    },
+    "Mobil": {
+      "total_items": 16,
+      "fields": [
+        "Mobil"
+      ],
+      "brands": []
+    },
+    "One Way Bearing ": {
+      "total_items": 8,
+      "fields": [
+        "One Way Bearing Set"
+      ],
+      "brands": []
+    },
+    "Oil Seal": {
+      "total_items": 14,
+      "fields": [
+        "Oil Seal"
+      ],
+      "brands": []
+    },
+    "Plug-Plug Cap": {
+      "total_items": 18,
+      "fields": [
+        "Plug"
+      ],
+      "brands": []
+    },
+    "Petrol Tap": {
+      "total_items": 18,
+      "fields": [
+        "Petrol Tap"
+      ],
+      "brands": []
+    },
+    "Rektifire": {
+      "total_items": 11,
+      "fields": [
+        "Rektifire"
+      ],
+      "brands": []
+    },
+    "Rocker": {
+      "total_items": 12,
+      "fields": [
+        "Rocker "
+      ],
+      "brands": []
+    },
+    "Rear Axel": {
+      "total_items": 8,
+      "fields": [
+        "Rear Axel"
+      ],
+      "brands": []
+    },
+    "Self-Carbon": {
+      "total_items": 14,
+      "fields": [
+        "Self Carbon "
+      ],
+      "brands": []
+    },
+    "Side Light": {
+      "total_items": 19,
+      "fields": [
+        "Side Light "
+      ],
+      "brands": []
+    },
+    "Side Stand": {
+      "total_items": 14,
+      "fields": [
+        "Side Stand "
+      ],
+      "brands": []
+    },
+    "Speedo Meter Cable ": {
+      "total_items": 26,
+      "fields": [
+        "Speedo Meter Cable"
+      ],
+      "brands": []
+    },
+    "Shock Rod ": {
+      "total_items": 26,
+      "fields": [
+        "Shock Rod"
+      ],
+      "brands": []
+    },
+    "Suspention Bush": {
+      "total_items": 13,
+      "fields": [
+        "Suspention Bush"
+      ],
+      "brands": []
+    },
+    "Self-Cutout- Relay": {
+      "total_items": 15,
+      "fields": [
+        "Self-Cutout "
+      ],
+      "brands": []
+    },
+    "Seat Cover": {
+      "total_items": 38,
+      "fields": [
+        "Seat Cover"
+      ],
+      "brands": []
+    },
+    "Shock Spring": {
+      "total_items": 8,
+      "fields": [
+        "Shock Spring"
+      ],
+      "brands": []
+    },
+    "Top ": {
+      "total_items": 9,
+      "fields": [
+        "Top"
+      ],
+      "brands": []
+    },
+    "Tube": {
+      "total_items": 14,
+      "fields": [
+        "Tube"
+      ],
+      "brands": []
+    },
+    "Tanky Cap": {
+      "total_items": 19,
+      "fields": [
+        "Tanky Cap"
+      ],
+      "brands": []
+    },
+    "Timing Pad": {
+      "total_items": 7,
+      "fields": [
+        "Timing Pad"
+      ],
+      "brands": []
+    },
+    "Tyres": {
+      "total_items": 28,
+      "fields": [
+        "Tyres (MRF)"
+      ],
+      "brands": []
+    },
+    "Helmet": {
+      "total_items": 9,
+      "fields": [
+        "Helmet "
+      ],
+      "brands": []
+    },
+    "Weigh-Roller": {
+      "total_items": 24,
+      "fields": [
+        "Weight Roller/Green/Link Bush/Varrator(Kachaura)/Rear Roller Hub "
+      ],
+      "brands": []
+    }
+  },
+  "brands_by_category": {
+    "Others": [
+      "Bajaj",
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Hero",
+      "Ray"
+    ],
+    "Acc Cable ": [
+      "Bajaj",
+      "Yamaha",
+      "Royal Enfield",
+      "Honda",
+      "Hero",
+      "Suzuki",
+      "TVS"
+    ],
+    "Air Filter": [
+      "Bajaj",
+      "Yamaha",
+      "Royal Enfield",
+      "Honda",
+      "Hero",
+      "Suzuki",
+      "TVS"
+    ],
+    "Brake Shoe ": [
+      "Superjit"
+    ],
+    "Brake Pad-Disk Pad": [
+      "Superjit",
+      "Pulsar",
+      "Jupiter",
+      "Shine",
+      "Activa",
+      "Unicorn",
+      "RTR",
+      "Enticer",
+      "NTRQ",
+      "Ray",
+      "Gladiator",
+      "CBZ",
+      "Gixxer",
+      "Duke"
+    ],
+    "Chainkit": [
+      "Pulsar",
+      "Discover",
+      "Twin Disk",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "KTM",
+      "Enticer",
+      "Gladiator",
+      "Avenger",
+      "CBZ",
+      "Gixxer"
+    ],
+    "Clutch Plate": [
+      "F.C.C.",
+      "Honda",
+      "Endurance"
+    ],
+    "Clutch Shoe-Chain exhauster": [
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "Activa",
+      "Unicorn",
+      "Honda",
+      "NTRQ",
+      "Ray",
+      "TVS",
+      "Gladiator"
+    ],
+    "Clutch Cable ": [
+      "Bajaj",
+      "Yamaha",
+      "Royal Enfield",
+      "Honda",
+      "Hero",
+      "Suzuki",
+      "TVS"
+    ],
+    "Choke Cable-Clutch Yoke": [
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Ray",
+      "Gladiator",
+      "Platina",
+      "CBZ"
+    ],
+    "Clucth Switch-C.D.I": [
+      "Bajaj"
+    ],
+    "Drum Rubber": [
+      "Pulsar",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Avenger",
+      "Gixxer"
+    ],
+    "Daya form": [
+      "Unicorn",
+      "Pulsar",
+      "RTR",
+      "Shine"
+    ],
+    "Disc Caliber": [
+      "Unicorn",
+      "Pulsar",
+      "RTR",
+      "Shine"
+    ],
+    "Dipper Switch": [
+      "Bajaj",
+      "Honda",
+      "Yamaha"
+    ],
+    "Front Spocket": [
+      "Pulsar",
+      "Discover",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Enticer",
+      "CBZ",
+      "Gixxer",
+      "Duke"
+    ],
+    "Gear Lever-Gear  Sharf": [
+      "Bajaj",
+      "Pulsar",
+      "Shine",
+      "Unicorn",
+      "Honda",
+      "RTR",
+      "Hero",
+      "Gladiator"
+    ],
+    "Head Show-Head Light Assemble": [
+      "Pulsar",
+      "Unicorn",
+      "RTR",
+      "Jainson",
+      "CBZ"
+    ],
+    "Half-Excel": [
+      "Pulsar",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "CBZ"
+    ],
+    "Ingnation Swtich-Switch set": [
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Avenger"
+    ],
+    "Kick Lever": [
+      "Pulsar",
+      "Discover",
+      "Dio",
+      "Shine",
+      "Passion"
+    ],
+    "Lever Set ": [
+      "Discover",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Passion",
+      "Platina",
+      "CBZ"
+    ],
+    "Mirror": [
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Enticer",
+      "NTRQ",
+      "Ray",
+      "Avenger",
+      "Platina",
+      "Gixxer",
+      "Duke"
+    ],
+    "Front+Rear Master Cylinder": [
+      "Bajaj",
+      "Pulsar",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Endorance",
+      "Enticer",
+      "Avenger",
+      "Endurance",
+      "Gixxer"
+    ],
+    "Male-Female; Male-Female Assemb": [
+      "Bajaj",
+      "Pulsar",
+      "Discover",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "F.C.C.",
+      "Gixxer"
+    ],
+    "Mobil": [
+      "RTR",
+      "Gixxer"
+    ],
+    "One Way Bearing ": [
+      "Passion",
+      "Unicorn",
+      "Pulsar",
+      "RTR"
+    ],
+    "Oil Seal": [
+      "Bajaj",
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Avenger",
+      "Gixxer"
+    ],
+    "Plug-Plug Cap": [
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "LML",
+      "CBZ"
+    ],
+    "Petrol Tap": [
+      "Pulsar",
+      "Discover",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "Ray",
+      "Gixxer"
+    ],
+    "Rektifire": [
+      "Unicorn",
+      "Pulsar",
+      "Gladiator",
+      "Dio"
+    ],
+    "Rocker": [
+      "Pulsar",
+      "Discover",
+      "Dio",
+      "Shine",
+      "RTR",
+      "Ray"
+    ],
+    "Rear Axel": [
+      "Unicorn",
+      "Pulsar",
+      "RTR",
+      "Shine"
+    ],
+    "Self-Carbon": [
+      "Mesto",
+      "Pulsar",
+      "Dio",
+      "Varroc",
+      "Ray",
+      "Avenger",
+      "Gixxer"
+    ],
+    "Side Light": [
+      "Pulsar",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Jainson"
+    ],
+    "Side Stand": [
+      "Pulsar",
+      "Discover",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Ray",
+      "Gladiator",
+      "CBZ"
+    ],
+    "Speedo Meter Cable ": [
+      "Bajaj",
+      "Pulsar",
+      "Discover",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "Enticer",
+      "Ray",
+      "Gladiator",
+      "Avenger"
+    ],
+    "Shock Rod ": [
+      "Ebdurance",
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "RTR",
+      "Jainson",
+      "ABN",
+      "Endurance"
+    ],
+    "Suspention Bush": [
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "CBZ"
+    ],
+    "Self-Cutout- Relay": [
+      "Bajaj",
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "Activa",
+      "Unicorn",
+      "Varroc"
+    ],
+    "Seat Cover": [
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Enticer",
+      "NTRQ",
+      "Ray",
+      "Gladiator",
+      "Avenger",
+      "CBZ",
+      "Gixxer"
+    ],
+    "Shock Spring": [
+      "Unicorn",
+      "Pulsar",
+      "Shine"
+    ],
+    "Top ": [
+      "Pulsar",
+      "Dio",
+      "Shine",
+      "Unicorn",
+      "RTR",
+      "Avenger"
+    ],
+    "Tanky Cap": [
+      "Pulsar",
+      "Discover",
+      "Shine",
+      "Unicorn",
+      "CBZ"
+    ],
+    "Timing Pad": [
+      "Bajaj",
+      "Pulsar",
+      "Discover",
+      "Dio"
+    ],
+    "Weigh-Roller": [
+      "Dio",
+      "Activa",
+      "F.C.C.",
+      "NTRQ",
+      "Ray",
+      "ABN"
+    ],
+    "Dashboard": [],
+    "Bearing ": [],
+    "Tube": [],
+    "Tyres": [],
+    "Helmet": []
+  },
+  "all_brands": [
+    "ABN",
+    "Activa",
+    "Avenger",
+    "Bajaj",
+    "CBZ",
+    "Dio",
+    "Discover",
+    "Duke",
+    "Ebdurance",
+    "Endorance",
+    "Endurance",
+    "Enticer",
+    "F.C.C.",
+    "Gixxer",
+    "Gladiator",
+    "Hero",
+    "Honda",
+    "Jainson",
+    "Jupiter",
+    "KTM",
+    "LML",
+    "Mesto",
+    "NTRQ",
+    "Passion",
+    "Platina",
+    "Pulsar",
+    "RTR",
+    "Ray",
+    "Royal Enfield",
+    "Shine",
+    "Superjit",
+    "Suzuki",
+    "TVS",
+    "Twin Disk",
+    "Unicorn",
+    "Varroc",
+    "Yamaha"
+  ]
+}

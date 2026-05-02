@@ -1,1 +1,1 @@
-# Utils package for Inventory Pro
+# utils package

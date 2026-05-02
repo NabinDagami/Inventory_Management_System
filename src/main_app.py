@@ -20,6 +20,7 @@ from views.suppliers import SuppliersView
 from views.statements import StatementsView
 from views.reports import ReportsView
 from views.settings import SettingsView
+from utils.logger import logger
 # Table styles are now handled individually in each view
 
 class InventoryApp:
@@ -30,7 +31,7 @@ class InventoryApp:
         
         # Create main window
         self.root = ctk.CTk()
-        self.root.title("Inventory Pro - Management System")
+        self.root.title("Inventory Beta - Management System")
         
         # Get screen dimensions for responsive sizing
         screen_width = self.root.winfo_screenwidth()
@@ -134,7 +135,7 @@ class InventoryApp:
         
         title_label = ctk.CTkLabel(
             logo_frame,
-            text="INVENTORY PRO",
+            text="INVENTORY BETA",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color=("gray10", "white")
         )
@@ -312,7 +313,15 @@ class InventoryApp:
         self.header_title.configure(text="Dashboard")
         self.set_active_nav("🏠 Dashboard")
         
-        self.current_view = Dashboard(self.content_frame)
+        # Pass navigation callbacks to Dashboard for quick actions
+        navigation_callbacks = {
+            'inventory': self.show_inventory,
+            'sales': self.show_sales,
+            'purchases': self.show_purchases,
+            'customers': self.show_customers
+        }
+        
+        self.current_view = Dashboard(self.content_frame, navigation_callbacks)
     
     def show_inventory(self):
         """Show inventory view"""

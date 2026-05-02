@@ -15,8 +15,9 @@ from models.database import db
 from utils.format_utils import format_price_with_decimals, get_currency_symbol
 
 class Dashboard:
-    def __init__(self, parent):
+    def __init__(self, parent, navigation_callbacks=None):
         self.parent = parent
+        self.navigation_callbacks = navigation_callbacks or {}
         self.create_dashboard()
         self.load_dashboard_data()
     
@@ -648,70 +649,29 @@ class Dashboard:
     
     # Quick action methods
     def add_product(self):
-        """Quick action: Add new product"""
-        # Get reference to main app to switch views
-        try:
-            # Find the main app window
-            main_app = self.parent
-            while hasattr(main_app, 'master') and main_app.master:
-                main_app = main_app.master
-            
-            # Navigate to inventory view
-            if hasattr(main_app, 'show_inventory'):
-                main_app.show_inventory()
-                messagebox.showinfo("Navigation", "Switched to Inventory module. Use the 'Add Product' button to add new products.")
-            else:
-                messagebox.showinfo("Info", "Navigate to Inventory → Products to add new products.")
-        except Exception as e:
+        """Quick action: Navigate to Inventory to add new product"""
+        if 'inventory' in self.navigation_callbacks:
+            self.navigation_callbacks['inventory']()
+        else:
             messagebox.showinfo("Info", "Navigate to Inventory → Products to add new products.")
     
     def new_sale(self):
-        """Quick action: Create new sale"""
-        try:
-            # Find the main app window
-            main_app = self.parent
-            while hasattr(main_app, 'master') and main_app.master:
-                main_app = main_app.master
-            
-            # Navigate to sales view
-            if hasattr(main_app, 'show_sales'):
-                main_app.show_sales()
-                messagebox.showinfo("Navigation", "Switched to Sales module. Start adding products to your cart!")
-            else:
-                messagebox.showinfo("Info", "Navigate to Sales module to create new sales.")
-        except Exception as e:
+        """Quick action: Navigate to Sales to create new sale"""
+        if 'sales' in self.navigation_callbacks:
+            self.navigation_callbacks['sales']()
+        else:
             messagebox.showinfo("Info", "Navigate to Sales module to create new sales.")
     
     def new_purchase(self):
-        """Quick action: Create new purchase"""
-        try:
-            # Find the main app window
-            main_app = self.parent
-            while hasattr(main_app, 'master') and main_app.master:
-                main_app = main_app.master
-            
-            # Navigate to purchases view
-            if hasattr(main_app, 'show_purchases'):
-                main_app.show_purchases()
-                messagebox.showinfo("Navigation", "Switched to Purchases module.")
-            else:
-                messagebox.showinfo("Info", "Navigate to Purchases module to create new purchase orders.")
-        except Exception as e:
+        """Quick action: Navigate to Purchases to create new purchase"""
+        if 'purchases' in self.navigation_callbacks:
+            self.navigation_callbacks['purchases']()
+        else:
             messagebox.showinfo("Info", "Navigate to Purchases module to create new purchase orders.")
     
     def add_customer(self):
-        """Quick action: Add new customer"""
-        try:
-            # Find the main app window
-            main_app = self.parent
-            while hasattr(main_app, 'master') and main_app.master:
-                main_app = main_app.master
-            
-            # Navigate to customers view
-            if hasattr(main_app, 'show_customers'):
-                main_app.show_customers()
-                messagebox.showinfo("Navigation", "Switched to Customer Management module.")
-            else:
-                messagebox.showinfo("Info", "Navigate to Customers module to add new customers.")
-        except Exception as e:
+        """Quick action: Navigate to Customers to add new customer"""
+        if 'customers' in self.navigation_callbacks:
+            self.navigation_callbacks['customers']()
+        else:
             messagebox.showinfo("Info", "Navigate to Customers module to add new customers.")

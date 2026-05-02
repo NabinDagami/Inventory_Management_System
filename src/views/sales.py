@@ -11,6 +11,260 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.database import db
 import utils.simple_table_styles as table_styles
 
+
+def center_window_on_screen(window, width, height):
+    """Center a window on the screen."""
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+    x = (screen_width - width) // 2
+    y = (screen_height - height) // 2
+    window.geometry(f"{width}x{height}+{x}+{y}")
+
+
+class SearchableDropdown(ctk.CTkFrame):
+    """A custom searchable dropdown component for customer selection"""
+    def __init__(self, parent, placeholder_text="Search...", width=250, command=None, **kwargs):
+        super().__init__(parent, fg_color="transparent", **kwargs)
+        
+        self.parent_widget = parent  # Renamed to avoid conflict
+        self.command = command
+        self.all_values = []
+        self.filtered_values = []
+        self.selected_value = None
+        self.dropdown_window = None
+        self.listbox = None
+        
+        # Container frame for horizontal layout
+        self.inner_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.inner_frame.pack(fill="x", expand=True)
+        
+        # Main entry field
+        self.entry = ctk.CTkEntry(
+            self.inner_frame,
+            placeholder_text=placeholder_text,
+            width=width - 40,
+            height=32
+        )
+        self.entry.pack(side="left", fill="x", expand=True)
+        
+        # Dropdown button
+        self.dropdown_btn = ctk.CTkButton(
+            self.inner_frame,
+            text="▼",
+            width=30,
+            height=32,
+            command=self.toggle_dropdown
+        )
+        self.dropdown_btn.pack(side="left", padx=(5, 0))
+        
+        # Bind events
+        self.entry.bind('<KeyRelease>', self.on_key_release)
+        self.entry.bind('<FocusIn>', self.on_entry_focus_in)
+        self.entry.bind('<Down>', self.on_arrow_down)
+        
+        # Click outside to close dropdown - bind to toplevel window
+        self._setup_click_binding()
+    
+    def _setup_click_binding(self):
+        """Setup the click-outside binding after widget is fully created"""
+        try:
+            toplevel = self.winfo_toplevel()
+            toplevel.bind('<Button-1>', self.on_click_outside, add='+')
+        except:
+            pass
+    
+    def create_dropdown_window(self):
+        """Create the dropdown Toplevel window"""
+        if self.dropdown_window is not None:
+            return
+            
+        # Create Toplevel window for dropdown
+        self.dropdown_window = tk.Toplevel(self.winfo_toplevel())
+        self.dropdown_window.overrideredirect(True)  # Remove window decorations
+        self.dropdown_window.transient(self.winfo_toplevel())
+        
+        # Frame for content
+        is_light = ctk.get_appearance_mode() == "Light"
+        bg_color = "white" if is_light else "#1e1e1e"
+        border_color = "#0078d4" if is_light else "#0078d4"  # Blue border for visibility
+        
+        outer_frame = tk.Frame(self.dropdown_window, bg=border_color, bd=2)
+        outer_frame.pack(fill="both", expand=True)
+        
+        inner_frame = tk.Frame(outer_frame, bg=bg_color)
+        inner_frame.pack(fill="both", expand=True, padx=2, pady=2)
+        
+        # Listbox for dropdown items - improved visibility
+        self.listbox = tk.Listbox(
+            inner_frame,
+            font=("Segoe UI", 13, "bold"),  # Larger, bolder font
+            bg=bg_color,
+            fg="black" if is_light else "white",
+            selectbackground="#0078d4",  # Microsoft blue selection
+            selectforeground="white",
+            relief="flat",
+            highlightthickness=0,
+            activestyle="none",
+            height=10,  # More visible items
+            selectmode="single"
+        )
+        self.listbox.pack(side="left", fill="both", expand=True, padx=2, pady=2)
+        
+        # Configure listbox item height for better visibility
+        self.listbox.configure(height=8)
+        
+        # Scrollbar for listbox
+        scrollbar = ttk.Scrollbar(inner_frame, orient="vertical", command=self.listbox.yview)
+        self.listbox.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Bind events for listbox
+        self.listbox.bind('<<ListboxSelect>>', self.on_listbox_select)
+        self.listbox.bind('<Return>', self.on_listbox_select)
+        self.listbox.bind('<Escape>', self.hide_dropdown)
+    
+    def set_values(self, values):
+        """Set the list of values for the dropdown"""
+        self.all_values = values
+        self.filtered_values = values.copy()
+        if self.listbox:
+            self.update_listbox()
+    
+    def get(self):
+        """Get the current entry text"""
+        return self.entry.get()
+    
+    def set(self, value):
+        """Set the entry text"""
+        self.entry.delete(0, tk.END)
+        self.entry.insert(0, value)
+        self.selected_value = value
+    
+    def on_key_release(self, event):
+        """Handle typing in the entry field"""
+        if event.keysym in ('Down', 'Up', 'Return', 'Escape'):
+            return
+        
+        search_term = self.entry.get().lower()
+        self.filtered_values = [v for v in self.all_values if search_term in v.lower()]
+        
+        if self.filtered_values:
+            self.show_dropdown()
+        else:
+            self.hide_dropdown()
+    
+    def update_listbox(self):
+        """Update the listbox with filtered values"""
+        if self.listbox is None:
+            return
+        self.listbox.delete(0, tk.END)
+        for value in self.filtered_values:
+            self.listbox.insert(tk.END, value)
+    
+    def show_dropdown(self):
+        """Show the dropdown below the entry"""
+        if not self.filtered_values:
+            return
+        
+        # Create dropdown window if not exists
+        if self.dropdown_window is None:
+            self.create_dropdown_window()
+        
+        # Update listbox content
+        self.update_listbox()
+        
+        # Position dropdown below the entry - make it wider and taller
+        x = self.inner_frame.winfo_rootx()
+        y = self.inner_frame.winfo_rooty() + self.inner_frame.winfo_height()
+        
+        # Make dropdown wider than the entry field for better visibility
+        entry_width = self.inner_frame.winfo_width()
+        width = max(entry_width, 350)  # Minimum 350px width
+        
+        # Calculate height based on number of items, with min and max limits
+        item_height = 28  # Height per item in pixels
+        height = min(280, max(120, len(self.filtered_values) * item_height + 20))  # Min 120px, max 280px
+        
+        # Position and size the window
+        self.dropdown_window.geometry(f"{width}x{height}+{x}+{y}")
+        self.dropdown_window.deiconify()
+        self.dropdown_window.lift()
+        self.dropdown_window.focus_force()
+    
+    def hide_dropdown(self, event=None):
+        """Hide the dropdown"""
+        if self.dropdown_window:
+            self.dropdown_window.withdraw()
+    
+    def toggle_dropdown(self):
+        """Toggle dropdown visibility"""
+        if self.dropdown_window and self.dropdown_window.winfo_viewable():
+            self.hide_dropdown()
+        else:
+            self.filtered_values = self.all_values.copy()
+            self.show_dropdown()
+            self.entry.focus()
+    
+    def on_entry_focus_in(self, event):
+        """Show dropdown when entry is focused"""
+        if self.filtered_values:
+            self.show_dropdown()
+    
+    def on_arrow_down(self, event):
+        """Handle down arrow key"""
+        if self.dropdown_window is None or not self.dropdown_window.winfo_viewable():
+            self.filtered_values = self.all_values.copy()
+            self.show_dropdown()
+        if self.listbox and self.listbox.size() > 0:
+            self.listbox.focus()
+            self.listbox.selection_set(0)
+    
+    def on_listbox_select(self, event=None):
+        """Handle selection from listbox"""
+        if self.listbox is None:
+            return
+        selection = self.listbox.curselection()
+        if selection:
+            value = self.listbox.get(selection[0])
+            self.set(value)
+            self.hide_dropdown()
+            self.entry.focus()
+            if self.command:
+                self.command(value)
+    
+    def on_click_outside(self, event):
+        """Hide dropdown when clicking outside"""
+        if self.dropdown_window and self.dropdown_window.winfo_viewable():
+            # Check if click is inside the dropdown or the widget
+            widget = event.widget
+            try:
+                # Get widget under mouse
+                x, y = event.x_root, event.y_root
+                
+                # Check if click is in dropdown window
+                dropdown_x = self.dropdown_window.winfo_rootx()
+                dropdown_y = self.dropdown_window.winfo_rooty()
+                dropdown_w = self.dropdown_window.winfo_width()
+                dropdown_h = self.dropdown_window.winfo_height()
+                
+                in_dropdown = (dropdown_x <= x <= dropdown_x + dropdown_w and 
+                              dropdown_y <= y <= dropdown_y + dropdown_h)
+                
+                # Check if click is in the entry/button
+                entry_x = self.winfo_rootx()
+                entry_y = self.winfo_rooty()
+                entry_w = self.winfo_width()
+                entry_h = self.winfo_height()
+                
+                in_entry = (entry_x <= x <= entry_x + entry_w and 
+                           entry_y <= y <= entry_y + entry_h)
+                
+                if not in_dropdown and not in_entry:
+                    self.hide_dropdown()
+            except:
+                pass
+
+
 class SalesView:
     def __init__(self, parent):
         self.parent = parent
@@ -675,6 +929,7 @@ class SalesView:
                 }
             
             self.customer_dropdown.configure(values=customer_values)
+            self.customer_dropdown.set("Walk-in Customer")
             
         except Exception as e:
             print(f"Error loading customers: {e}")
@@ -1602,13 +1857,12 @@ class CreditPaymentDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title("💳 Credit Sale - Payment Details")
-        self.dialog.geometry("420x320")
         self.dialog.resizable(False, False)
         self.dialog.transient(parent)
         self.dialog.grab_set()
 
-        # Center dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 80, parent.winfo_rooty() + 80))
+        # Center dialog on screen
+        center_window_on_screen(self.dialog, 420, 320)
 
         # Prevent closing with X without handling
         self.dialog.protocol("WM_DELETE_WINDOW", self.on_cancel)
@@ -1747,17 +2001,23 @@ class PaySaleCreditDialog:
     """Dialog to record a payment against a specific credit sale."""
     def __init__(self, parent, sale_data):
         self.parent = parent
-        self.sale_data = sale_data
-        self.balance = sale_data['total_amount'] - sale_data['paid_amount']
+        # Convert sqlite3.Row to dict if needed
+        if hasattr(sale_data, 'keys') and callable(getattr(sale_data, 'keys', None)):
+            self.sale_data = dict(sale_data)
+        else:
+            self.sale_data = sale_data
+        self.balance = self.sale_data['total_amount'] - self.sale_data['paid_amount']
         self.result = False
 
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Pay Credit - {sale_data['invoice_number']}")
-        self.dialog.geometry("460x480")
         self.dialog.resizable(True, True)
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 80, parent.winfo_rooty() + 80))
+        
+        # Center dialog on screen
+        center_window_on_screen(self.dialog, 460, 480)
+        
         self.dialog.protocol("WM_DELETE_WINDOW", self.on_cancel)
 
         self._build_ui()
@@ -1975,17 +2235,21 @@ class PaySaleCreditDialog:
 class SaleDetailsDialog:
     def __init__(self, parent, sale_data):
         self.parent = parent
-        self.sale_data = sale_data
+        # Convert sqlite3.Row to dict if needed
+        if hasattr(sale_data, 'keys') and callable(getattr(sale_data, 'keys', None)):
+            # It's already a dict-like object, ensure it's a real dict
+            self.sale_data = dict(sale_data)
+        else:
+            self.sale_data = sale_data
         
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Sale Details - {sale_data['invoice_number']}")
-        self.dialog.geometry("600x500")
         self.dialog.transient(parent)
         self.dialog.grab_set()
         
-        # Center dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
+        # Center dialog on screen
+        center_window_on_screen(self.dialog, 600, 500)
         
         self.create_details_view()
         
@@ -2124,12 +2388,11 @@ class DiscountDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title("Apply Discount")
-        self.dialog.geometry("750x600")
         self.dialog.transient(parent)
         self.dialog.grab_set()
         
-        # Center dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 100, parent.winfo_rooty() + 100))
+        # Center dialog on screen
+        center_window_on_screen(self.dialog, 750, 600)
         
         # Make dialog resizable
         self.dialog.minsize(450, 400)

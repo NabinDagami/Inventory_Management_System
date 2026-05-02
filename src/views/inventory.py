@@ -160,6 +160,20 @@ class InventoryView:
         self.export_menu.pack(side="left")
         self.export_menu.set("Export")
         
+        # Import button
+        self.import_btn = ctk.CTkButton(
+            action_frame,
+            text="📥 Import Excel",
+            width=130,
+            height=38,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=self.import_from_excel,
+            fg_color="#10B981",
+            hover_color="#059669",
+            corner_radius=8
+        )
+        self.import_btn.pack(side="left", padx=(0, 15))
+        
         # Search and Filter frame
         filter_frame = ctk.CTkFrame(main_frame)
         filter_frame.pack(fill="x", padx=10, pady=(0, 10))
@@ -363,7 +377,7 @@ class InventoryView:
         table_container.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         
         # Create treeview for products
-        columns = ("SKU", "Name", "Category", "Sub Category", "Brand", "Sub Brand", "Stock", "Normal Price", "Workshop Price", "Reorder Level")
+        columns = ("SKU", "Name", "Category", "Sub Category", "Brand", "Sub Brand", "Stock", "Qty Sold", "Normal Price", "Workshop Price", "Reorder Level")
         self.data_tree = ttk.Treeview(table_container, columns=columns, show="headings", height=20)
         
         # Apply centralized styling
@@ -380,7 +394,7 @@ class InventoryView:
         
         # Define headings and column widths - wider for better visibility
         column_widths = {"SKU": 100, "Name": 200, "Category": 120, "Sub Category": 120, 
-                        "Brand": 120, "Sub Brand": 120, "Stock": 80, 
+                        "Brand": 120, "Sub Brand": 120, "Stock": 80, "Qty Sold": 80,
                         "Normal Price": 100, "Workshop Price": 120, "Reorder Level": 100}
         
         for col in columns:
@@ -690,7 +704,7 @@ class InventoryView:
         """Load products data with proper formatting, stock colors, and summary stats"""
         query = """
             SELECT p.sku, p.name, c.category_name, sc.sub_category_name, 
-                   b.brand_name, sb.sub_brand_name, p.stock, 
+                   b.brand_name, sb.sub_brand_name, p.stock, p.qty_sold,
                    p.price_normal, p.price_workshop, p.reorder_level, p.cost_price
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.category_id
@@ -746,6 +760,7 @@ class InventoryView:
                 product['brand_name'] or "N/A",
                 product['sub_brand_name'] or "N/A",
                 stock_display,
+                product.get('qty_sold', 0),
                 self.format_price(product['price_normal']),
                 self.format_price(product['price_workshop']),
                 reorder
@@ -936,6 +951,7 @@ class InventoryView:
                         brand_name,
                         sub_brand_name,
                         stock_display,
+                        item.get('qty_sold', 0),
                         self.format_price(item['price_normal']),
                         self.format_price(item['price_workshop']),
                         reorder_level
@@ -1304,6 +1320,1295 @@ class InventoryView:
         # Reset dropdown to default
         self.export_menu.set("Export")
 
+    def import_from_excel(self):
+        """Import products from Excel with column mapping"""
+        if self.current_tab != "products":
+            messagebox.showinfo("Info", "Excel import is only available for Products tab.")
+            return
+        
+        from utils.excel_mapper import ExcelColumnMapper
+        
+        mapper = ExcelColumnMapper(self.parent)
+        mapper.browse_and_import()
+        
+        # Refresh the data after import
+        self.load_data()
+    
+    def _show_preview_dialog(self, preview_data):
+        """Show preview of data before import - smaller and responsive"""
+        # Calculate responsive dimensions
+        parent_width = self.parent.winfo_width()
+        parent_height = self.parent.winfo_height()
+        if parent_width < 100:
+            parent_width = 1200
+        if parent_height < 100:
+            parent_height = 800
+        
+        dialog_width = int(min(parent_width * 0.7, 800))
+        dialog_height = int(min(parent_height * 0.7, 550))
+        
+        preview_dialog = ctk.CTkToplevel(self.parent)
+        preview_dialog.title("Preview Excel Data")
+        preview_dialog.geometry(f"{dialog_width}x{dialog_height}")
+        preview_dialog.transient(self.parent)
+        preview_dialog.grab_set()
+        
+        # Center dialog with bounds checking
+        preview_dialog.update_idletasks()
+        x = self.parent.winfo_x() + (self.parent.winfo_width() // 2) - (dialog_width // 2)
+        y = self.parent.winfo_y() + (self.parent.winfo_height() // 2) - (dialog_height // 2)
+        x = max(0, min(x, preview_dialog.winfo_screenwidth() - dialog_width))
+        y = max(0, min(y, preview_dialog.winfo_screenheight() - dialog_height))
+        preview_dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        
+        # Header
+        header = ctk.CTkFrame(preview_dialog, corner_radius=10, fg_color="#3B82F6")
+        header.pack(fill="x", padx=15, pady=(15, 8))
+        ctk.CTkLabel(header, text="📋 Preview Excel Data", 
+                    font=ctk.CTkFont(size=16, weight="bold"), text_color="white").pack(pady=10)
+        
+        # Summary
+        total_sheets = len(preview_data)
+        total_rows = sum(sheet['total_rows'] for sheet in preview_data)
+        
+        summary_frame = ctk.CTkFrame(preview_dialog)
+        summary_frame.pack(fill="x", padx=15, pady=(0, 8))
+        
+        ctk.CTkLabel(summary_frame, 
+                    text=f"Found {total_sheets} sheets with approximately {total_rows} products",
+                    font=ctk.CTkFont(size=12, weight="bold")).pack(pady=8)
+        
+        # Preview tree
+        tree_frame = ctk.CTkFrame(preview_dialog)
+        tree_frame.pack(fill="both", expand=True, padx=15, pady=8)
+        
+        # Calculate columns based on dialog width
+        col_width = max(100, (dialog_width - 50) // 6)
+        name_width = max(200, (dialog_width - 50) - (col_width * 5))
+        
+        tree = ttk.Treeview(tree_frame, columns=("Sheet", "Product Name", "Brand", "Cost", "Price", "Stock"), 
+                           show="headings", height=12)
+        tree.pack(side="left", fill="both", expand=True)
+        
+        scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        scrollbar.pack(side="right", fill="y")
+        tree.configure(yscrollcommand=scrollbar.set)
+        
+        # Configure columns
+        for col in ("Sheet", "Product Name", "Brand", "Cost", "Price", "Stock"):
+            tree.heading(col, text=col)
+            tree.column(col, width=col_width if col != "Product Name" else name_width)
+        
+        # Insert preview data
+        for sheet_data in preview_data:
+            for product in sheet_data['sample_products']:
+                # Ensure name is a string
+                name = str(product['name']) if product['name'] else ""
+                tree.insert("", "end", values=(
+                    sheet_data['sheet_name'],
+                    name[:40],
+                    product['brand'],
+                    f"₹{product['cost']:.0f}",
+                    f"₹{product['price']:.0f}",
+                    product['stock']
+                ))
+        
+        # Buttons - responsive sizing
+        button_frame = ctk.CTkFrame(preview_dialog, fg_color="transparent")
+        button_frame.pack(fill="x", padx=15, pady=(8, 15))
+        
+        result = {"proceed": False}
+        
+        def on_import():
+            result["proceed"] = True
+            preview_dialog.destroy()
+        
+        def on_cancel():
+            result["proceed"] = False
+            preview_dialog.destroy()
+        
+        # Responsive button sizing
+        btn_width = max(120, min(180, dialog_width // 5))
+        ctk.CTkButton(button_frame, text="✓ Import This Data", command=on_import,
+                     fg_color="#10B981", hover_color="#059669",
+                     width=btn_width, height=40, font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(0, 8))
+        
+        ctk.CTkButton(button_frame, text="✗ Cancel", command=on_cancel,
+                     fg_color="#EF4444", hover_color="#DC2626",
+                     width=int(btn_width * 0.7), height=40, font=ctk.CTkFont(size=12)).pack(side="left")
+        
+        self.parent.wait_window(preview_dialog)
+        return result["proceed"]
+    
+    def _do_import_with_progress(self, importer, file_path):
+        """Show import progress and execute import - smaller and responsive"""
+        # Calculate responsive dimensions
+        parent_width = self.parent.winfo_width()
+        parent_height = self.parent.winfo_height()
+        if parent_width < 100:
+            parent_width = 1200
+        if parent_height < 100:
+            parent_height = 800
+        
+        dialog_width = int(min(parent_width * 0.45, 450))
+        dialog_height = int(min(parent_height * 0.5, 350))
+        
+        progress_dialog = ctk.CTkToplevel(self.parent)
+        progress_dialog.title("Importing...")
+        progress_dialog.geometry(f"{dialog_width}x{dialog_height}")
+        progress_dialog.transient(self.parent)
+        progress_dialog.grab_set()
+        
+        # Center dialog with bounds checking
+        progress_dialog.update_idletasks()
+        x = self.parent.winfo_x() + (self.parent.winfo_width() // 2) - (dialog_width // 2)
+        y = self.parent.winfo_y() + (self.parent.winfo_height() // 2) - (dialog_height // 2)
+        x = max(0, min(x, progress_dialog.winfo_screenwidth() - dialog_width))
+        y = max(0, min(y, progress_dialog.winfo_screenheight() - dialog_height))
+        progress_dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        
+        # Header
+        header = ctk.CTkFrame(progress_dialog, corner_radius=10, fg_color="#10B981")
+        header.pack(fill="x", padx=15, pady=(12, 8))
+        ctk.CTkLabel(header, text="📥 Importing Data", 
+                    font=ctk.CTkFont(size=14, weight="bold"), text_color="white").pack(pady=10)
+        
+        # Progress display
+        progress_text_height = int(dialog_height * 0.4)
+        progress_text = ctk.CTkTextbox(progress_dialog, height=progress_text_height, font=ctk.CTkFont(size=10))
+        progress_text.pack(fill="both", expand=True, padx=15, pady=8)
+        progress_text.insert("1.0", "Starting import...\n\n")
+        
+        # Status label
+        status_label = ctk.CTkLabel(progress_dialog, text="Importing...", 
+                                   font=ctk.CTkFont(size=11, weight="bold"))
+        status_label.pack(pady=(0, 8))
+        
+        # Close button
+        close_btn = ctk.CTkButton(progress_dialog, text="Close", 
+                                 command=progress_dialog.destroy,
+                                 state="disabled", width=100, height=35)
+        close_btn.pack(pady=(0, 12))
+        
+        # Update UI during import
+        def update_progress(msg):
+            progress_text.insert("end", f"{msg}\n")
+            progress_text.see("end")
+            progress_dialog.update_idletasks()
+        
+        # Run import (synchronous, but updates UI)
+        try:
+            total_imported = importer.import_file(file_path, progress_callback=update_progress)
+            
+            # Show completion
+            progress_text.insert("end", "\n" + "=" * 40 + "\n")
+            progress_text.insert("end", "✓ IMPORT COMPLETE!\n\n")
+            progress_text.insert("end", f"Sheets processed: {importer.stats['sheets_processed']}\n")
+            progress_text.insert("end", f"Products imported: {total_imported}\n")
+            progress_text.insert("end", f"Categories created: {importer.stats['categories_created']}\n")
+            progress_text.insert("end", f"Brands created: {importer.stats['brands_created']}\n")
+            
+            if importer.stats['errors']:
+                progress_text.insert("end", f"\nErrors: {len(importer.stats['errors'])}\n")
+                for error in importer.stats['errors'][:5]:
+                    progress_text.insert("end", f"  - {error}\n")
+            
+            status_label.configure(text="Import completed!", text_color="#10B981")
+            close_btn.configure(state="normal", text="Close & Refresh")
+            
+            # Refresh inventory
+            self.load_data()
+            
+        except Exception as e:
+            progress_text.insert("end", f"\n✗ ERROR: {str(e)}\n")
+            status_label.configure(text="Import failed!", text_color="#EF4444")
+            close_btn.configure(state="normal", text="Close")
+
+
+class ExcelImportDialog:
+    """Dialog for importing products from Excel with column mapping"""
+    def __init__(self, parent, title):
+        self.parent = parent
+        self.result = None
+        self.excel_data = None
+        self.excel_columns = []
+        self.preview_data = []
+        
+        # Database field mappings
+        self.db_fields = {
+            'name': {'label': 'Product Name*', 'required': True, 'type': 'text'},
+            'sku': {'label': 'SKU*', 'required': True, 'type': 'text'},
+            'category': {'label': 'Category', 'required': False, 'type': 'text'},
+            'sub_category': {'label': 'Sub Category', 'required': False, 'type': 'text'},
+            'brand': {'label': 'Brand', 'required': False, 'type': 'text'},
+            'sub_brand': {'label': 'Sub Brand', 'required': False, 'type': 'text'},
+            'description': {'label': 'Description', 'required': False, 'type': 'text'},
+            'stock': {'label': 'Stock Quantity', 'required': False, 'type': 'number', 'default': 0},
+            'cost_price': {'label': 'Cost Price*', 'required': True, 'type': 'number'},
+            'price_normal': {'label': 'Normal Price*', 'required': True, 'type': 'number'},
+            'price_workshop': {'label': 'Workshop Price*', 'required': True, 'type': 'number'},
+            'reorder_level': {'label': 'Reorder Level', 'required': False, 'type': 'number', 'default': 10}
+        }
+        
+        self.field_mappings = {}  # Will hold db_field -> excel_column mappings
+        
+        # Calculate responsive dimensions
+        self._calculate_responsive_dimensions()
+        
+        # Create dialog
+        self.dialog = ctk.CTkToplevel(parent)
+        self.dialog.title(title)
+        self.dialog.geometry(f"{self.dialog_width}x{self.dialog_height}")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+        
+        # Center dialog on parent window
+        self._center_dialog()
+        
+        # Create UI
+        self.create_ui()
+        
+        # Wait for dialog to close
+        self.dialog.wait_window()
+    
+    def _calculate_responsive_dimensions(self):
+        """Calculate responsive window dimensions based on parent window"""
+        parent_width = self.parent.winfo_width()
+        parent_height = self.parent.winfo_height()
+        
+        # Handle case where parent window might not be fully rendered
+        if parent_width < 100 or parent_height < 100:
+            parent_width = 1200
+            parent_height = 800
+        
+        # Calculate dialog size as percentage of parent (max 85% of parent)
+        dialog_width = int(min(parent_width * 0.85, 1100))
+        dialog_height = int(min(parent_height * 0.85, 800))
+        
+        # Set minimum dimensions
+        self.dialog_width = max(dialog_width, 800)
+        self.dialog_height = max(dialog_height, 650)
+    
+    def _center_dialog(self):
+        """Center the dialog on the parent window"""
+        self.dialog.update_idletasks()
+        self.parent.update_idletasks()
+        
+        parent_x = self.parent.winfo_rootx()
+        parent_y = self.parent.winfo_rooty()
+        parent_width = self.parent.winfo_width()
+        parent_height = self.parent.winfo_height()
+        
+        # Handle case where parent window might not be fully rendered
+        if parent_width < 100:
+            parent_width = 1200
+        if parent_height < 100:
+            parent_height = 800
+        
+        x = parent_x + (parent_width // 2) - (self.dialog_width // 2)
+        y = parent_y + (parent_height // 2) - (self.dialog_height // 2)
+        
+        # Ensure dialog stays within screen bounds
+        screen_width = self.dialog.winfo_screenwidth()
+        screen_height = self.dialog.winfo_screenheight()
+        
+        x = max(0, min(x, screen_width - self.dialog_width))
+        y = max(0, min(y, screen_height - self.dialog_height))
+        
+        self.dialog.geometry(f"{self.dialog_width}x{self.dialog_height}+{x}+{y}")
+    
+    def create_ui(self):
+        """Create the import dialog UI"""
+        # Main container
+        main_frame = ctk.CTkScrollableFrame(self.dialog)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Header
+        header = ctk.CTkFrame(main_frame, corner_radius=10, fg_color="#10B981")
+        header.pack(fill="x", pady=(0, 20))
+        ctk.CTkLabel(header, text="📥 Import Products from Excel", 
+                     font=ctk.CTkFont(size=20, weight="bold"), text_color="white").pack(pady=15)
+        
+        # Step 1: File Selection
+        file_frame = ctk.CTkFrame(main_frame)
+        file_frame.pack(fill="x", pady=(0, 20))
+        
+        ctk.CTkLabel(file_frame, text="Step 1: Select Excel File", 
+                     font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=15, pady=(15, 10))
+        
+        file_select_frame = ctk.CTkFrame(file_frame, fg_color="transparent")
+        file_select_frame.pack(fill="x", padx=15, pady=(0, 15))
+        
+        self.file_path_var = tk.StringVar()
+        self.file_entry = ctk.CTkEntry(file_select_frame, textvariable=self.file_path_var, 
+                                       placeholder_text="Select an Excel file...", width=500)
+        self.file_entry.pack(side="left", padx=(0, 10))
+        
+        ctk.CTkButton(file_select_frame, text="Browse...", command=self.browse_file,
+                     fg_color="#3B82F6", hover_color="#2563EB").pack(side="left")
+        
+        # Step 2: Column Mapping
+        self.mapping_frame = ctk.CTkFrame(main_frame)
+        self.mapping_frame.pack(fill="x", pady=(0, 20))
+        
+        ctk.CTkLabel(self.mapping_frame, text="Step 2: Map Excel Columns to Database Fields", 
+                     font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=15, pady=(15, 10))
+        
+        ctk.CTkLabel(self.mapping_frame, text="Select which Excel column corresponds to each database field.", 
+                     font=ctk.CTkFont(size=11), text_color="gray").pack(anchor="w", padx=15, pady=(0, 10))
+        
+        # Create mapping dropdowns
+        self.mapping_widgets = {}
+        mapping_grid = ctk.CTkFrame(self.mapping_frame, fg_color="transparent")
+        mapping_grid.pack(fill="x", padx=15, pady=(0, 15))
+        
+        row = 0
+        col = 0
+        for field_key, field_info in self.db_fields.items():
+            field_frame = ctk.CTkFrame(mapping_grid, fg_color="transparent")
+            field_frame.grid(row=row, column=col, padx=10, pady=5, sticky="w")
+            
+            label_text = field_info['label']
+            ctk.CTkLabel(field_frame, text=label_text, font=ctk.CTkFont(size=11, weight="bold")).pack(anchor="w")
+            
+            dropdown = ctk.CTkOptionMenu(
+                field_frame, 
+                values=["-- Not Mapped --"], 
+                width=200,
+                command=lambda x, fk=field_key: self.on_mapping_changed(fk, x)
+            )
+            dropdown.pack(anchor="w", pady=(2, 0))
+            
+            self.mapping_widgets[field_key] = dropdown
+            
+            col += 1
+            if col > 2:
+                col = 0
+                row += 1
+        
+        # Step 3: Preview
+        preview_frame = ctk.CTkFrame(main_frame)
+        preview_frame.pack(fill="both", expand=True, pady=(0, 20))
+        
+        ctk.CTkLabel(preview_frame, text="Step 3: Preview Data", 
+                     font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=15, pady=(15, 10))
+        
+        # Preview treeview
+        self.preview_tree = ttk.Treeview(preview_frame, show="headings", height=8)
+        self.preview_tree.pack(side="left", fill="both", expand=True, padx=(15, 5), pady=(0, 15))
+        
+        scrollbar = ttk.Scrollbar(preview_frame, orient="vertical", command=self.preview_tree.yview)
+        scrollbar.pack(side="right", fill="y", padx=(0, 15), pady=(0, 15))
+        self.preview_tree.configure(yscrollcommand=scrollbar.set)
+        
+        # Buttons
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x", pady=(0, 10))
+        
+        self.import_btn = ctk.CTkButton(button_frame, text="Import Products", command=self.import_data,
+                                       fg_color="#10B981", hover_color="#059669",
+                                       font=ctk.CTkFont(size=13, weight="bold"),
+                                       width=150, height=40, state="disabled")
+        self.import_btn.pack(side="left", padx=(0, 10))
+        
+        ctk.CTkButton(button_frame, text="Cancel", command=self.cancel,
+                     fg_color="#6B7280", hover_color="#4B5563",
+                     width=100, height=40).pack(side="left")
+        
+        # Status label
+        self.status_label = ctk.CTkLabel(main_frame, text="", font=ctk.CTkFont(size=11))
+        self.status_label.pack(anchor="w", pady=(10, 0))
+    
+    def browse_file(self):
+        """Browse for Excel file"""
+        from tkinter import filedialog
+        file_path = filedialog.askopenfilename(
+            title="Select Excel File",
+            filetypes=[("Excel files", "*.xlsx *.xls"), ("All files", "*.*")]
+        )
+        if file_path:
+            self.file_path_var.set(file_path)
+            self.load_excel_file(file_path)
+    
+    def load_excel_file(self, file_path):
+        """Load and parse Excel file with intelligent header detection"""
+        try:
+            import openpyxl
+            
+            # Load workbook
+            wb = openpyxl.load_workbook(file_path)
+            
+            # Check if multiple sheets exist
+            sheet_names = wb.sheetnames
+            if len(sheet_names) > 1:
+                # Show sheet selector with ALL sheets
+                selected_sheet = self.show_sheet_selector(wb, sheet_names)
+                if not selected_sheet:
+                    return  # User cancelled
+                
+                sheet = wb[selected_sheet]
+            else:
+                sheet = wb.active
+            
+            # Show first few rows to help identify header row (show first 15 columns for more data)
+            preview_rows = []
+            for row_num in range(1, min(10, sheet.max_row + 1)):
+                row = sheet[row_num]
+                row_data = [str(cell.value)[:25] if cell.value else "" for cell in row[:15]]  # Show 15 columns
+                preview_rows.append(f"Row {row_num}: {' | '.join(row_data)}")
+            
+            # Calculate responsive dimensions
+            parent_width = self.dialog.winfo_width()
+            parent_height = self.dialog.winfo_height()
+            if parent_width < 100:
+                parent_width = 1000
+            if parent_height < 100:
+                parent_height = 700
+            
+            dialog_width = int(min(parent_width * 0.65, 800))
+            dialog_height = int(min(parent_height * 0.75, 550))
+            
+            # Ask user to select header row
+            header_dialog = tk.Toplevel(self.dialog)
+            header_dialog.title("Select Header Row")
+            header_dialog.geometry(f"{dialog_width}x{dialog_height}")
+            header_dialog.transient(self.dialog)
+            header_dialog.grab_set()
+            header_dialog.configure(bg="#2D2D2D")
+            
+            # Center dialog with bounds checking
+            header_dialog.update_idletasks()
+            x = self.dialog.winfo_x() + (self.dialog.winfo_width() // 2) - (dialog_width // 2)
+            y = self.dialog.winfo_y() + (self.dialog.winfo_height() // 2) - (dialog_height // 2)
+            x = max(0, min(x, header_dialog.winfo_screenwidth() - dialog_width))
+            y = max(0, min(y, header_dialog.winfo_screenheight() - dialog_height))
+            header_dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+            
+            ctk.CTkLabel(header_dialog, text="Preview of Excel file (first 15 columns):", 
+                        font=ctk.CTkFont(size=12, weight="bold")).pack(pady=10)
+            
+            # Show preview with scrolling
+            preview_frame = ctk.CTkFrame(header_dialog, fg_color="#1E1E1E")
+            preview_frame.pack(fill="both", expand=True, padx=10, pady=5)
+            
+            preview_text = tk.Text(preview_frame, height=12, width=90, font=("Courier", 9), 
+                                  bg="#1E1E1E", fg="white", wrap="none")
+            scrollbar_y = ttk.Scrollbar(preview_frame, orient="vertical", command=preview_text.yview)
+            scrollbar_x = ttk.Scrollbar(preview_frame, orient="horizontal", command=preview_text.xview)
+            preview_text.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
+            
+            preview_text.pack(side="left", fill="both", expand=True)
+            scrollbar_y.pack(side="right", fill="y")
+            scrollbar_x.pack(side="bottom", fill="x")
+            
+            preview_text.insert("1.0", "\n".join(preview_rows))
+            preview_text.configure(state="disabled")
+            
+            ctk.CTkLabel(header_dialog, text="Select which row contains the column headers:", 
+                        font=ctk.CTkFont(size=12)).pack(pady=10)
+            
+            row_var = tk.IntVar(value=1)
+            row_frame = ctk.CTkFrame(header_dialog)
+            row_frame.pack(pady=10)
+            
+            for i in range(1, min(6, sheet.max_row + 1)):
+                ctk.CTkRadioButton(row_frame, text=f"Row {i}", variable=row_var, value=i).pack(anchor="w", pady=2)
+            
+            def on_confirm():
+                header_dialog.destroy()
+                self._process_excel_with_header_row(sheet, row_var.get())
+            
+            ctk.CTkButton(header_dialog, text="Confirm", command=on_confirm, 
+                         fg_color="#10B981", width=100).pack(pady=20)
+            
+            self.dialog.wait_window(header_dialog)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load Excel file:\n{e}")
+            self.status_label.configure(text="✗ Failed to load file", text_color="#EF4444")
+    
+    def _process_excel_with_header_row(self, sheet, header_row_idx):
+        """Process Excel file with specified header row"""
+        try:
+            # Get headers from the specified header row
+            raw_headers = []
+            for i, cell in enumerate(sheet[header_row_idx]):
+                if cell.value:
+                    raw_headers.append(str(cell.value).strip())
+                else:
+                    raw_headers.append(f"Column_{i+1}")
+            
+            print(f"DEBUG: Found headers: {raw_headers}")  # Debug output
+            
+            # Data starts from the row after the header
+            data_start_row = header_row_idx + 1
+            
+            # Get first data row for samples
+            first_row = []
+            for row in sheet.iter_rows(min_row=data_start_row, max_row=data_start_row, values_only=True):
+                first_row = [str(val) if val is not None else "" for val in row]
+                break
+            
+            # Create column options with samples
+            self.excel_columns = raw_headers
+            self.column_samples = {}
+            
+            column_options = ["-- Not Mapped --"]
+            for i, header in enumerate(raw_headers):
+                sample = first_row[i] if i < len(first_row) else ""
+                # Truncate sample if too long
+                sample_display = sample[:20] + "..." if len(sample) > 20 else sample
+                if sample_display:
+                    option_text = f"{header}  |  Ex: {sample_display}"
+                else:
+                    option_text = header
+                self.column_samples[header] = option_text
+                column_options.append(option_text)
+            
+            print(f"DEBUG: Column options: {column_options}")  # Debug output
+            
+            # Get preview data (first 5 rows)
+            self.preview_data = []
+            for row in sheet.iter_rows(min_row=data_start_row, max_row=data_start_row + 4, values_only=True):
+                self.preview_data.append([str(val) if val is not None else "" for val in row])
+            
+            # Get all data for import
+            self.excel_data = []
+            for row in sheet.iter_rows(min_row=data_start_row, values_only=True):
+                self.excel_data.append([str(val) if val is not None else "" for val in row])
+            
+            # Store raw headers for mapping
+            self.raw_column_options = ["-- Not Mapped --"] + raw_headers
+            
+            # Update dropdowns with column options showing samples
+            print(f"DEBUG: Updating {len(self.mapping_widgets)} dropdowns")  # Debug output
+            for field_key, dropdown in self.mapping_widgets.items():
+                try:
+                    dropdown.configure(values=column_options)
+                    print(f"DEBUG: Updated dropdown for {field_key}")  # Debug output
+                except Exception as dropdown_error:
+                    print(f"DEBUG: Error updating dropdown {field_key}: {dropdown_error}")
+            
+            # Try to auto-map columns based on name matching
+            self.auto_map_columns()
+            
+            # Update preview
+            self.update_preview()
+            
+            # Enable import button
+            self.import_btn.configure(state="normal")
+            
+            self.status_label.configure(text="✓ Loaded " + str(len(self.excel_data)) + " rows from Excel file", 
+                                       text_color="#10B981")
+            
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"DEBUG: Error in _process_excel_with_header_row: {error_details}")
+            messagebox.showerror("Error", f"Failed to load Excel file:\n{str(e)}\n\nSee console for details.")
+            self.status_label.configure(text="✗ Failed to load file", text_color="#EF4444")
+    
+    def auto_map_columns(self):
+        """Automatically map columns based on name similarity"""
+        excel_cols_lower = {col.lower(): col for col in self.excel_columns}
+        
+        for field_key, field_info in self.db_fields.items():
+            # Check for exact match
+            if field_key.lower() in excel_cols_lower:
+                self.mapping_widgets[field_key].set(excel_cols_lower[field_key.lower()])
+                continue
+            
+            # Check for label match
+            label_words = field_info['label'].lower().replace('*', '').strip().split()
+            for col in self.excel_columns:
+                col_lower = col.lower()
+                # Check if any significant word matches
+                for word in label_words:
+                    if len(word) > 2 and word in col_lower:
+                        self.mapping_widgets[field_key].set(col)
+                        break
+                else:
+                    continue
+                break
+    
+    def update_preview(self):
+        """Update preview treeview to show mapped data preview"""
+        # Clear existing columns and items
+        for item in self.preview_tree.get_children():
+            self.preview_tree.delete(item)
+        self.preview_tree['columns'] = []
+        
+        if not self.excel_columns or not self.preview_data:
+            return
+        
+        # Build columns: Show Excel column name + mapped field name
+        display_columns = []
+        
+        # Get all Excel columns that are mapped
+        for field_key, dropdown in self.mapping_widgets.items():
+            mapped_col = dropdown.get()
+            if mapped_col != "-- Not Mapped --" and mapped_col in self.excel_columns:
+                col_idx = self.excel_columns.index(mapped_col)
+                col_id = f"col_{col_idx}"
+                # Show both Excel column name and field name
+                header_text = f"{mapped_col}\n({self.db_fields[field_key]['label']})"
+                display_columns.append((col_id, header_text, col_idx))
+        
+        if not display_columns:
+            # No mappings yet, show first few Excel columns
+            for i, col_name in enumerate(self.excel_columns[:5]):
+                col_id = f"col_{i}"
+                display_columns.append((col_id, col_name, i))
+        
+        # Configure columns
+        self.preview_tree['columns'] = [c[0] for c in display_columns]
+        
+        for col_id, header_text, col_idx in display_columns:
+            # Truncate long headers
+            display_header = header_text[:25] + "..." if len(header_text) > 25 else header_text
+            self.preview_tree.heading(col_id, text=display_header, anchor="center")
+            self.preview_tree.column(col_id, width=120, anchor="center")
+        
+        # Populate data rows (first 5 rows)
+        for row_data in self.preview_data[:5]:
+            values = []
+            for col_id, header_text, col_idx in display_columns:
+                if col_idx < len(row_data):
+                    val = str(row_data[col_idx])
+                    # Truncate long values
+                    values.append(val[:25] + "..." if len(val) > 25 else val)
+                else:
+                    values.append("")
+            
+            self.preview_tree.insert("", "end", values=values)
+    
+    def import_data(self):
+        """Import data into database with preview confirmation"""
+        # Validate required fields
+        for field_key, field_info in self.db_fields.items():
+            if field_info['required']:
+                dropdown = self.mapping_widgets[field_key]
+                selected = dropdown.get()
+                if selected == "-- Not Mapped --":
+                    messagebox.showerror("Validation Error", 
+                                        f"Required field '{field_info['label']}' is not mapped!")
+                    return
+        
+        # Get mappings
+        mappings = {}
+        for field_key, dropdown in self.mapping_widgets.items():
+            selected_display = dropdown.get()
+            if selected_display != "-- Not Mapped --":
+                raw_col_name = selected_display.split("  |  ")[0] if "  |  " in selected_display else selected_display
+                if raw_col_name in self.excel_columns:
+                    mappings[field_key] = self.excel_columns.index(raw_col_name)
+        
+        # Analyze data first (don't import yet)
+        preview_data = self._analyze_import_data(mappings)
+        
+        if preview_data['total_products'] == 0:
+            messagebox.showerror("Import Error", "No valid products found to import!")
+            return
+        
+        # Show comprehensive preview dialog
+        if not self._show_import_preview_dialog(preview_data):
+            return  # User cancelled
+        
+        # Now actually import the data
+        imported_count = self._do_import(mappings, preview_data)
+        
+        self.result = {'imported_count': imported_count}
+        self.dialog.destroy()
+    
+    def _analyze_import_data(self, mappings):
+        """Analyze Excel data and return preview information"""
+        preview = {
+            'total_products': 0,
+            'new_categories': set(),
+            'new_brands': set(),
+            'existing_skus': [],
+            'sample_products': [],
+            'errors': []
+        }
+        
+        for row_idx, row_data in enumerate(self.excel_data):
+            try:
+                # Extract values
+                values = {}
+                for field_key, col_idx in mappings.items():
+                    val = row_data[col_idx] if col_idx < len(row_data) else ""
+                    field_info = self.db_fields[field_key]
+                    if field_info['type'] == 'number':
+                        try:
+                            val = float(val) if val else (field_info.get('default', 0))
+                        except:
+                            val = field_info.get('default', 0)
+                    values[field_key] = val
+                
+                # Skip if missing required fields
+                has_required = True
+                for field_key, field_info in self.db_fields.items():
+                    if field_info['required'] and not values.get(field_key):
+                        has_required = False
+                        break
+                
+                if not has_required:
+                    continue
+                
+                # Track categories and brands
+                category = values.get('category', '').strip()
+                brand = values.get('brand', '').strip()
+                
+                if category:
+                    # Check if category exists
+                    existing = db.execute_query("SELECT category_id FROM categories WHERE LOWER(category_name) = LOWER(?)", (category,))
+                    if not existing:
+                        preview['new_categories'].add(category)
+                
+                if brand:
+                    existing = db.execute_query("SELECT brand_id FROM brands WHERE LOWER(brand_name) = LOWER(?)", (brand,))
+                    if not existing:
+                        preview['new_brands'].add(brand)
+                
+                # Check for existing SKU
+                sku = values.get('sku', '').strip()
+                if sku:
+                    existing = db.execute_query("SELECT product_id FROM products WHERE sku = ?", (sku,))
+                    if existing:
+                        preview['existing_skus'].append(sku)
+                
+                # Add to sample products (first 10)
+                if len(preview['sample_products']) < 10:
+                    preview['sample_products'].append({
+                        'name': values.get('name', ''),
+                        'category': category or 'N/A',
+                        'brand': brand or 'N/A',
+                        'stock': values.get('stock', 0),
+                        'cost_price': values.get('cost_price', 0),
+                        'price_normal': values.get('price_normal', 0)
+                    })
+                
+                preview['total_products'] += 1
+                
+            except Exception as e:
+                preview['errors'].append(f"Row {row_idx + 2}: {str(e)}")
+        
+        return preview
+    
+    def _show_import_preview_dialog(self, preview_data):
+        """Show preview dialog with import summary"""
+        # Calculate responsive dimensions
+        parent_width = self.dialog.winfo_width()
+        parent_height = self.dialog.winfo_height()
+        if parent_width < 100:
+            parent_width = 1000
+        if parent_height < 100:
+            parent_height = 700
+        
+        dialog_width = int(min(parent_width * 0.85, 1000))
+        dialog_height = int(min(parent_height * 0.9, 750))
+        
+        preview_dialog = ctk.CTkToplevel(self.dialog)
+        preview_dialog.title("Import Preview - Review Before Importing")
+        preview_dialog.geometry(f"{dialog_width}x{dialog_height}")
+        preview_dialog.transient(self.dialog)
+        preview_dialog.grab_set()
+        
+        # Center dialog with bounds checking
+        preview_dialog.update_idletasks()
+        x = self.dialog.winfo_x() + (self.dialog.winfo_width() // 2) - (dialog_width // 2)
+        y = self.dialog.winfo_y() + (self.dialog.winfo_height() // 2) - (dialog_height // 2)
+        x = max(0, min(x, preview_dialog.winfo_screenwidth() - dialog_width))
+        y = max(0, min(y, preview_dialog.winfo_screenheight() - dialog_height))
+        preview_dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        
+        # Main container
+        main_frame = ctk.CTkScrollableFrame(preview_dialog)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Header
+        header = ctk.CTkFrame(main_frame, corner_radius=10, fg_color="#10B981")
+        header.pack(fill="x", pady=(0, 20))
+        ctk.CTkLabel(header, text="📋 Import Preview", 
+                    font=ctk.CTkFont(size=20, weight="bold"), text_color="white").pack(pady=15)
+        
+        # Summary Section
+        summary_frame = ctk.CTkFrame(main_frame)
+        summary_frame.pack(fill="x", pady=(0, 15))
+        
+        ctk.CTkLabel(summary_frame, text="📊 Import Summary", 
+                    font=ctk.CTkFont(size=14, weight="bold")).pack(anchor="w", padx=15, pady=(15, 10))
+        
+        summary_grid = ctk.CTkFrame(summary_frame, fg_color="transparent")
+        summary_grid.pack(fill="x", padx=15, pady=(0, 15))
+        
+        # Stats boxes
+        stats = [
+            ("📦 Products", str(preview_data['total_products']), "#3B82F6"),
+            ("🏷️ New Categories", str(len(preview_data['new_categories'])), "#8B5CF6"),
+            ("🏭 New Brands", str(len(preview_data['new_brands'])), "#F59E0B"),
+        ]
+        
+        for i, (label, value, color) in enumerate(stats):
+            stat_box = ctk.CTkFrame(summary_grid, fg_color=color, corner_radius=8)
+            stat_box.grid(row=0, column=i, padx=5, pady=5, sticky="ew")
+            stat_box.grid_columnconfigure(0, weight=1)
+            ctk.CTkLabel(stat_box, text=label, font=ctk.CTkFont(size=11), text_color="white").pack(pady=(8, 2))
+            ctk.CTkLabel(stat_box, text=value, font=ctk.CTkFont(size=20, weight="bold"), text_color="white").pack(pady=(0, 8))
+        
+        # New Categories Section
+        if preview_data['new_categories']:
+            cat_frame = ctk.CTkFrame(main_frame)
+            cat_frame.pack(fill="x", pady=(0, 15))
+            ctk.CTkLabel(cat_frame, text="🏷️ New Categories to Create", 
+                        font=ctk.CTkFont(size=13, weight="bold")).pack(anchor="w", padx=15, pady=(10, 5))
+            cat_text = ", ".join(sorted(list(preview_data['new_categories']))[:20])
+            if len(preview_data['new_categories']) > 20:
+                cat_text += f"... and {len(preview_data['new_categories']) - 20} more"
+            ctk.CTkLabel(cat_frame, text=cat_text, font=ctk.CTkFont(size=11), 
+                        wraplength=700).pack(anchor="w", padx=15, pady=(0, 10))
+        
+        # New Brands Section
+        if preview_data['new_brands']:
+            brand_frame = ctk.CTkFrame(main_frame)
+            brand_frame.pack(fill="x", pady=(0, 15))
+            ctk.CTkLabel(brand_frame, text="🏭 New Brands to Create", 
+                        font=ctk.CTkFont(size=13, weight="bold")).pack(anchor="w", padx=15, pady=(10, 5))
+            brand_text = ", ".join(sorted(list(preview_data['new_brands']))[:20])
+            if len(preview_data['new_brands']) > 20:
+                brand_text += f"... and {len(preview_data['new_brands']) - 20} more"
+            ctk.CTkLabel(brand_frame, text=brand_text, font=ctk.CTkFont(size=11), 
+                        wraplength=700).pack(anchor="w", padx=15, pady=(0, 10))
+        
+        # Existing SKUs Section
+        if preview_data['existing_skus']:
+            existing_frame = ctk.CTkFrame(main_frame, fg_color="#FEF3C7")
+            existing_frame.pack(fill="x", pady=(0, 15))
+            ctk.CTkLabel(existing_frame, text="⚠️ Existing SKUs (Will be updated)", 
+                        font=ctk.CTkFont(size=13, weight="bold"), text_color="#92400E").pack(anchor="w", padx=15, pady=(10, 5))
+            sku_text = ", ".join(preview_data['existing_skus'][:10])
+            if len(preview_data['existing_skus']) > 10:
+                sku_text += f"... and {len(preview_data['existing_skus']) - 10} more"
+            ctk.CTkLabel(existing_frame, text=sku_text, font=ctk.CTkFont(size=11), 
+                        text_color="#92400E").pack(anchor="w", padx=15, pady=(0, 10))
+        
+        # Sample Products Section
+        if preview_data['sample_products']:
+            sample_frame = ctk.CTkFrame(main_frame)
+            sample_frame.pack(fill="both", expand=True, pady=(0, 15))
+            ctk.CTkLabel(sample_frame, text="📦 Sample Products (First 10)", 
+                        font=ctk.CTkFont(size=13, weight="bold")).pack(anchor="w", padx=15, pady=(10, 5))
+            
+            # Sample treeview
+            sample_tree = ttk.Treeview(sample_frame, columns=("Name", "Category", "Brand", "Stock", "Cost", "Price"), 
+                                       show="headings", height=8)
+            sample_tree.pack(side="left", fill="both", expand=True, padx=(15, 5), pady=(0, 10))
+            
+            scrollbar = ttk.Scrollbar(sample_frame, orient="vertical", command=sample_tree.yview)
+            scrollbar.pack(side="right", fill="y", padx=(0, 15), pady=(0, 10))
+            sample_tree.configure(yscrollcommand=scrollbar.set)
+            
+            # Configure columns
+            for col in ("Name", "Category", "Brand", "Stock", "Cost", "Price"):
+                sample_tree.heading(col, text=col)
+                sample_tree.column(col, width=100 if col != "Name" else 200)
+            
+            # Insert sample data
+            for prod in preview_data['sample_products']:
+                sample_tree.insert("", "end", values=(
+                    prod['name'][:40],
+                    prod['category'],
+                    prod['brand'],
+                    prod['stock'],
+                    f"₹{prod['cost_price']}",
+                    f"₹{prod['price_normal']}"
+                ))
+        
+        # Errors Section
+        if preview_data['errors']:
+            error_frame = ctk.CTkFrame(main_frame, fg_color="#FEE2E2")
+            error_frame.pack(fill="x", pady=(0, 15))
+            ctk.CTkLabel(error_frame, text=f"⚠️ Errors ({len(preview_data['errors'])})", 
+                        font=ctk.CTkFont(size=13, weight="bold"), text_color="#DC2626").pack(anchor="w", padx=15, pady=(10, 5))
+            for error in preview_data['errors'][:5]:
+                ctk.CTkLabel(error_frame, text=f"  • {error}", font=ctk.CTkFont(size=10), 
+                            text_color="#DC2626").pack(anchor="w", padx=15)
+            if len(preview_data['errors']) > 5:
+                ctk.CTkLabel(error_frame, text=f"  ... and {len(preview_data['errors']) - 5} more errors", 
+                            font=ctk.CTkFont(size=10), text_color="#DC2626").pack(anchor="w", padx=15, pady=(0, 10))
+        
+        # Buttons
+        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        button_frame.pack(fill="x", pady=(10, 0))
+        
+        result = {"confirmed": False}
+        
+        def on_confirm():
+            result["confirmed"] = True
+            preview_dialog.destroy()
+        
+        def on_cancel():
+            result["confirmed"] = False
+            preview_dialog.destroy()
+        
+        ctk.CTkButton(button_frame, text="✓ Proceed with Import", command=on_confirm,
+                     fg_color="#10B981", hover_color="#059669",
+                     width=180, height=45, font=ctk.CTkFont(size=13, weight="bold")).pack(side="left", padx=(0, 10))
+        
+        ctk.CTkButton(button_frame, text="✗ Cancel Import", command=on_cancel,
+                     fg_color="#EF4444", hover_color="#DC2626",
+                     width=150, height=45, font=ctk.CTkFont(size=13)).pack(side="left")
+        
+        # Wait for dialog
+        self.dialog.wait_window(preview_dialog)
+        return result["confirmed"]
+    
+    def _do_import(self, mappings, preview_data):
+        """Actually perform the import"""
+        imported_count = 0
+        errors = []
+        
+        for row_idx, row_data in enumerate(self.excel_data):
+            try:
+                # Extract values
+                values = {}
+                for field_key, col_idx in mappings.items():
+                    val = row_data[col_idx] if col_idx < len(row_data) else ""
+                    field_info = self.db_fields[field_key]
+                    if field_info['type'] == 'number':
+                        try:
+                            val = float(val) if val else (field_info.get('default', 0))
+                        except:
+                            val = field_info.get('default', 0)
+                    values[field_key] = val
+                
+                # Skip if missing required fields
+                skip_row = False
+                for field_key, field_info in self.db_fields.items():
+                    if field_info['required'] and not values.get(field_key):
+                        skip_row = True
+                        break
+                
+                if skip_row:
+                    continue
+                
+                # Handle category/sub_category/brand/sub_brand
+                category_id = self.get_or_create_category(values.get('category', ''))
+                sub_category_id = self.get_or_create_sub_category(values.get('sub_category', ''), category_id)
+                brand_id = self.get_or_create_brand(values.get('brand', ''))
+                sub_brand_id = self.get_or_create_sub_brand(values.get('sub_brand', ''), brand_id)
+                
+                # Generate SKU if not provided
+                sku = values.get('sku', '').strip()
+                if not sku:
+                    sku = SKUGenerator.generate_sku(category_id, brand_id)
+                
+                # Check if SKU already exists
+                existing = db.execute_query("SELECT product_id FROM products WHERE sku = ?", (sku,))
+                if existing:
+                    db.execute_update(
+                        """UPDATE products SET name=?, category_id=?, sub_category_id=?, 
+                           brand_id=?, sub_brand_id=?, description=?, stock=?, 
+                           cost_price=?, price_normal=?, price_workshop=?, reorder_level=?
+                           WHERE sku=?""",
+                        (values.get('name', ''), category_id, sub_category_id, brand_id, sub_brand_id,
+                         values.get('description', ''), values.get('stock', 0),
+                         values.get('cost_price', 0), values.get('price_normal', 0),
+                         values.get('price_workshop', 0), values.get('reorder_level', 10), sku)
+                    )
+                else:
+                    db.execute_insert(
+                        """INSERT INTO products (name, sku, category_id, sub_category_id, 
+                           brand_id, sub_brand_id, description, stock, cost_price, 
+                           price_normal, price_workshop, reorder_level, is_active)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+                        (values.get('name', ''), sku, category_id, sub_category_id, brand_id, sub_brand_id,
+                         values.get('description', ''), values.get('stock', 0),
+                         values.get('cost_price', 0), values.get('price_normal', 0),
+                         values.get('price_workshop', 0), values.get('reorder_level', 10))
+                    )
+                
+                imported_count += 1
+                
+            except Exception as e:
+                errors.append(f"Row {row_idx + 2}: {str(e)}")
+        
+        # Show results
+        if errors:
+            error_msg = "Import completed with some errors:\n\n" + "\n".join(errors[:10])
+            if len(errors) > 10:
+                error_msg += f"\n... and {len(errors) - 10} more errors"
+            messagebox.showwarning("Import Results", error_msg)
+        
+        return imported_count
+    
+    def get_or_create_category(self, category_name):
+        """Get or create category by name"""
+        if not category_name:
+            return None
+        
+        category = db.execute_query("SELECT category_id FROM categories WHERE LOWER(category_name) = LOWER(?)", 
+                                    (category_name,))
+        if category:
+            return category[0]['category_id']
+        
+        return db.execute_insert("INSERT INTO categories (category_name) VALUES (?)", (category_name,))
+    
+    def get_or_create_sub_category(self, sub_category_name, category_id):
+        """Get or create sub category by name"""
+        if not sub_category_name or not category_id:
+            return None
+        
+        sub_category = db.execute_query(
+            "SELECT sub_category_id FROM sub_categories WHERE LOWER(sub_category_name) = LOWER(?) AND category_id = ?",
+            (sub_category_name, category_id))
+        if sub_category:
+            return sub_category[0]['sub_category_id']
+        
+        return db.execute_insert(
+            "INSERT INTO sub_categories (sub_category_name, category_id) VALUES (?, ?)",
+            (sub_category_name, category_id))
+    
+    def get_or_create_brand(self, brand_name):
+        """Get or create brand by name"""
+        if not brand_name:
+            return None
+        
+        brand = db.execute_query("SELECT brand_id FROM brands WHERE LOWER(brand_name) = LOWER(?)", 
+                                 (brand_name,))
+        if brand:
+            return brand[0]['brand_id']
+        
+        return db.execute_insert("INSERT INTO brands (brand_name) VALUES (?)", (brand_name,))
+    
+    def get_or_create_sub_brand(self, sub_brand_name, brand_id):
+        """Get or create sub brand by name"""
+        if not sub_brand_name or not brand_id:
+            return None
+        
+        sub_brand = db.execute_query(
+            "SELECT sub_brand_id FROM sub_brands WHERE LOWER(sub_brand_name) = LOWER(?) AND brand_id = ?",
+            (sub_brand_name, brand_id))
+        if sub_brand:
+            return sub_brand[0]['sub_brand_id']
+        
+        return db.execute_insert(
+            "INSERT INTO sub_brands (sub_brand_name, brand_id) VALUES (?, ?)",
+            (sub_brand_name, brand_id))
+    
+    def on_mapping_changed(self, field_key, selected_value):
+        """Called when a mapping dropdown is changed - refreshes the preview"""
+        # Update the preview to show the new mapping
+        self.update_preview()
+    
+    def cancel(self):
+        """Cancel import"""
+        self.result = None
+        self.dialog.destroy()
+
+    def show_sheet_selector(self, wb, sheet_names):
+        """Show sheet selector dialog with navigation to preview and back"""
+        self._selected_sheet_result = None
+        
+        # Calculate responsive dimensions
+        parent_width = self.dialog.winfo_width()
+        parent_height = self.dialog.winfo_height()
+        if parent_width < 100:
+            parent_width = 1000
+        if parent_height < 100:
+            parent_height = 700
+        
+        dialog_width = int(min(parent_width * 0.7, 700))
+        dialog_height = int(min(parent_height * 0.85, 750))
+        
+        # Create main sheet selector dialog
+        selector_dialog = tk.Toplevel(self.dialog)
+        selector_dialog.title("Select Sheet")
+        selector_dialog.geometry(f"{dialog_width}x{dialog_height}")
+        selector_dialog.transient(self.dialog)
+        selector_dialog.grab_set()
+        selector_dialog.configure(bg="#2D2D2D")
+        
+        # Center on parent
+        selector_dialog.update_idletasks()
+        x = self.dialog.winfo_x() + (self.dialog.winfo_width() // 2) - (dialog_width // 2)
+        y = self.dialog.winfo_y() + (self.dialog.winfo_height() // 2) - (dialog_height // 2)
+        x = max(0, min(x, selector_dialog.winfo_screenwidth() - dialog_width))
+        y = max(0, min(y, selector_dialog.winfo_screenheight() - dialog_height))
+        selector_dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        
+        # Header
+        header_frame = ctk.CTkFrame(selector_dialog, corner_radius=0, fg_color="#3B82F6")
+        header_frame.pack(fill="x", pady=0)
+        ctk.CTkLabel(header_frame, text="📑 Select Sheet to Import", 
+                    font=ctk.CTkFont(size=16, weight="bold"), text_color="white").pack(pady=15)
+        
+        ctk.CTkLabel(selector_dialog, text=f"This Excel file has {len(sheet_names)} sheets. Select a sheet:", 
+                    font=ctk.CTkFont(size=12), text_color="gray").pack(pady=(10, 5))
+        
+        # Sheet list frame
+        list_frame = ctk.CTkFrame(selector_dialog, fg_color="#2D2D2D")
+        list_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        
+        # Create listbox for ALL sheets
+        sheet_listbox = tk.Listbox(list_frame, font=("Segoe UI", 13), 
+                                   bg="#2D2D2D", fg="white",
+                                   selectbackground="#3B82F6", 
+                                   selectforeground="white",
+                                   borderwidth=1, highlightthickness=1,
+                                   height=25, width=50)
+        scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=sheet_listbox.yview)
+        sheet_listbox.configure(yscrollcommand=scrollbar.set)
+        
+        sheet_listbox.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Populate ALL sheet names
+        for name in sheet_names:
+            sheet_listbox.insert(tk.END, name)
+        
+        def on_select_clicked():
+            """Handle Select button click"""
+            selection = sheet_listbox.curselection()
+            if not selection:
+                messagebox.showwarning("Warning", "Please select a sheet first")
+                return
+            
+            sheet_name = sheet_listbox.get(selection[0])
+            
+            # Hide selector and show preview
+            selector_dialog.withdraw()
+            preview_result = self.show_sheet_preview(wb, sheet_name, selector_dialog)
+            
+            if preview_result == "SELECT":
+                self._selected_sheet_result = sheet_name
+                selector_dialog.destroy()
+            elif preview_result == "BACK":
+                # Show selector again
+                selector_dialog.deiconify()
+        
+        # Button frame
+        btn_frame = ctk.CTkFrame(selector_dialog, fg_color="transparent")
+        btn_frame.pack(fill="x", pady=15, padx=20)
+        
+        ctk.CTkButton(btn_frame, text="Preview Sheet", command=on_select_clicked,
+                     fg_color="#3B82F6", hover_color="#2563EB",
+                     width=150, height=40, font=ctk.CTkFont(size=12, weight="bold")).pack(side="left")
+        
+        ctk.CTkButton(btn_frame, text="Cancel", command=lambda: selector_dialog.destroy(),
+                     fg_color="#6B7280", hover_color="#4B5563",
+                     width=100, height=40).pack(side="right")
+        
+        self.dialog.wait_window(selector_dialog)
+        return self._selected_sheet_result
+
+    def show_sheet_preview(self, wb, sheet_name, parent_dialog):
+        """Show detailed preview of selected sheet with BACK button - responsive and shows more data"""
+        result = None
+        
+        # Calculate responsive dimensions
+        parent_width = self.dialog.winfo_width()
+        parent_height = self.dialog.winfo_height()
+        if parent_width < 100:
+            parent_width = 1000
+        if parent_height < 100:
+            parent_height = 700
+        
+        dialog_width = int(min(parent_width * 0.9, 1100))
+        dialog_height = int(min(parent_height * 0.9, 750))
+        
+        preview_dialog = tk.Toplevel(self.dialog)
+        preview_dialog.title(f"Preview: {sheet_name}")
+        preview_dialog.geometry(f"{dialog_width}x{dialog_height}")
+        preview_dialog.transient(self.dialog)
+        preview_dialog.grab_set()
+        preview_dialog.configure(bg="#2D2D2D")
+        
+        # Center on parent
+        preview_dialog.update_idletasks()
+        x = self.dialog.winfo_x() + (self.dialog.winfo_width() // 2) - (dialog_width // 2)
+        y = self.dialog.winfo_y() + (self.dialog.winfo_height() // 2) - (dialog_height // 2)
+        x = max(0, min(x, preview_dialog.winfo_screenwidth() - dialog_width))
+        y = max(0, min(y, preview_dialog.winfo_screenheight() - dialog_height))
+        preview_dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        
+        # Header
+        header_frame = ctk.CTkFrame(preview_dialog, corner_radius=0, fg_color="#10B981")
+        header_frame.pack(fill="x", pady=0)
+        ctk.CTkLabel(header_frame, text=f"📄 {sheet_name}", 
+                    font=ctk.CTkFont(size=16, weight="bold"), text_color="white").pack(pady=15)
+        
+        # Content frame
+        content_frame = ctk.CTkFrame(preview_dialog, fg_color="#2D2D2D")
+        content_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        
+        # Show more columns and rows in preview
+        ctk.CTkLabel(content_frame, text="Sheet Content Preview (First 20 rows, first 20 columns):", 
+                    font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
+        
+        # Preview text widget with more content
+        preview_text = tk.Text(content_frame, font=("Courier", 10), 
+                              bg="#1E1E1E", fg="white",
+                              borderwidth=1, highlightthickness=1,
+                              height=28, width=100, wrap="none")
+        scrollbar_y = ttk.Scrollbar(content_frame, orient="vertical", command=preview_text.yview)
+        scrollbar_x = ttk.Scrollbar(content_frame, orient="horizontal", command=preview_text.xview)
+        preview_text.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
+        
+        preview_text.pack(side="top", fill="both", expand=True)
+        scrollbar_y.pack(side="right", fill="y")
+        scrollbar_x.pack(side="bottom", fill="x")
+        
+        # Load and display sheet content - show more data
+        try:
+            sheet = wb[sheet_name]
+            preview_lines = []
+            
+            # Get first 20 rows, 20 columns for more comprehensive preview
+            for row_num in range(1, min(21, sheet.max_row + 1)):
+                row = sheet[row_num]
+                row_data = []
+                for cell in row[:20]:  # First 20 columns
+                    val = cell.value
+                    if val is not None:
+                        # Truncate long values
+                        text = str(val)[:30]
+                        row_data.append(text)
+                    else:
+                        row_data.append("")
+                preview_lines.append(f"Row {row_num:2}: {' | '.join(row_data)}")
+            
+            preview_text.insert("1.0", "\n".join(preview_lines))
+            preview_text.configure(state="disabled")
+        except Exception as e:
+            preview_text.insert("1.0", f"Error loading preview: {str(e)}")
+            preview_text.configure(state="disabled")
+        
+        # Button frame
+        btn_frame = ctk.CTkFrame(preview_dialog, fg_color="transparent")
+        btn_frame.pack(fill="x", pady=15, padx=20)
+        
+        def on_back():
+            nonlocal result
+            result = "BACK"
+            preview_dialog.destroy()
+        
+        def on_select():
+            nonlocal result
+            result = "SELECT"
+            preview_dialog.destroy()
+        
+        ctk.CTkButton(btn_frame, text="← Back", command=on_back,
+                     fg_color="#6B7280", hover_color="#4B5563",
+                     width=120, height=40, font=ctk.CTkFont(size=12)).pack(side="left", padx=(0, 10))
+        
+        ctk.CTkButton(btn_frame, text="Select This Sheet", command=on_select,
+                     fg_color="#10B981", hover_color="#059669", 
+                     width=180, height=40, font=ctk.CTkFont(size=12, weight="bold")).pack(side="right")
+        
+        self.dialog.wait_window(preview_dialog)
+        return result
+
 
 class ProductDialog:
     def __init__(self, parent, title, product_data=None):
@@ -1317,8 +2622,22 @@ class ProductDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         
-        # Center dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 100, parent.winfo_rooty() + 50))
+        # Center dialog on parent window
+        self.dialog.update_idletasks()
+        parent.update_idletasks()
+        
+        parent_x = parent.winfo_rootx()
+        parent_y = parent.winfo_rooty()
+        parent_width = parent.winfo_width()
+        parent_height = parent.winfo_height()
+        
+        dialog_width = 500
+        dialog_height = 750
+        
+        x = parent_x + (parent_width // 2) - (dialog_width // 2)
+        y = parent_y + (parent_height // 2) - (dialog_height // 2)
+        
+        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
         
         # Load categories and brands
         self.load_categories_and_brands()
@@ -1566,9 +2885,10 @@ class ProductDialog:
                 )
                 # Reload sub categories
                 self.sub_categories = db.execute_query("SELECT sub_category_id, sub_category_name, category_id FROM sub_categories ORDER BY sub_category_name")
-                # Update dropdown with filtered items
-                self._update_sub_categories(category_id)
-                # Select the new sub category
+                # Update dropdown with filtered items (includes the new one)
+                filtered_sub_categories = [sc for sc in self.sub_categories if sc['category_id'] == category_id]
+                self.sub_category_dropdown.set_items(filtered_sub_categories)
+                # Select the new sub category immediately
                 self.sub_category_dropdown.set(dialog.result['name'], sub_category_id)
                 messagebox.showinfo("Success", "Sub Category added successfully!")
             except Exception as e:
@@ -1596,9 +2916,10 @@ class ProductDialog:
                 )
                 # Reload sub brands
                 self.sub_brands = db.execute_query("SELECT sub_brand_id, sub_brand_name, brand_id FROM sub_brands ORDER BY sub_brand_name")
-                # Update dropdown with filtered items
-                self._update_sub_brands(brand_id)
-                # Select the new sub brand
+                # Update dropdown with filtered items (includes the new one)
+                filtered_sub_brands = [sb for sb in self.sub_brands if sb['brand_id'] == brand_id]
+                self.sub_brand_dropdown.set_items(filtered_sub_brands)
+                # Select the new sub brand immediately
                 self.sub_brand_dropdown.set(dialog.result['name'], sub_brand_id)
                 messagebox.showinfo("Success", "Sub Brand added successfully!")
             except Exception as e:
@@ -2500,7 +3821,7 @@ class SearchableDropdown(ctk.CTkFrame):
         search_entry.focus()
         
         # Separator
-        separator = ctk.CTkFrame(dropdown_frame, height=1, fg_color=(("#E5E7EB", "#404040")))
+        separator = ctk.CTkFrame(dropdown_frame, height=1, fg_color=("#E5E7EB", "#404040"))
         separator.pack(fill="x", padx=10, pady=5)
         
         # Add New button (if add_command is provided)
@@ -2510,7 +3831,7 @@ class SearchableDropdown(ctk.CTkFrame):
                                     font=ctk.CTkFont(size=11), command=self._on_add_new)
             add_btn.pack(anchor="w", padx=10, pady=(0, 5))
             
-            separator2 = ctk.CTkFrame(dropdown_frame, height=1, fg_color=(("#E5E7EB", "#404040")))
+            separator2 = ctk.CTkFrame(dropdown_frame, height=1, fg_color=("#E5E7EB", "#404040"))
             separator2.pack(fill="x", padx=10, pady=5)
         
         # List frame

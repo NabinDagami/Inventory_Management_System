@@ -28,9 +28,10 @@ def create_executable():
     # PyInstaller command
     cmd = [
         'pyinstaller',
-        '--onefile',                    # Create single executable
-        '--windowed',                   # Remove console window
-        '--name=InventoryPro',          # Executable name
+        # '--onefile',                  # Create single executable (disabled for folder mode)
+        '--windowed',                   # Remove console window (no console shown)
+        '--noconsole',                  # Extra flag to ensure no console
+        '--name=Inventory_Beta',        # Executable name
         '--icon=assets/icons/app_icon.png',  # App icon
         '--add-data=assets;assets',     # Include assets folder
         '--add-data=data;data',         # Include data folder (if exists)
@@ -41,6 +42,27 @@ def create_executable():
         '--hidden-import=openpyxl',
         '--hidden-import=babel',
         '--hidden-import=tkcalendar',
+        '--hidden-import=src',
+        '--hidden-import=src.models.database',
+        '--hidden-import=src.models',
+        '--hidden-import=src.views.dashboard',
+        '--hidden-import=src.views.inventory',
+        '--hidden-import=src.views.sales',
+        '--hidden-import=src.views.purchases',
+        '--hidden-import=src.views.customers',
+        '--hidden-import=src.views.suppliers',
+        '--hidden-import=src.views.statements',
+        '--hidden-import=src.views.reports',
+        '--hidden-import=src.views.settings',
+        '--hidden-import=src.views.payment_dialog',
+        '--hidden-import=src.utils.logger',
+        '--hidden-import=src.utils.simple_table_styles',
+        '--hidden-import=src.utils.format_utils',
+        '--hidden-import=src.utils.export_manager',
+        '--hidden-import=src.utils.sku_generator',
+        '--hidden-import=src.modules.sales',
+        '--hidden-import=src.modules',
+        '--paths=src',                  # Add src to Python path
         '--clean',                      # Clean cache
         'main.py'
     ]
@@ -53,12 +75,14 @@ def create_executable():
         print("Build successful!")
         print(result.stdout)
         
-        # Check if executable was created
-        exe_path = Path('dist/InventoryPro.exe')
+        # Check if executable was created (folder mode creates dist/Inventory_Beta/Inventory_Beta.exe)
+        exe_path = Path('dist/Inventory_Beta/Inventory_Beta.exe')
         if exe_path.exists():
-            size = exe_path.stat().st_size / (1024 * 1024)  # Size in MB
+            # Calculate total folder size
+            total_size = sum(f.stat().st_size for f in Path('dist/Inventory_Beta').rglob('*') if f.is_file())
+            total_size_mb = total_size / (1024 * 1024)
             print(f"Executable created: {exe_path}")
-            print(f"Size: {size:.1f} MB")
+            print(f"Total folder size: {total_size_mb:.1f} MB")
             
             # Copy required files to dist folder
             copy_required_files()
@@ -103,28 +127,25 @@ def copy_required_files():
 def create_installer_script():
     """Create a simple installer script"""
     installer_script = '''@echo off
-echo Installing Inventory Pro...
+echo Installing Inventory Beta...
 echo.
 
 REM Create application directory
-if not exist "%PROGRAMFILES%\\InventoryPro" (
-    mkdir "%PROGRAMFILES%\\InventoryPro"
+if not exist "%PROGRAMFILES%\\Inventory_Beta" (
+    mkdir "%PROGRAMFILES%\\Inventory_Beta"
 )
 
 REM Copy files
-copy "InventoryPro.exe" "%PROGRAMFILES%\\InventoryPro\\"
-xcopy "assets" "%PROGRAMFILES%\\InventoryPro\\assets\\" /E /I /Q
-xcopy "data" "%PROGRAMFILES%\\InventoryPro\\data\\" /E /I /Q 2>nul
-xcopy "reports" "%PROGRAMFILES%\\InventoryPro\\reports\\" /E /I /Q 2>nul
+xcopy "Inventory_Beta" "%PROGRAMFILES%\\Inventory_Beta\\" /E /I /Q
 
 REM Create desktop shortcut
 echo Set oWS = WScript.CreateObject("WScript.Shell") > "%TEMP%\\shortcut.vbs"
-echo sLinkFile = "%USERPROFILE%\\Desktop\\Inventory Pro.lnk" >> "%TEMP%\\shortcut.vbs"
+echo sLinkFile = "%USERPROFILE%\\Desktop\\Inventory Beta.lnk" >> "%TEMP%\\shortcut.vbs"
 echo Set oLink = oWS.CreateShortcut(sLinkFile) >> "%TEMP%\\shortcut.vbs"
-echo oLink.TargetPath = "%PROGRAMFILES%\\InventoryPro\\InventoryPro.exe" >> "%TEMP%\\shortcut.vbs"
-echo oLink.WorkingDirectory = "%PROGRAMFILES%\\InventoryPro" >> "%TEMP%\\shortcut.vbs"
-echo oLink.IconLocation = "%PROGRAMFILES%\\InventoryPro\\assets\\icons\\app_icon.png" >> "%TEMP%\\shortcut.vbs"
-echo oLink.Description = "Inventory Pro - Professional Inventory Management" >> "%TEMP%\\shortcut.vbs"
+echo oLink.TargetPath = "%PROGRAMFILES%\\Inventory_Beta\\Inventory_Beta.exe" >> "%TEMP%\\shortcut.vbs"
+echo oLink.WorkingDirectory = "%PROGRAMFILES%\\Inventory_Beta" >> "%TEMP%\\shortcut.vbs"
+echo oLink.IconLocation = "%PROGRAMFILES%\\Inventory_Beta\\_internal\\assets\\icons\\app_icon.png" >> "%TEMP%\\shortcut.vbs"
+echo oLink.Description = "Inventory Beta - Inventory Management System" >> "%TEMP%\\shortcut.vbs"
 echo oLink.Save >> "%TEMP%\\shortcut.vbs"
 cscript "%TEMP%\\shortcut.vbs" /nologo
 del "%TEMP%\\shortcut.vbs"
@@ -144,7 +165,7 @@ pause
 def main():
     """Main build process"""
     print("=" * 50)
-    print("Inventory Pro - Build Script")
+    print("Inventory Beta - Build Script")
     print("=" * 50)
     
     # Check if we're in virtual environment
@@ -167,14 +188,13 @@ def main():
         print("BUILD COMPLETE!")
         print("=" * 50)
         print("Files created:")
-        print("- dist/InventoryPro.exe (Main executable)")
+        print("- dist/Inventory_Beta/Inventory_Beta.exe (Main executable)")
         print("- dist/install.bat (Installer script)")
-        print("- dist/assets/ (Application assets)")
         print("\nTo install:")
         print("1. Run 'install.bat' as administrator")
         print("2. Or copy files manually to desired location")
         print("\nTo run:")
-        print("- Double-click InventoryPro.exe")
+        print("- Run: dist/Inventory_Beta/Inventory_Beta.exe")
         print("- Or use the desktop shortcut after installation")
     else:
         print("\nBuild failed! Check the error messages above.")

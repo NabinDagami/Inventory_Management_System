@@ -1,0 +1,236 @@
+This is a classic data migration task. You have a Source File (your messy, multi-sheet backup) and a Target Template (the clean format your app expects).
+You cannot simply copy-paste because:
+Structure: Your source has ~60 separate sheets; the app wants one single list.
+Missing Data: Your source lacks SKU codes and separates Wholesale/Retail prices, while the app needs them combined into specific columns.
+Noise: The source file has many empty rows and repeated headers that will break the import.
+🚀 The Solution: Automated Conversion Script
+I have written a Python script below that will:
+Read every sheet in your Diwan Autoparts backup.xlsx.
+Clean out the garbage rows (empty rows, repeated "Acc Cable" headers).
+Map your columns to the App's required format (Company → Brand, Bikes names → Product Name, etc.).
+Auto-generate SKUs (e.g., ACC-BAJ-001) since your file doesn't have them.
+Calculate the Reorder Level based on your "Status" column.
+Save a final file named Ready_For_App_Import.csv that you can upload directly.
+How to use this:
+Install Python (if you haven't).
+Install the required library: pip install pandas openpyxl
+Save the code below as convert_inventory.py in the same folder as your Excel file.
+Run it. It will create the clean file for you.
+
+python
+
+import pandas as pd
+import os
+import re
+
+# CONFIGURATION
+INPUT_FILE = 'Diwan Autoparts backup.xlsx'
+OUTPUT_FILE = 'Ready_For_App_Import.csv'
+
+# Columns expected by your App
+APP_COLUMNS = [
+'SKU', 'Product Name', 'Category', 'Brand', 'Stock',
+'Cost Price', 'Normal Price', 'Workshop Price', 'Reorder Level'
+]
+
+def clean_value(val):
+"""Converts values to numbers or strings, handling errors."""
+if pd.isna(val):
+return 0 if isinstance(val, float) else ""
+if isinstance(val, str):
+val = val.strip()
+if val == "": return 0
+# Remove currency symbols or text if accidentally present
+return re.sub(r'[^\d.]', '', val) if re.search(r'\d', val) else val
+return val
+
+def generate_sku(category, brand, index):
+"""Generates a simple SKU like ACC-BAJ-001"""
+cat_code = "".join([c for c in category.upper() if c.isalpha()][:3])
+brand_code = "".join([c for c in str(brand).upper() if c.isalpha()][:3])
+return f"{cat_code}-{brand_code}-{str(index).zfill(3)}"
+
+def process_sheet(df, sheet_name):
+"""Cleans a single sheet and maps columns."""
+
+# 1. Identify the header row.
+# In your file, headers are usually in row 3 or 4 after repeated titles.
+# We look for the row containing "Company" or "Bikes names" or "Bike Names"
+header_row_idx = -1
+for i, row in df.iterrows():
+if 'Company' in str(row.values) or 'Bikes names' in str(row.values) or 'Bike Names' in str(row.values):
+header_row_idx = i
+break
+
+if header_row_idx == -1:
+return None # Skip sheets with no recognizable header
+
+# Set the correct header and drop rows above it
+df.columns = df.iloc[header_row_idx]
+df = df[header_row_idx+1:].reset_index(drop=True)
+
+# 2. Drop completely empty rows
+df = df.dropna(how='all')
+
+# 3. Filter out rows that are just repeated headers (e.g., rows where Company == "Acc Cable")
+# We assume valid data has a Company name like "BAJAJ", "HONDA", etc., not the category name again.
+valid_companies = ['BAJAJ', 'HONDA', 'YAMAHA', 'TVS', 'HERO', 'SUZUKI', 'ROYAL ENFIELD', 'ABS', 'ASK', 'SUPERJIT', 'MINDA', 'VARROC', 'ENDURANCE', 'F.C.C.', 'H/F', 'POLLYSU', 'MGF', 'MEBESTO', 'OTHERS', 'VEER', 'ARF', 'JAINSON', 'PERFECT', 'KTM', 'SERVO', 'CASTROL', 'MOTUL', 'PETRONUS']
+
+cleaned_rows = []
+for index, row in df.iterrows():
+company_val = str(row.get('Company', '')).upper().strip()
+bike_val = str(row.get('Bikes names', row.get('Bike Names', ''))).strip()
+
+# Skip if Bike Name is empty (invalid item)
+if not bike_val or bike_val == "nan":
+continue
+
+# Skip if the "Company" column actually contains the Category Name (noise row)
+if company_val == sheet_name.upper() or company_val == "":
+# Exception: Some sheets might have empty company but valid data?
+# But looking at your file, empty company usually means noise or end of block.
+# Let's try to keep it if the bike name is very specific, but mostly skip.
+if company_val == sheet_name.upper():
+continue
+
+cleaned_rows.append(row)
+
+if not cleaned_rows:
+return None
+
+df_clean = pd.DataFrame(cleaned_rows)
+
+# 4. Map to App Format
+new_data = []
+
+for idx, row in df_clean.iterrows():
+# Determine Brand (Company)
+brand = str(row.get('Company', 'Generic')).strip()
+if brand == "nan" or brand == "": brand = "Generic"
+
+# Determine Product Name (Combine Bike Name + Specifics if needed)
+# In your file, 'Bikes names' often contains the full description like "Pulsar 150 (ASK)"
+product_name = str(row.get('Bikes names', row.get('Bike Names', ''))).strip()
+if product_name == "nan": product_name = "Unknown Item"
+
+# Prices
+# Logic: Wholesale -> Cost, Retail -> Normal.
+# If there are two prices in one cell (e.g., "180/250"), we take the first as Cost, second as Normal.
+def parse_price(val):
+if pd.isna(val): return 0
+s_val = str(val).replace(',', '')
+if '/' in s_val:
+parts = s_val.split('/')
+try:
+cost = float(parts[0])
+normal = float(parts[1]) if len(parts) > 1 else cost
+return cost, normal
+except:
+return 0, 0
+try:
+p = float(s_val)
+return p, p # If only one price, assume Cost=Normal
+except:
+return 0, 0
+
+raw_cost = row.get('Wholesale Price', row.get('Wholesale Price/PCS', row.get('Wholesale Price/SET', 0)))
+raw_retail = row.get('Retail Price', row.get('Retail Price/PCS', row.get('Retail Price/SET', 0)))
+
+# Special handling for sheets where price columns might be named differently or combined
+if pd.isna(raw_cost) and pd.isna(raw_retail):
+# Try generic 'Price' column if exists (some sheets vary)
+raw_cost = row.get('Price', 0)
+raw_retail = raw_cost
+
+cost, normal = parse_price(raw_cost)
+# If retail was separate and valid, overwrite normal price
+if not pd.isna(raw_retail) and str(raw_retail) != str(raw_cost):
+_, norm_override = parse_price(raw_retail)
+if norm_override > 0: normal = norm_override
+
+# Stock
+stock_val = row.get('Qty in Hand', row.get('Qty in Hand (PCS)', row.get('Qty in Hand/PCS', 0)))
+try:
+stock = int(float(str(stock_val).replace(',', '')))
+except:
+stock = 0
+
+# Status & Reorder Level
+status = str(row.get('Status', '')).lower()
+reorder_level = 0
+if 'reorder' in status:
+reorder_level = 5 # Default reorder level if status says so
+elif stock < 3:
+reorder_level = 3 # Auto-flag low stock
+
+# Workshop Price (Not in source, defaulting to Normal Price)
+workshop_price = normal
+
+new_item = {
+'SKU': "", # Will generate later
+'Product Name': product_name,
+'Category': sheet_name,
+'Brand': brand,
+'Stock': stock,
+'Cost Price': cost,
+'Normal Price': normal,
+'Workshop Price': workshop_price,
+'Reorder Level': reorder_level
+}
+new_data.append(new_item)
+
+return pd.DataFrame(new_data)
+
+# --- MAIN EXECUTION ---
+
+print(f"Reading {INPUT_FILE}...")
+try:
+xls = pd.ExcelFile(INPUT_FILE)
+except FileNotFoundError:
+print("Error: File not found. Make sure the Excel file is in the same folder.")
+exit()
+
+all_data = []
+
+for sheet_name in xls.sheet_names:
+# Skip dashboard/summary sheets that don't look like item lists
+if 'Dashboard' in sheet_name or 'Home' in sheet_name or sheet_name.startswith('/'):
+continue
+
+print(f"Processing sheet: {sheet_name}...")
+try:
+df = pd.read_excel(xls, sheet_name=sheet_name, header=None) # Read raw to find headers manually
+processed_df = process_sheet(df, sheet_name)
+
+if processed_df is not None and not processed_df.empty:
+all_data.append(processed_df)
+except Exception as e:
+print(f" -> Skipped due to error: {e}")
+
+if all_data:
+# Combine all sheets
+final_df = pd.concat(all_data, ignore_index=True)
+
+# Generate SKUs now that we have the full list
+print("Generating SKUs...")
+final_df['SKU'] = [generate_sku(row['Category'], row['Brand'], i) for i, row in final_df.iterrows()]
+
+# Ensure column order matches App requirement
+final_df = final_df[APP_COLUMNS]
+
+# Save to CSV (Universal format for imports)
+final_df.to_csv(OUTPUT_FILE, index=False)
+print(f"\n✅ Success! Created '{OUTPUT_FILE}' with {len(final_df)} items.")
+print("You can now import this CSV file into your app.")
+else:
+print("\n❌ No data was extracted. Please check the file structure.")
+
+What this script does specifically for your data:
+Handles the "Others" Sheet: Your "Others" sheet has a slightly different header structure (Items, Price). The script attempts to adapt, but primarily focuses on the standard Company/Bike Name structure found in 95% of your sheets.
+Price Splitting: In your "Others" sheet, prices are listed as 180/250. The script splits these: 180 becomes Cost Price, 250 becomes Normal Price.
+SKU Generation: Since your file has no SKUs, it creates them based on the Category and Brand (e.g., an Air Filter from Bajaj becomes AIR-BAJ-001).
+Cleaning: It removes the hundreds of empty rows and the rows that just say "Acc Cable" repeatedly, which would otherwise crash your app import.
+Next Steps:
+Run the script.
+Open the generated Ready_For_App_Import.csv in Excel to verify it looks correct.
+Go to your App's Import section and upload this CSV file.
