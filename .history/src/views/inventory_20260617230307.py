@@ -3,14 +3,6 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 import sys
 import os
-import io
-import random
-import string
-import tempfile
-import threading
-from PIL import Image
-from barcode import Code128
-from barcode.writer import ImageWriter
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -19,249 +11,6 @@ from models.database import db
 from utils.sku_generator import SKUGenerator
 import utils.simple_table_styles as table_styles
 from utils.export_manager import ExportManager
-# from utils.camera_scanner import CameraBarcodeReader
-
-
-class _FilterPopup(ctk.CTkToplevel):
-    """CTkToplevel that skips the Windows titlebar-color withdraw/deiconify cycle.
-    This avoids grab_set() being called on a withdrawn window and prevents
-    the bad-window-path-name crashes from after() callbacks firing on a destroyed popup."""
-    _deactivate_windows_window_header_manipulation = True
-
-    def destroy(self):
-        try:
-            self.grab_release()
-        except Exception:
-            pass
-        super().destroy()
-
-
-class ScrollableFilter(ctk.CTkFrame):
-    """Dropdown with search, checkmarks, and scroll support."""
-
-    def __init__(self, master, values=None, variable=None, command=None,
-                 width=140, **kwargs):
-        super().__init__(master, fg_color="transparent", **kwargs)
-
-        self._values = values or ["All"]
-        self._variable = variable
-        self._command = command
-        self._width = width
-        self._popup = None
-        self._filtered = list(self._values)
-
-        initial = self._variable.get() if self._variable else "All"
-        self._is_active = initial != "All"
-
-        self._btn = ctk.CTkButton(
-            self, text=initial, width=width, height=28,
-            anchor="w",
-            fg_color=("gray90", "gray25"),
-            text_color=("gray10", "gray90"),
-            hover_color=("gray85", "gray35"),
-            corner_radius=6,
-            font=ctk.CTkFont(size=12),
-            command=self._open_popup
-        )
-        self._btn.pack(fill="both", expand=True)
-
-        if self._variable:
-            self._variable.trace_add("write", lambda *_: self._on_var_changed())
-
-    def _on_var_changed(self):
-        val = self._variable.get()
-        self._btn.configure(text=val)
-        was = self._is_active
-        self._is_active = val != "All"
-        if was != self._is_active:
-            self._update_active_style()
-
-    def _update_active_style(self):
-        if self._is_active:
-            self._btn.configure(
-                fg_color=("#DBEAFE", "#1E3A5F"),
-                text_color=("#1E40AF", "#93C5FD"),
-                border_color=("#3B82F6", "#60A5FA"),
-                border_width=1
-            )
-        else:
-            self._btn.configure(
-                fg_color=("gray90", "gray25"),
-                text_color=("gray10", "gray90"),
-                border_width=0
-            )
-
-    def _open_popup(self):
-        self._close_popup()
-
-        current = self._variable.get() if self._variable else "All"
-        btn_font = self._btn.cget("font")
-        popup_w = self._width
-        for v in self._values:
-            tw = btn_font.measure(f"✓ {v}") + 50
-            if tw > popup_w:
-                popup_w = min(tw, 400)
-
-        n_items = len(self._values)
-        max_h = min(300, n_items * 32 + 50)
-
-        # Close other filter popups before opening a new one
-        for child in self.master.winfo_children():
-            if isinstance(child, ScrollableFilter) and child is not self and child._popup:
-                child._close_popup()
-
-        popup = _FilterPopup(self)
-        popup.withdraw()
-        popup.overrideredirect(True)
-        # Click-outside closes the popup; click falls through to the intended widget.
-
-        main = ctk.CTkFrame(popup, corner_radius=8,
-                            fg_color=("white", "#262626"),
-                            border_width=1, border_color=("gray70", "gray50"))
-        main.pack(fill="both", expand=True)
-
-        # Search bar
-        search_frame = ctk.CTkFrame(main, fg_color="transparent")
-        search_frame.pack(fill="x", padx=6, pady=(6, 2))
-        search_entry = ctk.CTkEntry(
-            search_frame, height=28, corner_radius=6,
-            placeholder_text="Type to filter...",
-            font=ctk.CTkFont(size=12),
-        )
-        search_entry.pack(fill="x")
-
-        sep = ctk.CTkFrame(main, height=1, fg_color=("gray80", "gray40"))
-        sep.pack(fill="x", padx=6, pady=4)
-
-        # Scrollable options
-        scroll = ctk.CTkScrollableFrame(
-            main, corner_radius=0,
-            fg_color="transparent",
-            scrollbar_button_hover_color=("gray70", "gray45")
-        )
-        scroll.pack(fill="both", expand=True, padx=2, pady=(0, 4))
-        scroll.configure(width=popup_w)
-
-        self._filtered = list(self._values)
-        self._option_btns = []
-
-        def rebuild_list(*_):
-            q = search_entry.get().lower()
-            self._filtered = [v for v in self._values if q in v.lower()]
-            for ob in self._option_btns:
-                ob.pack_forget()
-            self._option_btns.clear()
-            for value in self._filtered:
-                selected = (value == current)
-                prefix = "✓ " if selected else "   "
-                ob = ctk.CTkButton(
-                    scroll, text=f"{prefix}{value}", height=30, anchor="w",
-                    fg_color=("#EFF6FF", "#1E3A5F") if selected else "transparent",
-                    text_color=("#1E40AF", "#93C5FD") if selected else ("gray10", "gray90"),
-                    hover_color=("#F3F4F6", "#333333"),
-                    corner_radius=4,
-                    font=ctk.CTkFont(size=13),
-                    command=lambda v=value: self._select(v)
-                )
-                ob.pack(fill="x", padx=4, pady=1)
-                self._option_btns.append(ob)
-
-        search_entry.bind("<KeyRelease>", rebuild_list)
-        rebuild_list()
-
-        # Show popup before setting geometry
-        popup.deiconify()
-        popup.update_idletasks()
-
-        sx = self.winfo_rootx()
-        sy = self.winfo_rooty() + self._btn.winfo_height()
-        popup.geometry(f"{popup_w}x{max_h}+{int(sx)}+{int(sy)}")
-
-        self._popup = popup
-        popup.bind("<Escape>", lambda e: self._close_popup())
-        popup.after(10, lambda: self._safe_focus(popup, search_entry))
-        toplevel = self.winfo_toplevel()
-        toplevel.bind("<Button-1>", self._on_global_click, add="+")
-
-    def _safe_focus(self, popup, entry):
-        try:
-            if popup.winfo_exists():
-                popup.focus_force()
-                entry.focus_set()
-        except Exception:
-            pass
-
-    def _close_popup(self):
-        if getattr(self, '_closing_popup', False):
-            return
-        self._closing_popup = True
-        try:
-            # ALWAYS release the grab first — even if the popup is gone,
-            # releasing defensively prevents stuck-grab lock on the toplevel
-            try:
-                toplevel = self.winfo_toplevel()
-                toplevel.grab_release()
-            except Exception:
-                pass
-            if not self._popup:
-                self._closing_popup = False
-                return
-            popup = self._popup
-            self._popup = None
-            try:
-                if popup.winfo_exists():
-                    popup.destroy()
-            except Exception:
-                pass
-        finally:
-            self._closing_popup = False
-
-    def _select(self, value):
-        if self._variable:
-            self._variable.set(value)
-        self._btn.configure(text=value)
-        self._is_active = value != "All"
-        self._update_active_style()
-        if self._command:
-            self._command(value)
-        self._close_popup()
-
-    def _on_global_click(self, event):
-        """Called when any click happens on the main toplevel.
-        Close the popup if the click was not inside it or the filter button."""
-        if not self._popup:
-            return
-        # Check if click is inside the popup
-        try:
-            px = self._popup.winfo_rootx()
-            py = self._popup.winfo_rooty()
-            pw = self._popup.winfo_width()
-            ph = self._popup.winfo_height()
-            in_popup = (px <= event.x_root <= px + pw and py <= event.y_root <= py + ph)
-        except Exception:
-            in_popup = False
-
-        # Check if click is on the filter button
-        try:
-            bx = self._btn.winfo_rootx()
-            by = self._btn.winfo_rooty()
-            bw = self._btn.winfo_width()
-            bh = self._btn.winfo_height()
-            in_btn = (bx <= event.x_root <= bx + bw and by <= event.y_root <= by + bh)
-        except Exception:
-            in_btn = False
-
-        if not in_popup and not in_btn:
-            self._close_popup()
-
-    def configure(self, **kwargs):
-        if "values" in kwargs:
-            self._values = kwargs.pop("values")
-        if "command" in kwargs:
-            self._command = kwargs.pop("command")
-        if kwargs:
-            super().configure(**kwargs)
-
 
 class InventoryView:
     def __init__(self, parent):
@@ -274,48 +23,77 @@ class InventoryView:
         """Create inventory management interface"""
         # Main container
         main_frame = ctk.CTkFrame(self.parent)
-        main_frame.pack(fill="both", expand=True, padx=15, pady=15)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
         
         # Header with tabs and action buttons
-        header_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header_frame.pack(fill="x", padx=5, pady=(8, 0))
+        header_frame = ctk.CTkFrame(main_frame)
+        header_frame.pack(fill="x", padx=10, pady=(10, 0))
         
-        # Tab buttons — pill-style segmented control
-        tab_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        # Tab buttons
+        tab_frame = ctk.CTkFrame(header_frame)
         tab_frame.pack(side="left", padx=10, pady=10)
         
-        tab_bg = ctk.CTkFrame(tab_frame, corner_radius=20, fg_color=("gray90", "gray20"))
-        tab_bg.pack(side="left")
+        self.products_btn = ctk.CTkButton(
+            tab_frame,
+            text="Products",
+            width=100,
+            height=35,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            command=lambda: self.switch_tab("products")
+        )
+        self.products_btn.pack(side="left", padx=(0, 10))
         
-        tab_defs = [
-            ("products", "Products", 100),
-            ("categories", "Categories", 110),
-            ("sub_categories", "Sub Categories", 130),
-            ("brands", "Brands", 100),
-            ("sub_brands", "Sub Brands", 120),
-        ]
-        self._tab_buttons = {}
-        for i, (key, text, w) in enumerate(tab_defs):
-            pad = (3, 0) if i > 0 else (3, 3)
-            btn = ctk.CTkButton(
-                tab_bg,
-                text=text,
-                width=w,
-                height=32,
-                corner_radius=16,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                fg_color=("gray85", "gray25"),
-                hover_color=("gray75", "gray35"),
-                text_color=("gray10", "gray90"),
-                command=lambda k=key: self.switch_tab(k)
-            )
-            btn.pack(side="left", padx=pad, pady=3)
-            self._tab_buttons[key] = btn
-        self.products_btn = self._tab_buttons["products"]
-        self.categories_btn = self._tab_buttons["categories"]
-        self.sub_categories_btn = self._tab_buttons["sub_categories"]
-        self.brands_btn = self._tab_buttons["brands"]
-        self.sub_brands_btn = self._tab_buttons["sub_brands"]
+        self.categories_btn = ctk.CTkButton(
+            tab_frame,
+            text="Categories",
+            width=100,
+            height=35,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color=("gray85", "gray25"),
+            hover_color=("gray75", "gray35"),
+            text_color=("gray10", "gray90"),
+            command=lambda: self.switch_tab("categories")
+        )
+        self.categories_btn.pack(side="left", padx=(0, 10))
+        
+        self.sub_categories_btn = ctk.CTkButton(
+            tab_frame,
+            text="Sub Categories",
+            width=120,
+            height=35,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color=("gray85", "gray25"),
+            hover_color=("gray75", "gray35"),
+            text_color=("gray10", "gray90"),
+            command=lambda: self.switch_tab("sub_categories")
+        )
+        self.sub_categories_btn.pack(side="left", padx=(0, 10))
+        
+        self.brands_btn = ctk.CTkButton(
+            tab_frame,
+            text="Brands",
+            width=100,
+            height=35,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color=("gray85", "gray25"),
+            hover_color=("gray75", "gray35"),
+            text_color=("gray10", "gray90"),
+            command=lambda: self.switch_tab("brands")
+        )
+        self.brands_btn.pack(side="left", padx=(0, 10))
+        
+        self.sub_brands_btn = ctk.CTkButton(
+            tab_frame,
+            text="Sub Brands",
+            width=110,
+            height=35,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color=("gray85", "gray25"),
+            hover_color=("gray75", "gray35"),
+            text_color=("gray10", "gray90"),
+            command=lambda: self.switch_tab("sub_brands")
+        )
+        self.sub_brands_btn.pack(side="left")
         
         # Action buttons - Visual Hierarchy
         action_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
@@ -324,23 +102,23 @@ class InventoryView:
         # Primary Action: Add Product (Blue)
         self.add_btn = ctk.CTkButton(
             action_frame,
-            text="  + Add Product",
+            text="Add Product",
             width=130,
-            height=36,
+            height=38,
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self.add_item,
             fg_color="#3B82F6",
             hover_color="#2563EB",
             corner_radius=8
         )
-        self.add_btn.pack(side="left", padx=(0, 6))
+        self.add_btn.pack(side="left", padx=(0, 8))
         
         # Secondary: Edit (Outline)
         self.edit_btn = ctk.CTkButton(
             action_frame,
-            text="✏  Edit",
+            text="Edit",
             width=80,
-            height=36,
+            height=38,
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self.edit_item,
             fg_color="transparent",
@@ -350,239 +128,209 @@ class InventoryView:
             hover_color=("gray85", "gray25"),
             corner_radius=8
         )
-        self.edit_btn.pack(side="left", padx=(0, 6))
+        self.edit_btn.pack(side="left", padx=(0, 8))
         
         # Danger: Delete (Red)
         self.delete_btn = ctk.CTkButton(
             action_frame,
-            text="🗑  Delete",
+            text="Delete",
             width=90,
-            height=36,
+            height=38,
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self.delete_item,
             fg_color="#EF4444",
             hover_color="#DC2626",
             corner_radius=8
         )
-        self.delete_btn.pack(side="left", padx=(6, 12))
-        
-        # Separator
-        sep = ctk.CTkFrame(action_frame, width=1, height=28, fg_color=("gray75", "gray40"))
-        sep.pack(side="left", padx=(0, 12))
+        self.delete_btn.pack(side="left", padx=(0, 15))
         
         # Export Dropdown
         self.export_menu = ctk.CTkOptionMenu(
             action_frame,
-            values=["📥 Export", "📊  Excel", "📄  PDF"],
+            values=["Export", "Excel", "PDF"],
             width=110,
-            height=36,
+            height=38,
             font=ctk.CTkFont(size=11, weight="bold"),
             command=self.handle_export,
-            fg_color=("gray80", "gray30"),
-            button_color=("gray70", "gray40"),
-            button_hover_color=("gray60", "gray50"),
-            text_color=("gray20", "gray90"),
+            fg_color="#6B7280",
+            button_color="#4B5563",
+            button_hover_color="#374151",
             corner_radius=8
         )
         self.export_menu.pack(side="left")
-        self.export_menu.set("📥 Export")
+        self.export_menu.set("Export")
         
         # Import button
         self.import_btn = ctk.CTkButton(
             action_frame,
-            text="📥  Import",
-            width=100,
-            height=36,
+            text="📥 Import Excel",
+            width=130,
+            height=38,
             font=ctk.CTkFont(size=12, weight="bold"),
             command=self.import_from_excel,
             fg_color="#10B981",
             hover_color="#059669",
             corner_radius=8
         )
-        self.import_btn.pack(side="left", padx=(8, 0))
+        self.import_btn.pack(side="left", padx=(0, 15))
         
         # Search and Filter frame
-        self.filter_frame = ctk.CTkFrame(main_frame, corner_radius=10)
-        self.filter_frame.pack(fill="x", padx=10, pady=(0, 10))
+        filter_frame = ctk.CTkFrame(main_frame)
+        filter_frame.pack(fill="x", padx=10, pady=(0, 10))
         
         # Row 1: Search box
-        search_row = ctk.CTkFrame(self.filter_frame, fg_color="transparent")
-        search_row.pack(fill="x", padx=12, pady=(10, 5))
+        search_row = ctk.CTkFrame(filter_frame, fg_color="transparent")
+        search_row.pack(fill="x", padx=10, pady=(10, 5))
         
-        search_icon = ctk.CTkLabel(search_row, text="🔍", font=ctk.CTkFont(size=14))
-        search_icon.pack(side="left", padx=(0, 6))
+        search_label = ctk.CTkLabel(search_row, text="Search:", font=ctk.CTkFont(size=12, weight="bold"))
+        search_label.pack(side="left", padx=(0, 5))
         
-        self.search_var = ctk.StringVar()
+        self.search_var = tk.StringVar()
         self.search_var.trace('w', self.filter_data)
         search_entry = ctk.CTkEntry(
             search_row,
             textvariable=self.search_var,
-            placeholder_text="Search by name, SKU or barcode...",
-            width=320,
-            height=32,
-            corner_radius=8
+            placeholder_text="Search by name or SKU...",
+            width=300
         )
         search_entry.pack(side="left", padx=5)
         
-        # Separator line
-        sep = ctk.CTkFrame(self.filter_frame, height=1, fg_color=("gray80", "gray35"))
-        sep.pack(fill="x", padx=12, pady=(5, 5))
-        
         # Row 2: Advanced filters - inline layout
-        filters_row = ctk.CTkFrame(self.filter_frame, fg_color="transparent")
+        filters_row = ctk.CTkFrame(filter_frame, fg_color="transparent")
         filters_row.pack(fill="x", padx=10, pady=(5, 10))
         
-        # Filter label prefix
-        filter_label = ctk.CTkLabel(filters_row, text="Filters:", font=ctk.CTkFont(size=11, weight="bold"))
-        filter_label.pack(side="left", padx=(2, 8))
-        
         # Category filter
-        cat_label = ctk.CTkLabel(filters_row, text="Category", font=ctk.CTkFont(size=10), text_color=("gray50", "gray60"))
-        cat_label.pack(side="left", padx=(0, 3))
+        cat_label = ctk.CTkLabel(filters_row, text="Category:", font=ctk.CTkFont(size=11, weight="bold"))
+        cat_label.pack(side="left", padx=(0, 5))
         
         self.category_filter_var = tk.StringVar(value="All")
-        self.category_filter = ScrollableFilter(
+        self.category_filter = ctk.CTkOptionMenu(
             filters_row,
             variable=self.category_filter_var,
             values=["All"],
-            width=130,
-            command=lambda v: self.filter_data()
+            width=140,
+            command=lambda x: self.filter_data()
         )
-        self.category_filter.pack(side="left", padx=(0, 10))
+        self.category_filter.pack(side="left", padx=(0, 12))
         
         # Sub Category filter
-        sub_cat_label = ctk.CTkLabel(filters_row, text="Sub Cat", font=ctk.CTkFont(size=10), text_color=("gray50", "gray60"))
-        sub_cat_label.pack(side="left", padx=(0, 3))
+        sub_cat_label = ctk.CTkLabel(filters_row, text="Sub Category:", font=ctk.CTkFont(size=11, weight="bold"))
+        sub_cat_label.pack(side="left", padx=(0, 5))
         
         self.sub_category_filter_var = tk.StringVar(value="All")
-        self.sub_category_filter = ScrollableFilter(
+        self.sub_category_filter = ctk.CTkOptionMenu(
             filters_row,
             variable=self.sub_category_filter_var,
             values=["All"],
-            width=130,
-            command=lambda v: self.filter_data()
+            width=140,
+            command=lambda x: self.filter_data()
         )
-        self.sub_category_filter.pack(side="left", padx=(0, 10))
+        self.sub_category_filter.pack(side="left", padx=(0, 12))
         
         # Brand filter
-        brand_label = ctk.CTkLabel(filters_row, text="Brand", font=ctk.CTkFont(size=10), text_color=("gray50", "gray60"))
-        brand_label.pack(side="left", padx=(0, 3))
+        brand_label = ctk.CTkLabel(filters_row, text="Brand:", font=ctk.CTkFont(size=11, weight="bold"))
+        brand_label.pack(side="left", padx=(0, 5))
         
         self.brand_filter_var = tk.StringVar(value="All")
-        self.brand_filter = ScrollableFilter(
+        self.brand_filter = ctk.CTkOptionMenu(
             filters_row,
             variable=self.brand_filter_var,
             values=["All"],
-            width=130,
-            command=lambda v: self.filter_data()
+            width=140,
+            command=lambda x: self.filter_data()
         )
-        self.brand_filter.pack(side="left", padx=(0, 10))
+        self.brand_filter.pack(side="left", padx=(0, 12))
         
         # Sub Brand filter
-        sub_brand_label = ctk.CTkLabel(filters_row, text="Sub Brand", font=ctk.CTkFont(size=10), text_color=("gray50", "gray60"))
-        sub_brand_label.pack(side="left", padx=(0, 3))
+        sub_brand_label = ctk.CTkLabel(filters_row, text="Sub Brand:", font=ctk.CTkFont(size=11, weight="bold"))
+        sub_brand_label.pack(side="left", padx=(0, 5))
         
         self.sub_brand_filter_var = tk.StringVar(value="All")
-        self.sub_brand_filter = ScrollableFilter(
+        self.sub_brand_filter = ctk.CTkOptionMenu(
             filters_row,
             variable=self.sub_brand_filter_var,
             values=["All"],
-            width=130,
-            command=lambda v: self.filter_data()
+            width=140,
+            command=lambda x: self.filter_data()
         )
-        self.sub_brand_filter.pack(side="left", padx=(0, 10))
+        self.sub_brand_filter.pack(side="left", padx=(0, 12))
         
         # Stock status filter
-        stock_label = ctk.CTkLabel(filters_row, text="Stock", font=ctk.CTkFont(size=10), text_color=("gray50", "gray60"))
-        stock_label.pack(side="left", padx=(0, 3))
+        stock_label = ctk.CTkLabel(filters_row, text="Stock:", font=ctk.CTkFont(size=11, weight="bold"))
+        stock_label.pack(side="left", padx=(0, 5))
         
         self.stock_filter_var = tk.StringVar(value="All")
-        self.stock_filter = ScrollableFilter(
+        self.stock_filter = ctk.CTkOptionMenu(
             filters_row,
             variable=self.stock_filter_var,
             values=["All", "In Stock", "Low Stock", "Out of Stock"],
-            width=110,
-            command=lambda v: self.filter_data()
+            width=120,
+            command=lambda x: self.filter_data()
         )
-        self.stock_filter.pack(side="left", padx=(0, 10))
+        self.stock_filter.pack(side="left", padx=(0, 12))
         
         # Clear filters button - inline with filters
         clear_btn = ctk.CTkButton(
             filters_row,
-            text="✕  Clear",
+            text="Clear",
             command=self.clear_filters,
-            width=85,
+            width=90,
             height=28,
-            fg_color=("gray80", "gray30"),
-            hover_color=("gray70", "gray40"),
-            text_color=("gray20", "gray90"),
-            font=ctk.CTkFont(size=11),
-            corner_radius=8
+            fg_color="#6B7280",
+            hover_color="#4B5563",
+            font=ctk.CTkFont(size=11)
         )
         clear_btn.pack(side="left")
-        
-        # Active filter chips row (hidden initially, shown when filters active)
-        self.filter_chips_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        self.filter_chips_inner = ctk.CTkFrame(self.filter_chips_frame, fg_color="transparent")
-        self.filter_chips_inner.pack(fill="x", padx=12, pady=(0, 4))
         
         # Summary cards row
         self.create_summary_cards(main_frame)
         
         # Content area with table
         content_frame = ctk.CTkFrame(main_frame)
-        content_frame.pack(fill="both", expand=True, padx=5, pady=(0, 5))
+        content_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         
         # Create table
         self.create_table(content_frame)
     
     def create_summary_cards(self, parent):
         """Create compact summary cards showing inventory statistics"""
-        self.cards_frame = ctk.CTkFrame(parent, fg_color="transparent")
-        self.cards_frame.pack(fill="x", padx=10, pady=(0, 10))
+        cards_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        cards_frame.pack(fill="x", padx=10, pady=(0, 8))
         
-        card_configs = [
-            ("📦", "Total Products", ("#3B82F6", "#2563EB"), self.show_all_products),
-            ("⚡", "Low Stock", ("#D97706", "#B45309"), lambda: self.filter_by_stock_status("Low Stock")),
-            ("❌", "Out of Stock", ("#DC2626", "#B91C1C"), lambda: self.filter_by_stock_status("Out of Stock")),
-            ("💰", "Inventory Value", ("#059669", "#047857"), None),
-        ]
+        # Card 1: Total Products (compact)
+        self.total_card = ctk.CTkFrame(cards_frame, corner_radius=8, fg_color="#3B82F6", cursor="hand2", height=60)
+        self.total_card.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self.total_card.pack_propagate(False)
+        self.total_card.bind("<Button-1>", lambda e: self.show_all_products())
+        ctk.CTkLabel(self.total_card, text="Total", font=ctk.CTkFont(size=10), text_color="white").pack(pady=(5, 0))
+        self.total_label = ctk.CTkLabel(self.total_card, text="0", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
+        self.total_label.pack(pady=(0, 5))
         
-        labels = {}
-        for i, (icon, text, color, cmd) in enumerate(card_configs):
-            card = ctk.CTkFrame(
-                self.cards_frame, corner_radius=10,
-                fg_color=color, cursor="hand2" if cmd else "arrow",
-                height=64, border_width=0
-            )
-            card.pack(side="left", fill="x", expand=True, padx=(0 if i == 3 else 0, 8 if i < 3 else 0))
-            card.pack_propagate(False)
-            if cmd:
-                card.bind("<Button-1>", lambda e, c=cmd: c())
-            inner = ctk.CTkFrame(card, fg_color="transparent")
-            inner.pack(expand=True, fill="both", padx=14, pady=8)
-            inner.grid_columnconfigure(0, weight=0)
-            inner.grid_columnconfigure(1, weight=1)
-            ctk.CTkLabel(
-                inner, text=icon,
-                font=ctk.CTkFont(size=20), text_color="white"
-            ).grid(row=0, column=0, rowspan=2, padx=(0, 10))
-            ctk.CTkLabel(
-                inner, text=text,
-                font=ctk.CTkFont(size=10), text_color=("#FFFFFF", "#D0D0D0")
-            ).grid(row=0, column=1, sticky="w")
-            val_lbl = ctk.CTkLabel(
-                inner, text="0",
-                font=ctk.CTkFont(size=16, weight="bold"), text_color="white"
-            )
-            val_lbl.grid(row=1, column=1, sticky="w")
-            key = text.lower().replace(" ", "_")
-            labels[key] = val_lbl
+        # Card 2: Low Stock (compact)
+        self.low_stock_card = ctk.CTkFrame(cards_frame, corner_radius=8, fg_color="#D97706", cursor="hand2", height=60)
+        self.low_stock_card.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self.low_stock_card.pack_propagate(False)
+        self.low_stock_card.bind("<Button-1>", lambda e: self.filter_by_stock_status("Low Stock"))
+        ctk.CTkLabel(self.low_stock_card, text="Low", font=ctk.CTkFont(size=10), text_color="white").pack(pady=(5, 0))
+        self.low_stock_label = ctk.CTkLabel(self.low_stock_card, text="0", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
+        self.low_stock_label.pack(pady=(0, 5))
         
-        self.total_label = labels["total_products"]
-        self.low_stock_label = labels["low_stock"]
-        self.out_stock_label = labels["out_of_stock"]
-        self.value_label = labels["inventory_value"]
+        # Card 3: Out of Stock (compact)
+        self.out_stock_card = ctk.CTkFrame(cards_frame, corner_radius=8, fg_color="#DC2626", cursor="hand2", height=60)
+        self.out_stock_card.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        self.out_stock_card.pack_propagate(False)
+        self.out_stock_card.bind("<Button-1>", lambda e: self.filter_by_stock_status("Out of Stock"))
+        ctk.CTkLabel(self.out_stock_card, text="Out", font=ctk.CTkFont(size=10), text_color="white").pack(pady=(5, 0))
+        self.out_stock_label = ctk.CTkLabel(self.out_stock_card, text="0", font=ctk.CTkFont(size=18, weight="bold"), text_color="white")
+        self.out_stock_label.pack(pady=(0, 5))
+        
+        # Card 4: Inventory Value (compact)
+        self.value_card = ctk.CTkFrame(cards_frame, corner_radius=8, fg_color="#059669", height=60)
+        self.value_card.pack(side="left", fill="x", expand=True)
+        self.value_card.pack_propagate(False)
+        ctk.CTkLabel(self.value_card, text="Value", font=ctk.CTkFont(size=10), text_color="white").pack(pady=(5, 0))
+        self.value_label = ctk.CTkLabel(self.value_card, text="Rs 0", font=ctk.CTkFont(size=16, weight="bold"), text_color="white")
+        self.value_label.pack(pady=(0, 5))
     
     def show_all_products(self):
         """Show all products by clearing filters"""
@@ -612,40 +360,10 @@ class InventoryView:
         """Create the data table"""
         # Table frame
         table_frame = ctk.CTkFrame(parent)
-        table_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        table_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Products table (default)
         self.create_products_table(table_frame)
-    def refresh_table_tags(self):
-        """Re-apply zebra striping, stock status tags, and context menu colors for current theme."""
-        if not hasattr(self, 'data_tree') or not self.data_tree:
-            return
-        if not self.data_tree.winfo_exists():
-            return
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        row_fg = "#E0E0E0" if is_dark else "black"
-        self.data_tree.tag_configure("evenrow", background="#1A1A2E" if is_dark else "#F8FAFC", foreground=row_fg)
-        self.data_tree.tag_configure("oddrow",  background="#1E1E2E" if is_dark else "#FFFFFF", foreground=row_fg)
-        self.data_tree.tag_configure("stock_zero", foreground=("#DC2626" if not is_dark else "#F87171"), font=("Segoe UI", 11, "bold"))
-        self.data_tree.tag_configure("stock_low",  foreground=("#D97706" if not is_dark else "#FBBF24"), font=("Segoe UI", 11, "bold"))
-        self.data_tree.tag_configure("stock_ok",   foreground=("#059669" if not is_dark else "#34D399"), font=("Segoe UI", 11))
-        # Update category/brand styles for dark mode
-        current_tab = getattr(self, 'current_tab', None)
-        if current_tab in ("categories", "sub_categories"):
-            table_styles.apply_category_style(self.data_tree, is_dark)
-        elif current_tab in ("brands", "sub_brands"):
-            table_styles.apply_brand_style(self.data_tree, is_dark)
-        else:
-            table_styles.apply_product_style(self.data_tree)
-        # Update context menu colors
-        if hasattr(self, 'context_menu') and self.context_menu:
-            try:
-                ctx_bg = "#2D2D2D" if is_dark else "#F8FAFC"
-                ctx_fg = "#FFFFFF" if is_dark else "#1F2937"
-                self.context_menu.configure(bg=ctx_bg, fg=ctx_fg)
-            except Exception:
-                pass
-
     
     def create_products_table(self, parent):
         """Create products table with enhanced styling and smooth animations"""
@@ -654,73 +372,67 @@ class InventoryView:
         for widget in parent.winfo_children():
             widget.destroy()
         
-        # Create treeview frame with clean border
-        table_container = ctk.CTkFrame(parent, border_width=1, border_color=("gray80", "gray40"))
-        table_container.pack(fill="both", expand=True, padx=0, pady=0)
-        table_container.grid_columnconfigure(0, weight=1)
-        table_container.grid_rowconfigure(0, weight=1)
+        # Create treeview frame with border
+        table_container = ctk.CTkFrame(parent, border_width=2, border_color=("gray70", "gray30"))
+        table_container.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         
         # Create treeview for products
-        columns = ("#", "SKU", "Name", "Category", "Sub Category", "Brand", "Sub Brand", "Stock", "Qty Sold", "Normal Price", "Workshop Price", "Reorder Level")
+        columns = ("SKU", "Name", "Category", "Sub Category", "Brand", "Sub Brand", "Stock", "Qty Sold", "Normal Price", "Workshop Price", "Reorder Level")
         self.data_tree = ttk.Treeview(table_container, columns=columns, show="headings", height=20)
-        self.data_tree.grid(row=0, column=0, sticky="nsew", padx=(2, 0), pady=(2, 0))
         
         # Apply centralized styling
         table_styles.apply_product_style(self.data_tree)
         
-        # Alternating row colors
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        self.data_tree.tag_configure("evenrow", background="#F8FAFC" if not is_dark else "#1A1A2E")
-        self.data_tree.tag_configure("oddrow",  background="#FFFFFF" if not is_dark else "#1E1E2E")
+        # Configure tags for row styling
+        self.data_tree.tag_configure("evenrow", background="#E5E7EB")
+        self.data_tree.tag_configure("oddrow", background="#F3F4F6")
+        self.data_tree.tag_configure("hover", background="#D1D5DB")  # Hover effect
+        # Stock status colors - only for stock column
+        self.data_tree.tag_configure("stock_zero", foreground="#DC2626", font=("Segoe UI", 11, "bold"))
+        self.data_tree.tag_configure("stock_low", foreground="#D97706", font=("Segoe UI", 11, "bold"))
+        self.data_tree.tag_configure("stock_ok", foreground="#059669", font=("Segoe UI", 11))
         
-        # Stock status tag colors (adapt to dark mode)
-        self.data_tree.tag_configure("stock_zero", foreground=("#DC2626" if not is_dark else "#F87171"), font=("Segoe UI", 11, "bold"))
-        self.data_tree.tag_configure("stock_low", foreground=("#D97706" if not is_dark else "#FBBF24"), font=("Segoe UI", 11, "bold"))
-        self.data_tree.tag_configure("stock_ok", foreground=("#059669" if not is_dark else "#34D399"), font=("Segoe UI", 11))
-        
-        # Column widths - Name and Brand stretch to fill space
-        column_widths = {"#": 50, "SKU": 110, "Name": 200, "Category": 120, "Sub Category": 120,
+        # Define headings and column widths - wider for better visibility
+        column_widths = {"SKU": 100, "Name": 200, "Category": 120, "Sub Category": 120, 
                         "Brand": 120, "Sub Brand": 120, "Stock": 80, "Qty Sold": 80,
-                        "Normal Price": 100, "Workshop Price": 120, "Reorder Level": 90}
+                        "Normal Price": 100, "Workshop Price": 120, "Reorder Level": 100}
         
         for col in columns:
             self.data_tree.heading(col, text=f"  {col}  ", anchor="center")
-            stretch = col in ("Name", "Category", "Brand")
-            anchor = "center" if col != "#" else "w"
-            self.data_tree.column(col, width=column_widths.get(col, 120), anchor=anchor, minwidth=70, stretch=stretch)
+            self.data_tree.column(col, width=column_widths.get(col, 100), anchor="center", minwidth=80)
         
-        # Scrollbars (both inside table_container, using grid)
+        # Scrollbars with modern styling
         self.v_scrollbar = ttk.Scrollbar(table_container, orient="vertical", command=self.data_tree.yview)
-        self.v_scrollbar.grid(row=0, column=1, sticky="ns", pady=(2, 0))
-        
-        self.h_scrollbar = ttk.Scrollbar(table_container, orient="horizontal", command=self.data_tree.xview)
-        self.h_scrollbar.grid(row=1, column=0, columnspan=2, sticky="ew", padx=(2, 0))
-        
+        self.h_scrollbar = ttk.Scrollbar(parent, orient="horizontal", command=self.data_tree.xview)
         self.data_tree.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
+        
+        # Pack table and scrollbars
+        self.data_tree.pack(side="left", fill="both", expand=True, padx=(2, 0), pady=2)
+        self.v_scrollbar.pack(side="right", fill="y", pady=2)
+        self.h_scrollbar.pack(side="bottom", fill="x", padx=5)
         
         # Bind double-click to edit
         self.data_tree.bind("<Double-1>", lambda e: self.edit_item())
         
+        # Add hover effect binding
+        self.data_tree.bind("<Motion>", self.on_table_hover)
+        
         # Bind right-click for context menu
         self.data_tree.bind("<Button-3>", self.show_context_menu)
         
-        # Create styled context menu (adapts to theme)
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        ctx_bg = "#2D2D2D" if is_dark else "#F8FAFC"
-        ctx_fg = "#FFFFFF" if is_dark else "#1F2937"
-        self.context_menu = tk.Menu(self.parent, tearoff=0, bg=ctx_bg, fg=ctx_fg, 
+        # Create styled context menu matching dark theme
+        self.context_menu = tk.Menu(self.parent, tearoff=0, bg="#2D2D2D", fg="#FFFFFF", 
                                     activebackground="#3B82F6", activeforeground="#FFFFFF",
-                                    borderwidth=1, relief="solid",
-                                    font=("Segoe UI", 11))
-        self.context_menu.add_command(label="  ✏  Edit", command=self.edit_item)
-        self.context_menu.add_command(label="  ➕  Quick Stock +1", command=lambda: self.quick_stock_adjust(1))
-        self.context_menu.add_command(label="  ➖  Quick Stock -1", command=lambda: self.quick_stock_adjust(-1))
-        self.context_menu.add_separator()
-        self.context_menu.add_command(label="  🗑  Delete", command=self.delete_item, foreground="#EF4444")
+                                    borderwidth=0, font=("Segoe UI", 11))
+        self.context_menu.add_command(label="  Edit", command=self.edit_item)
+        self.context_menu.add_command(label="  Quick Stock +1", command=lambda: self.quick_stock_adjust(1))
+        self.context_menu.add_command(label="  Quick Stock -1", command=lambda: self.quick_stock_adjust(-1))
+        self.context_menu.add_separator(background="#404040")
+        self.context_menu.add_command(label="  Delete", command=self.delete_item, foreground="#EF4444")
         
         # Item count label below table
-        self.count_label = ctk.CTkLabel(parent, text="Showing 0 of 0 items", font=ctk.CTkFont(size=11), text_color=("gray50", "gray60"))
-        self.count_label.pack(side="bottom", anchor="w", padx=5, pady=(5, 5))
+        self.count_label = ctk.CTkLabel(parent, text="Showing 0 of 0 items", font=ctk.CTkFont(size=11), text_color="gray")
+        self.count_label.pack(side="bottom", anchor="w", padx=5, pady=(5, 0))
     
     def show_context_menu(self, event):
         """Show right-click context menu"""
@@ -737,7 +449,7 @@ class InventoryView:
             return
         
         item_values = self.data_tree.item(selection[0], 'values')
-        sku = item_values[1]
+        sku = item_values[0]
         
         # Get current stock
         product = db.execute_query("SELECT stock FROM products WHERE sku = ?", (sku,))
@@ -762,24 +474,26 @@ class InventoryView:
     
     def create_categories_table(self, parent):
         """Create categories table with enhanced styling"""
+        # Clear existing table - first unconfigure scrollbars to prevent errors
         self._cleanup_scrollbars()
         for widget in parent.winfo_children():
             widget.destroy()
         
+        # Create treeview for categories
         columns = ("ID", "Name", "Description", "Created")
         self.data_tree = ttk.Treeview(parent, columns=columns, show="headings", height=25)
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        table_styles.apply_category_style(self.data_tree, is_dark)
         
-        row_fg = "#E0E0E0" if is_dark else "black"
-        self.data_tree.tag_configure("evenrow", background="#1A1A2E" if is_dark else "#F8FAFC", foreground=row_fg)
-        self.data_tree.tag_configure("oddrow",  background="#1E1E2E" if is_dark else "#FFFFFF", foreground=row_fg)
+        # Apply centralized styling
+        table_styles.apply_category_style(self.data_tree)
         
+        # Define headings and column widths
         column_widths = {"ID": 80, "Name": 250, "Description": 450, "Created": 180}
+        
         for col in columns:
             self.data_tree.heading(col, text=f"  {col}  ", anchor="center")
             self.data_tree.column(col, width=column_widths.get(col, 120), anchor="center" if col == "ID" else "w", minwidth=80)
         
+        # Scrollbars
         self.v_scrollbar = ttk.Scrollbar(parent, orient="vertical", command=self.data_tree.yview)
         self.h_scrollbar = ttk.Scrollbar(parent, orient="horizontal", command=self.data_tree.xview)
         self.data_tree.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
@@ -787,28 +501,31 @@ class InventoryView:
         self.data_tree.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
         self.v_scrollbar.pack(side="right", fill="y", pady=5)
         self.h_scrollbar.pack(side="bottom", fill="x", padx=5)
+        
         self.data_tree.bind("<Double-1>", lambda e: self.edit_item())
     
     def create_sub_categories_table(self, parent):
         """Create sub categories table with enhanced styling"""
+        # Clear existing table - first unconfigure scrollbars to prevent errors
         self._cleanup_scrollbars()
         for widget in parent.winfo_children():
             widget.destroy()
         
+        # Create treeview for sub categories
         columns = ("ID", "Name", "Category", "Description", "Created")
         self.data_tree = ttk.Treeview(parent, columns=columns, show="headings", height=25)
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        table_styles.apply_category_style(self.data_tree, is_dark)
         
-        row_fg = "#E0E0E0" if is_dark else "black"
-        self.data_tree.tag_configure("evenrow", background="#1A1A2E" if is_dark else "#F8FAFC", foreground=row_fg)
-        self.data_tree.tag_configure("oddrow",  background="#1E1E2E" if is_dark else "#FFFFFF", foreground=row_fg)
+        # Apply centralized styling
+        table_styles.apply_category_style(self.data_tree)
         
+        # Define headings and column widths
         column_widths = {"ID": 80, "Name": 200, "Category": 150, "Description": 350, "Created": 180}
+        
         for col in columns:
             self.data_tree.heading(col, text=f"  {col}  ", anchor="center")
             self.data_tree.column(col, width=column_widths.get(col, 120), anchor="center" if col == "ID" else "w", minwidth=80)
         
+        # Scrollbars
         self.v_scrollbar = ttk.Scrollbar(parent, orient="vertical", command=self.data_tree.yview)
         self.h_scrollbar = ttk.Scrollbar(parent, orient="horizontal", command=self.data_tree.xview)
         self.data_tree.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
@@ -816,28 +533,31 @@ class InventoryView:
         self.data_tree.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
         self.v_scrollbar.pack(side="right", fill="y", pady=5)
         self.h_scrollbar.pack(side="bottom", fill="x", padx=5)
+        
         self.data_tree.bind("<Double-1>", lambda e: self.edit_item())
     
     def create_brands_table(self, parent):
         """Create brands table with enhanced styling"""
+        # Clear existing table - first unconfigure scrollbars to prevent errors
         self._cleanup_scrollbars()
         for widget in parent.winfo_children():
             widget.destroy()
         
+        # Create treeview for brands
         columns = ("ID", "Name", "Description", "Created")
         self.data_tree = ttk.Treeview(parent, columns=columns, show="headings", height=25)
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        table_styles.apply_brand_style(self.data_tree, is_dark)
         
-        row_fg = "#E0E0E0" if is_dark else "black"
-        self.data_tree.tag_configure("evenrow", background="#1A1A2E" if is_dark else "#F8FAFC", foreground=row_fg)
-        self.data_tree.tag_configure("oddrow",  background="#1E1E2E" if is_dark else "#FFFFFF", foreground=row_fg)
+        # Apply centralized styling
+        table_styles.apply_brand_style(self.data_tree)
         
+        # Define headings and column widths
         column_widths = {"ID": 80, "Name": 250, "Description": 450, "Created": 180}
+        
         for col in columns:
             self.data_tree.heading(col, text=f"  {col}  ", anchor="center")
             self.data_tree.column(col, width=column_widths.get(col, 120), anchor="center" if col == "ID" else "w", minwidth=80)
         
+        # Scrollbars
         self.v_scrollbar = ttk.Scrollbar(parent, orient="vertical", command=self.data_tree.yview)
         self.h_scrollbar = ttk.Scrollbar(parent, orient="horizontal", command=self.data_tree.xview)
         self.data_tree.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
@@ -845,28 +565,31 @@ class InventoryView:
         self.data_tree.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
         self.v_scrollbar.pack(side="right", fill="y", pady=5)
         self.h_scrollbar.pack(side="bottom", fill="x", padx=5)
+        
         self.data_tree.bind("<Double-1>", lambda e: self.edit_item())
     
     def create_sub_brands_table(self, parent):
         """Create sub brands table with enhanced styling"""
+        # Clear existing table - first unconfigure scrollbars to prevent errors
         self._cleanup_scrollbars()
         for widget in parent.winfo_children():
             widget.destroy()
         
+        # Create treeview for sub brands
         columns = ("ID", "Name", "Brand", "Description", "Created")
         self.data_tree = ttk.Treeview(parent, columns=columns, show="headings", height=25)
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        table_styles.apply_brand_style(self.data_tree, is_dark)
         
-        row_fg = "#E0E0E0" if is_dark else "black"
-        self.data_tree.tag_configure("evenrow", background="#1A1A2E" if is_dark else "#F8FAFC", foreground=row_fg)
-        self.data_tree.tag_configure("oddrow",  background="#1E1E2E" if is_dark else "#FFFFFF", foreground=row_fg)
+        # Apply centralized styling
+        table_styles.apply_brand_style(self.data_tree)
         
+        # Define headings and column widths
         column_widths = {"ID": 80, "Name": 200, "Brand": 150, "Description": 350, "Created": 180}
+        
         for col in columns:
             self.data_tree.heading(col, text=f"  {col}  ", anchor="center")
             self.data_tree.column(col, width=column_widths.get(col, 120), anchor="center" if col == "ID" else "w", minwidth=80)
         
+        # Scrollbars
         self.v_scrollbar = ttk.Scrollbar(parent, orient="vertical", command=self.data_tree.yview)
         self.h_scrollbar = ttk.Scrollbar(parent, orient="horizontal", command=self.data_tree.xview)
         self.data_tree.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
@@ -874,36 +597,36 @@ class InventoryView:
         self.data_tree.pack(side="left", fill="both", expand=True, padx=(5, 0), pady=5)
         self.v_scrollbar.pack(side="right", fill="y", pady=5)
         self.h_scrollbar.pack(side="bottom", fill="x", padx=5)
+        
         self.data_tree.bind("<Double-1>", lambda e: self.edit_item())
     
     def switch_tab(self, tab_name):
         """Switch between tabs"""
-        # Close any floating overrideredirect Toplevel popups
-        try:
-            root = self.parent.winfo_toplevel()
-            for w in root.winfo_children():
-                if isinstance(w, tk.Toplevel) and w.winfo_exists():
-                    try:
-                        if w.overrideredirect():
-                            w.destroy()
-                    except Exception:
-                        pass
-        except Exception:
-            pass
         self.current_tab = tab_name
         
-        active_fg = ("#3B82F6", "#2563EB")
-        active_text = "white"
-        inactive_fg = ("gray85", "gray25")
-        inactive_text = ("gray10", "gray90")
+        # Update button styles
+        active_color = ("#1f538d", "#14375e")
+        inactive_color = ("gray85", "gray25")
+        inactive_text_color = ("gray10", "gray90")
         
-        for key, btn in self._tab_buttons.items():
-            is_active = key == tab_name
-            btn.configure(
-                fg_color=active_fg if is_active else inactive_fg,
-                text_color=active_text if is_active else inactive_text,
-                hover_color=("#2563EB", "#1D4ED8") if is_active else ("gray75", "gray35")
-            )
+        # Reset all buttons to inactive
+        self.products_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
+        self.categories_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
+        self.sub_categories_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
+        self.brands_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
+        self.sub_brands_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
+        
+        # Set active button
+        if tab_name == "products":
+            self.products_btn.configure(fg_color=active_color, text_color="white")
+        elif tab_name == "categories":
+            self.categories_btn.configure(fg_color=active_color, text_color="white")
+        elif tab_name == "sub_categories":
+            self.sub_categories_btn.configure(fg_color=active_color, text_color="white")
+        elif tab_name == "brands":
+            self.brands_btn.configure(fg_color=active_color, text_color="white")
+        elif tab_name == "sub_brands":
+            self.sub_brands_btn.configure(fg_color=active_color, text_color="white")
         
         # Update add button text
         button_texts = {
@@ -915,15 +638,8 @@ class InventoryView:
         }
         self.add_btn.configure(text=button_texts.get(tab_name, "Add"))
         
-        # Close any open filter popups and hide filter bar for non-products tabs
-        if tab_name != "products":
-            for f in (self.category_filter, self.sub_category_filter,
-                      self.brand_filter, self.sub_brand_filter,
-                      self.stock_filter):
-                f._close_popup()
-            self.filter_frame.pack_forget()
-        else:
-            self.filter_frame.pack(fill="x", padx=10, pady=(0, 10), before=self.cards_frame)
+        # Show/hide filter frame based on tab
+        filter_frame = self.search_var.trace_info()
         
         # Recreate table for current tab
         content_frame = self.data_tree.master
@@ -959,17 +675,21 @@ class InventoryView:
             elif self.current_tab == "sub_brands":
                 self.load_sub_brands_data()
                 
-            if hasattr(self, 'filter_chips_frame'):
-                self._update_filter_chips()
-                
         except Exception as e:
             print(f"Error loading data: {e}")
             messagebox.showerror("Error", f"Failed to load data: {e}")
     
+    def on_table_hover(self, event):
+        """Handle mouse hover over table rows for visual feedback"""
+        row_id = self.data_tree.identify_row(event.y)
+        if row_id:
+            self.data_tree.config(cursor="hand2")
+        else:
+            self.data_tree.config(cursor="")
+
     def format_price(self, price):
         """Format price with comma separators"""
-        from utils.format_utils import format_price as _fp
-        return _fp(price)
+        return f"Rs {price:,.0f}"
     
     def get_stock_status_tag(self, stock, reorder_level):
         """Get stock status color tag - only for stock column"""
@@ -985,8 +705,7 @@ class InventoryView:
         query = """
             SELECT p.sku, p.name, c.category_name, sc.sub_category_name, 
                    b.brand_name, sb.sub_brand_name, p.stock, p.qty_sold,
-                   p.price_normal, p.price_workshop, p.reorder_level, p.cost_price,
-                   p.barcode
+                   p.price_normal, p.price_workshop, p.reorder_level, p.cost_price
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.category_id
             LEFT JOIN sub_categories sc ON p.sub_category_id = sc.sub_category_id
@@ -1015,7 +734,10 @@ class InventoryView:
         self.load_filter_options()
         
         # Insert data with proper formatting
-        for idx, product in enumerate(products, start=1):
+        for idx, product in enumerate(products):
+            # Determine row tag for alternating colors only
+            row_tag = "evenrow" if idx % 2 == 0 else "oddrow"
+            
             # Stock display with status icon and label
             stock = product['stock']
             reorder = product['reorder_level']
@@ -1026,43 +748,44 @@ class InventoryView:
             else:
                 stock_display = f"{stock}  OK"
             
-            # Get stock color tag
+            # Get stock color tag (only for stock column)
             stock_tag = self.get_stock_status_tag(stock, reorder)
             
-            # Insert the item with alternating row and stock status tags
-            row_tag = "evenrow" if idx % 2 == 0 else "oddrow"
+            # Insert the item
             item_id = self.data_tree.insert("", "end", values=(
-                idx,
                 product['sku'],
                 product['name'],
                 product['category_name'] or "N/A",
-                product['sub_category_name'] or "-",
+                product['sub_category_name'] or "N/A",
                 product['brand_name'] or "N/A",
-                product['sub_brand_name'] or "-",
+                product['sub_brand_name'] or "N/A",
                 stock_display,
                 product.get('qty_sold', 0),
                 self.format_price(product['price_normal']),
                 self.format_price(product['price_workshop']),
                 reorder
-            ), tags=(stock_tag, row_tag))
+            ), tags=(row_tag,))
+            
+            # Apply stock color ONLY to stock column
+            self.data_tree.item(item_id, tags=(row_tag, stock_tag))
         
+        # Update count label if it exists
         displayed_count = len(self.data_tree.get_children())
         if hasattr(self, 'count_label'):
-            self.count_label.configure(text=f"Showing {displayed_count} of {total_products} Products")
+            self.count_label.configure(text=f"Showing {displayed_count} of {total_products} items")
     
     def load_categories_data(self):
         """Load categories data"""
         categories = db.execute_query("SELECT * FROM categories ORDER BY category_name")
         self.all_data = categories
         
-        for idx, category in enumerate(categories, start=1):
-            row_tag = "evenrow" if idx % 2 == 0 else "oddrow"
+        for category in categories:
             self.data_tree.insert("", "end", values=(
                 category['category_id'],
                 category['category_name'],
                 category['description'] or "N/A",
                 category['created_at']
-            ), tags=(row_tag,))
+            ))
     
     def load_sub_categories_data(self):
         """Load sub categories data"""
@@ -1075,29 +798,27 @@ class InventoryView:
         sub_categories = db.execute_query(query)
         self.all_data = sub_categories
         
-        for idx, sc in enumerate(sub_categories, start=1):
-            row_tag = "evenrow" if idx % 2 == 0 else "oddrow"
+        for sc in sub_categories:
             self.data_tree.insert("", "end", values=(
                 sc['sub_category_id'],
                 sc['sub_category_name'],
                 sc['category_name'] or "N/A",
                 sc['description'] or "N/A",
                 sc['created_at']
-            ), tags=(row_tag,))
+            ))
     
     def load_brands_data(self):
         """Load brands data"""
         brands = db.execute_query("SELECT * FROM brands ORDER BY brand_name")
         self.all_data = brands
         
-        for idx, brand in enumerate(brands, start=1):
-            row_tag = "evenrow" if idx % 2 == 0 else "oddrow"
+        for brand in brands:
             self.data_tree.insert("", "end", values=(
                 brand['brand_id'],
                 brand['brand_name'],
                 brand['description'] or "N/A",
                 brand['created_at']
-            ), tags=(row_tag,))
+            ))
     
     def load_sub_brands_data(self):
         """Load sub brands data"""
@@ -1110,15 +831,14 @@ class InventoryView:
         sub_brands = db.execute_query(query)
         self.all_data = sub_brands
         
-        for idx, sb in enumerate(sub_brands, start=1):
-            row_tag = "evenrow" if idx % 2 == 0 else "oddrow"
+        for sb in sub_brands:
             self.data_tree.insert("", "end", values=(
                 sb['sub_brand_id'],
                 sb['sub_brand_name'],
                 sb['brand_name'] or "N/A",
                 sb['description'] or "N/A",
                 sb['created_at']
-            ), tags=(row_tag,))
+            ))
     
     def load_filter_options(self):
         """Load categories and brands for filter dropdowns"""
@@ -1152,68 +872,6 @@ class InventoryView:
         self.stock_filter_var.set("All")
         self.filter_data()
     
-    def _update_filter_chips(self):
-        for w in self.filter_chips_inner.winfo_children():
-            w.destroy()
-        filters = {}
-        if self.category_filter_var.get() != "All":
-            filters["Category"] = self.category_filter_var.get()
-        if self.sub_category_filter_var.get() != "All":
-            filters["Sub Cat"] = self.sub_category_filter_var.get()
-        if self.brand_filter_var.get() != "All":
-            filters["Brand"] = self.brand_filter_var.get()
-        if self.sub_brand_filter_var.get() != "All":
-            filters["Sub Brand"] = self.sub_brand_filter_var.get()
-        if self.stock_filter_var.get() != "All":
-            filters["Stock"] = self.stock_filter_var.get()
-        search = self.search_var.get().strip()
-        if search:
-            filters["Search"] = f'"{search}"'
-        if not filters:
-            self.filter_chips_frame.pack_forget()
-            return
-        lbl = ctk.CTkLabel(
-            self.filter_chips_inner, text="Active:",
-            font=ctk.CTkFont(size=11, weight="bold"),
-            text_color=("gray50", "gray60")
-        )
-        lbl.pack(side="left", padx=(0, 6))
-        for key, val in filters.items():
-            chip = ctk.CTkFrame(
-                self.filter_chips_inner, corner_radius=12,
-                fg_color=("#DBEAFE", "#1E3A5F"),
-                border_width=0
-            )
-            ctk.CTkLabel(
-                chip, text=f"{key}: {val}",
-                font=ctk.CTkFont(size=10),
-                text_color=("#1E40AF", "#93C5FD")
-            ).pack(side="left", padx=(8, 2), pady=2)
-            rm_btn = ctk.CTkLabel(
-                chip, text=" ✕",
-                font=ctk.CTkFont(size=10, weight="bold"),
-                text_color=("#1E40AF", "#93C5FD"),
-                cursor="hand2"
-            )
-            rm_btn.pack(side="right", padx=(2, 6), pady=2)
-            def on_rm(e, k=key):
-                if k == "Search":
-                    self.search_var.set("")
-                elif k == "Category":
-                    self.category_filter_var.set("All")
-                elif k == "Sub Cat":
-                    self.sub_category_filter_var.set("All")
-                elif k == "Brand":
-                    self.brand_filter_var.set("All")
-                elif k == "Sub Brand":
-                    self.sub_brand_filter_var.set("All")
-                elif k == "Stock":
-                    self.stock_filter_var.set("All")
-            rm_btn.bind("<Button-1>", on_rm)
-            chip.pack(side="left", padx=(0, 5))
-        # Pack before the summary cards to maintain layout order
-        self.filter_chips_frame.pack(fill="x", padx=10, pady=(0, 4), before=self.cards_frame)
-    
     def filter_data(self, *args):
         """Filter data based on search and filter criteria"""
         search_term = self.search_var.get().lower()
@@ -1231,13 +889,11 @@ class InventoryView:
             return
         
         # Filter and display matching items
-        row_num = 0
         for item in self.all_data:
             if self.current_tab == "products":
                 # Text search filter
                 matches_search = (search_term in item['name'].lower() or 
-                                  search_term in item['sku'].lower() or
-                                  (item.get('barcode') and search_term in item['barcode'].lower()))
+                                  search_term in item['sku'].lower())
                 
                 # Category filter
                 category_name = item['category_name'] if item['category_name'] else "N/A"
@@ -1275,7 +931,6 @@ class InventoryView:
                 
                 # Apply all filters
                 if matches_search and matches_category and matches_sub_category and matches_brand and matches_sub_brand and matches_stock:
-                    row_num += 1
                     # Stock display with status icon and label
                     if stock == 0:
                         stock_display = "0  Out"
@@ -1287,10 +942,8 @@ class InventoryView:
                     # Get stock color tag
                     stock_tag = self.get_stock_status_tag(stock, reorder_level)
                     
-                    # Insert the item with alternating row and stock status tags
-                    row_tag = "evenrow" if row_num % 2 == 0 else "oddrow"
+                    # Insert the item
                     item_id = self.data_tree.insert("", "end", values=(
-                        row_num,
                         item['sku'],
                         item['name'],
                         category_name,
@@ -1302,60 +955,45 @@ class InventoryView:
                         self.format_price(item['price_normal']),
                         self.format_price(item['price_workshop']),
                         reorder_level
-                    ), tags=(stock_tag, row_tag))
+                    ), tags=(stock_tag,))
             elif self.current_tab == "categories":
                 if search_term in item['category_name'].lower():
-                    row_num += 1
-                    row_tag = "evenrow" if row_num % 2 == 0 else "oddrow"
                     self.data_tree.insert("", "end", values=(
                         item['category_id'],
                         item['category_name'],
                         item['description'] or "N/A",
                         item['created_at']
-                    ), tags=(row_tag,))
+                    ))
             elif self.current_tab == "sub_categories":
                 if search_term in item['sub_category_name'].lower():
-                    row_num += 1
-                    row_tag = "evenrow" if row_num % 2 == 0 else "oddrow"
                     self.data_tree.insert("", "end", values=(
                         item['sub_category_id'],
                         item['sub_category_name'],
                         item['category_name'] or "N/A",
                         item['description'] or "N/A",
                         item['created_at']
-                    ), tags=(row_tag,))
+                    ))
             elif self.current_tab == "brands":
                 if search_term in item['brand_name'].lower():
-                    row_num += 1
-                    row_tag = "evenrow" if row_num % 2 == 0 else "oddrow"
                     self.data_tree.insert("", "end", values=(
                         item['brand_id'],
                         item['brand_name'],
                         item['description'] or "N/A",
                         item['created_at']
-                    ), tags=(row_tag,))
+                    ))
             elif self.current_tab == "sub_brands":
                 if search_term in item['sub_brand_name'].lower():
-                    row_num += 1
-                    row_tag = "evenrow" if row_num % 2 == 0 else "oddrow"
                     self.data_tree.insert("", "end", values=(
                         item['sub_brand_id'],
                         item['sub_brand_name'],
                         item['brand_name'] or "N/A",
                         item['description'] or "N/A",
                         item['created_at']
-                    ), tags=(row_tag,))
+                    ))
         
-        # Update count label
-        displayed_count = len(self.data_tree.get_children())
-        if hasattr(self, 'count_label'):
-            total = len(self.all_data) if hasattr(self, 'all_data') else 0
-            tab_name = self.current_tab.replace("_", " ").title()
-            self.count_label.configure(text=f"Showing {displayed_count} of {total} {tab_name}")
-        
-        # Update filter chips
-        if hasattr(self, 'filter_chips_frame'):
-            self._update_filter_chips()
+        # Configure tag for low stock items - red color (need to do this after inserting items)
+        if self.current_tab == "products":
+            self.data_tree.tag_configure("low_stock", foreground="#FF0000")
     
     def add_item(self):
         """Add new item based on current tab"""
@@ -1381,12 +1019,11 @@ class InventoryView:
                 # Insert product
                 db.execute_insert(
                     """INSERT INTO products (name, sku, category_id, sub_category_id, brand_id, sub_brand_id, description, 
-                                           barcode, stock, price_normal, price_workshop, cost_price, reorder_level)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                           stock, price_normal, price_workshop, cost_price, reorder_level)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (dialog.result['name'], sku, dialog.result['category_id'], dialog.result['sub_category_id'],
                      dialog.result['brand_id'], dialog.result['sub_brand_id'],
-                     dialog.result['description'], dialog.result['barcode'],
-                     dialog.result['stock'], dialog.result['price_normal'],
+                     dialog.result['description'], dialog.result['stock'], dialog.result['price_normal'],
                      dialog.result['price_workshop'], dialog.result['cost_price'], dialog.result['reorder_level'])
                 )
                 
@@ -1475,7 +1112,7 @@ class InventoryView:
     
     def edit_product(self, item_values):
         """Edit product"""
-        sku = item_values[1]
+        sku = item_values[0]
         # Get full product data
         product_query = "SELECT * FROM products WHERE sku = ?"
         product_result = db.execute_query(product_query, (sku,))
@@ -1487,12 +1124,11 @@ class InventoryView:
                 try:
                     db.execute_update(
                         """UPDATE products SET name=?, category_id=?, sub_category_id=?, brand_id=?, sub_brand_id=?, description=?,
-                                             barcode=?, stock=?, price_normal=?, price_workshop=?, cost_price=?, reorder_level=?
+                                             stock=?, price_normal=?, price_workshop=?, cost_price=?, reorder_level=?
                            WHERE sku=?""",
                         (dialog.result['name'], dialog.result['category_id'], dialog.result['sub_category_id'],
                          dialog.result['brand_id'], dialog.result['sub_brand_id'],
-                         dialog.result['description'], dialog.result['barcode'],
-                         dialog.result['stock'], dialog.result['price_normal'],
+                         dialog.result['description'], dialog.result['stock'], dialog.result['price_normal'],
                          dialog.result['price_workshop'], dialog.result['cost_price'], dialog.result['reorder_level'], sku)
                     )
                     messagebox.showinfo("Success", "Product updated successfully!")
@@ -1630,7 +1266,7 @@ class InventoryView:
         
         try:
             if self.current_tab == "products":
-                sku = item_values[1]
+                sku = item_values[0]
                 db.execute_update("UPDATE products SET is_active=0 WHERE sku=?", (sku,))
             elif self.current_tab == "categories":
                 category_id = item_values[0]
@@ -1677,58 +1313,26 @@ class InventoryView:
     
     def handle_export(self, choice):
         """Handle export dropdown selection"""
-        if "Excel" in choice:
+        if choice == "Excel":
             self.export_to_excel()
-        elif "PDF" in choice:
+        elif choice == "PDF":
             self.export_to_pdf()
-        self.export_menu.set("📥 Export")
+        # Reset dropdown to default
+        self.export_menu.set("Export")
 
     def import_from_excel(self):
-        """Import products from Excel using smart auto-detection.
-        
-        Workflow:
-          1. User selects an Excel file
-          2. All sheets are scanned automatically (no manual column mapping)
-          3. A preview dialog shows what will be imported
-          4. On confirmation a progress dialog runs the actual import
-          5. Inventory table is refreshed
-        
-        Duplicate handling: products whose name already exists in the same
-        category are silently skipped.
-        """
+        """Import products from Excel with column mapping"""
         if self.current_tab != "products":
             messagebox.showinfo("Info", "Excel import is only available for Products tab.")
             return
-
-        from utils.excel_importer import SimpleExcelImporter
-
-        importer = SimpleExcelImporter(self.parent)
-
-        # Step 1: browse
-        file_path = importer.browse_file()
-        if not file_path:
-            return  # user cancelled
-
-        # Step 2: scan & preview
-        preview_data = importer.extract_preview_data(file_path)
-        if not preview_data:
-            messagebox.showwarning(
-                "No Data Found",
-                "No importable product sheets were found in this file.\n\n"
-                "Make sure your Excel has columns like:\n"
-                "  • Items / Bikes names / Product Name\n"
-                "  • Price / Wholesale Price\n"
-                "  • Qty in Hand / Stock"
-            )
-            return
-
-        # Step 3: show preview dialog
-        proceed = self._show_preview_dialog(preview_data)
-        if not proceed:
-            return
-
-        # Step 4: import with progress
-        self._do_import_with_progress(importer, file_path)
+        
+        from utils.excel_mapper import ExcelColumnMapper
+        
+        mapper = ExcelColumnMapper(self.parent)
+        mapper.browse_and_import()
+        
+        # Refresh the data after import
+        self.load_data()
     
     def _show_preview_dialog(self, preview_data):
         """Show preview of data before import - smaller and responsive"""
@@ -1758,7 +1362,7 @@ class InventoryView:
         preview_dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
         
         # Header
-        header = ctk.CTkFrame(preview_dialog, corner_radius=10, fg_color=("#3B82F6", "#2563EB"))
+        header = ctk.CTkFrame(preview_dialog, corner_radius=10, fg_color="#3B82F6")
         header.pack(fill="x", padx=15, pady=(15, 8))
         ctk.CTkLabel(header, text="📋 Preview Excel Data", 
                     font=ctk.CTkFont(size=16, weight="bold"), text_color="white").pack(pady=10)
@@ -1826,18 +1430,19 @@ class InventoryView:
         # Responsive button sizing
         btn_width = max(120, min(180, dialog_width // 5))
         ctk.CTkButton(button_frame, text="✓ Import This Data", command=on_import,
-                     fg_color=("#10B981", "#059669"), hover_color=("#059669", "#047857"),
+                     fg_color="#10B981", hover_color="#059669",
                      width=btn_width, height=40, font=ctk.CTkFont(size=12, weight="bold")).pack(side="left", padx=(0, 8))
         
         ctk.CTkButton(button_frame, text="✗ Cancel", command=on_cancel,
-                     fg_color=("#EF4444", "#B91C1C"), hover_color=("#DC2626", "#991B1B"),
+                     fg_color="#EF4444", hover_color="#DC2626",
                      width=int(btn_width * 0.7), height=40, font=ctk.CTkFont(size=12)).pack(side="left")
         
         self.parent.wait_window(preview_dialog)
         return result["proceed"]
     
     def _do_import_with_progress(self, importer, file_path):
-        """Show import progress and execute import in background thread"""
+        """Show import progress and execute import - smaller and responsive"""
+        # Calculate responsive dimensions
         parent_width = self.parent.winfo_width()
         parent_height = self.parent.winfo_height()
         if parent_width < 100:
@@ -1854,7 +1459,7 @@ class InventoryView:
         progress_dialog.transient(self.parent)
         progress_dialog.grab_set()
         
-        # Center dialog
+        # Center dialog with bounds checking
         progress_dialog.update_idletasks()
         x = self.parent.winfo_x() + (self.parent.winfo_width() // 2) - (dialog_width // 2)
         y = self.parent.winfo_y() + (self.parent.winfo_height() // 2) - (dialog_height // 2)
@@ -1863,79 +1468,61 @@ class InventoryView:
         progress_dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
         
         # Header
-        header = ctk.CTkFrame(progress_dialog, corner_radius=10, fg_color=("#10B981", "#059669"))
+        header = ctk.CTkFrame(progress_dialog, corner_radius=10, fg_color="#10B981")
         header.pack(fill="x", padx=15, pady=(12, 8))
-        ctk.CTkLabel(header, text="📥 Importing Data",
+        ctk.CTkLabel(header, text="📥 Importing Data", 
                     font=ctk.CTkFont(size=14, weight="bold"), text_color="white").pack(pady=10)
         
-        # Progress bar
-        progress_bar = ctk.CTkProgressBar(progress_dialog)
-        progress_bar.pack(fill="x", padx=15, pady=(0, 5))
-        progress_bar.set(0)
-        
-        # Progress text
-        progress_text_height = int(dialog_height * 0.35)
+        # Progress display
+        progress_text_height = int(dialog_height * 0.4)
         progress_text = ctk.CTkTextbox(progress_dialog, height=progress_text_height, font=ctk.CTkFont(size=10))
         progress_text.pack(fill="both", expand=True, padx=15, pady=8)
         progress_text.insert("1.0", "Starting import...\n\n")
         
         # Status label
-        status_label = ctk.CTkLabel(progress_dialog, text="Importing...",
+        status_label = ctk.CTkLabel(progress_dialog, text="Importing...", 
                                    font=ctk.CTkFont(size=11, weight="bold"))
         status_label.pack(pady=(0, 8))
         
-        # Close button (disabled during import)
-        close_btn = ctk.CTkButton(progress_dialog, text="Close",
+        # Close button
+        close_btn = ctk.CTkButton(progress_dialog, text="Close", 
                                  command=progress_dialog.destroy,
                                  state="disabled", width=100, height=35)
         close_btn.pack(pady=(0, 12))
         
-        # --- Thread-safe UI update helpers ---
-        def _append_text(msg):
+        # Update UI during import
+        def update_progress(msg):
             progress_text.insert("end", f"{msg}\n")
             progress_text.see("end")
+            progress_dialog.update_idletasks()
         
-        def _on_complete(total_imported):
-            progress_bar.set(1.0)
-            _append_text("\n" + "=" * 40 + "\n")
-            _append_text("✓ IMPORT COMPLETE!\n\n")
-
-            stats = getattr(importer, "stats", {}) or {}
-
-            _append_text(f"Sheets processed:    {stats.get('sheets_processed', 0)}\n")
-            _append_text(f"Products imported:   {total_imported}\n")
-            _append_text(f"Duplicates skipped:  {stats.get('products_skipped', 0)}\n")
-            _append_text(f"Categories created:  {stats.get('categories_created', 0)}\n")
-            _append_text(f"Brands created:      {stats.get('brands_created', 0)}\n")
-
-            errors = stats.get('errors', []) or []
-            if errors:
-                _append_text(f"\nErrors: {len(errors)}\n")
-                for error in errors[:5]:
-                    _append_text(f"  - {error}\n")
-
-            status_label.configure(text="Import completed!", text_color=("#10B981", "#34D399"))
-            close_btn.configure(state="normal", text="Close & Refresh")
-            self.load_data()
-        
-        def _on_error(error_msg):
-            progress_bar.set(0)
-            _append_text(f"\n✗ ERROR: {error_msg}\n")
-            status_label.configure(text="Import failed!", text_color=("#EF4444", "#F87171"))
-            close_btn.configure(state="normal", text="Close")
-        
-        # --- Background import thread ---
-        def thread_target():
-            def callback(msg):
-                progress_dialog.after(0, lambda: _append_text(msg))
+        # Run import (synchronous, but updates UI)
+        try:
+            total_imported = importer.import_file(file_path, progress_callback=update_progress)
             
-            try:
-                total_imported = importer.import_file(file_path, progress_callback=callback)
-                progress_dialog.after(0, lambda: _on_complete(total_imported))
-            except Exception as e:
-                progress_dialog.after(0, lambda: _on_error(str(e)))
-        
-        threading.Thread(target=thread_target, daemon=True).start()
+            # Show completion
+            progress_text.insert("end", "\n" + "=" * 40 + "\n")
+            progress_text.insert("end", "✓ IMPORT COMPLETE!\n\n")
+            progress_text.insert("end", f"Sheets processed: {importer.stats['sheets_processed']}\n")
+            progress_text.insert("end", f"Products imported: {total_imported}\n")
+            progress_text.insert("end", f"Categories created: {importer.stats['categories_created']}\n")
+            progress_text.insert("end", f"Brands created: {importer.stats['brands_created']}\n")
+            
+            if importer.stats['errors']:
+                progress_text.insert("end", f"\nErrors: {len(importer.stats['errors'])}\n")
+                for error in importer.stats['errors'][:5]:
+                    progress_text.insert("end", f"  - {error}\n")
+            
+            status_label.configure(text="Import completed!", text_color="#10B981")
+            close_btn.configure(state="normal", text="Close & Refresh")
+            
+            # Refresh inventory
+            self.load_data()
+            
+        except Exception as e:
+            progress_text.insert("end", f"\n✗ ERROR: {str(e)}\n")
+            status_label.configure(text="Import failed!", text_color="#EF4444")
+            close_btn.configure(state="normal", text="Close")
 
 
 class ExcelImportDialog:
@@ -2251,7 +1838,7 @@ class ExcelImportDialog:
                 else:
                     raw_headers.append(f"Column_{i+1}")
             
-            pass
+            print(f"DEBUG: Found headers: {raw_headers}")  # Debug output
             
             # Data starts from the row after the header
             data_start_row = header_row_idx + 1
@@ -2278,7 +1865,7 @@ class ExcelImportDialog:
                 self.column_samples[header] = option_text
                 column_options.append(option_text)
             
-            pass
+            print(f"DEBUG: Column options: {column_options}")  # Debug output
             
             # Get preview data (first 5 rows)
             self.preview_data = []
@@ -2294,13 +1881,13 @@ class ExcelImportDialog:
             self.raw_column_options = ["-- Not Mapped --"] + raw_headers
             
             # Update dropdowns with column options showing samples
-            pass
+            print(f"DEBUG: Updating {len(self.mapping_widgets)} dropdowns")  # Debug output
             for field_key, dropdown in self.mapping_widgets.items():
                 try:
                     dropdown.configure(values=column_options)
-                    pass
+                    print(f"DEBUG: Updated dropdown for {field_key}")  # Debug output
                 except Exception as dropdown_error:
-                    pass
+                    print(f"DEBUG: Error updating dropdown {field_key}: {dropdown_error}")
             
             # Try to auto-map columns based on name matching
             self.auto_map_columns()
@@ -2317,6 +1904,7 @@ class ExcelImportDialog:
         except Exception as e:
             import traceback
             error_details = traceback.format_exc()
+            print(f"DEBUG: Error in _process_excel_with_header_row: {error_details}")
             messagebox.showerror("Error", f"Failed to load Excel file:\n{str(e)}\n\nSee console for details.")
             self.status_label.configure(text="✗ Failed to load file", text_color="#EF4444")
     
@@ -3114,47 +2702,6 @@ class ProductDialog:
         self.description_entry = ctk.CTkEntry(main_frame, width=400)
         self.description_entry.pack(anchor="w", pady=(0, 10))
         
-        # Barcode
-        ctk.CTkLabel(main_frame, text="Barcode:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
-        barcode_row = ctk.CTkFrame(main_frame, fg_color="transparent")
-        barcode_row.pack(fill="x", pady=(0, 5))
-        self.barcode_entry = ctk.CTkEntry(barcode_row, width=220, placeholder_text="Scan or type barcode...")
-        self.barcode_entry.pack(side="left", padx=(0, 5))
-        self.barcode_entry.bind("<Return>", self._on_barcode_scanned)
-        self.barcode_entry.bind("<KeyRelease>", self._on_barcode_edited)
-        self.cam_btn = ctk.CTkButton(
-            barcode_row, text="Camera", width=65,
-            command=self._start_camera_scanner
-        )
-        self.cam_btn.pack(side="left", padx=(0, 3))
-        # Second row: preview + action buttons
-        barcode_row2 = ctk.CTkFrame(main_frame, fg_color="transparent")
-        barcode_row2.pack(fill="x", pady=(0, 5))
-        self.barcode_preview = ctk.CTkLabel(barcode_row2, text="")
-        self.barcode_preview.pack(side="left", padx=(0, 10))
-        btn_frame = ctk.CTkFrame(barcode_row2, fg_color="transparent")
-        btn_frame.pack(side="left")
-        self.gen_btn = ctk.CTkButton(
-            btn_frame, text="Generate", width=80,
-            command=self._generate_barcode
-        )
-        self.gen_btn.pack(side="left", padx=(0, 5))
-        self.print_btn = ctk.CTkButton(
-            btn_frame, text="Print", width=70,
-            command=self._print_barcode
-        )
-        self.print_btn.pack(side="left")
-
-        self.qr_print_btn = ctk.CTkButton(
-            btn_frame, text="Print Barcode (Template)", width=165,
-            command=self._print_qr_in_template
-        )
-        self.qr_print_btn.pack(side="left", padx=(8, 0))
-        self.scan_info = ctk.CTkLabel(main_frame, text="", font=ctk.CTkFont(size=11))
-        self.scan_info.pack(anchor="w", pady=(0, 10))
-
-        self.dialog.protocol("WM_DELETE_WINDOW", self._on_dialog_close)
-        
         # Stock
         ctk.CTkLabel(main_frame, text="Stock Quantity:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
         self.stock_entry = ctk.CTkEntry(main_frame, width=400)
@@ -3185,7 +2732,6 @@ class ProductDialog:
             # Handle SQLite Row objects by accessing columns directly
             self.name_entry.insert(0, product_data['name'] if product_data['name'] else '')
             self.description_entry.insert(0, product_data['description'] if product_data['description'] else '')
-            self.barcode_entry.insert(0, product_data.get('barcode', '') or '')
             self.stock_entry.insert(0, str(product_data['stock']) if product_data['stock'] else '')
             self.cost_entry.insert(0, str(product_data['cost_price']) if product_data['cost_price'] else '')
             self.normal_price_entry.insert(0, str(product_data['price_normal']) if product_data['price_normal'] else '')
@@ -3229,8 +2775,8 @@ class ProductDialog:
             button_frame,
             text="Save",
             command=self.save_product,
-            fg_color=("#22C55E", "#16A34A"),
-            hover_color=("#16A34A", "#15803D"),
+            fg_color="green",
+            hover_color="darkgreen",
             width=100
         )
         save_btn.pack(side="left", padx=(0, 10))
@@ -3424,7 +2970,6 @@ class ProductDialog:
                 'brand_id': brand_id,
                 'sub_brand_id': sub_brand_id,
                 'description': self.description_entry.get(),
-                'barcode': self.barcode_entry.get().strip() or None,
                 'stock': stock,
                 'cost_price': cost_price,
                 'price_normal': price_normal,
@@ -3438,505 +2983,6 @@ class ProductDialog:
             messagebox.showerror("Error", "Please enter valid numeric values for prices and quantities")
         except Exception as e:
             messagebox.showerror("Error", f"Error saving product: {e}")
-
-
-    def _on_barcode_scanned(self, event=None):
-        barcode = self.barcode_entry.get().strip()
-        if barcode:
-            self.barcode_entry.configure(border_color="green")
-            self.parent.after(2000, lambda: self._reset_barcode_border())
-            # Select all so next scan naturally replaces, not appends
-            self.barcode_entry.select_range(0, "end")
-            self.barcode_entry.icursor("end")
-
-    def _reset_barcode_border(self):
-        try:
-            if self.dialog.winfo_exists():
-                self.barcode_entry.configure(border_color="#565b5e")
-        except Exception:
-            pass
-
-    def _start_camera_scanner(self):
-        """
-        Start barcode camera scanner.
-
-        NOTE: CameraBarcodeReader import is currently commented out in this file.
-        Implement a safe behavior to avoid crashing when the user clicks Camera.
-        """
-        try:
-            # If CameraBarcodeReader exists/import is enabled, prefer it.
-            from utils.camera_scanner import CameraBarcodeReader  # type: ignore
-            reader = CameraBarcodeReader(self.dialog, self._on_camera_barcode)
-            reader.start()
-        except Exception:
-            messagebox.showinfo(
-                "Camera Scanner Unavailable",
-                "Camera scanning is not available in this build.\n"
-                "Use Phone scanning or type the barcode manually."
-            )
-
-    def _on_camera_barcode(self, code):
-        try:
-            if not self.dialog.winfo_exists():
-                return
-            self.barcode_entry.delete(0, "end")
-            self.barcode_entry.insert(0, code)
-            self.barcode_entry.configure(border_color="green")
-            self.parent.after(2000, lambda: self._reset_barcode_border())
-        except Exception:
-            pass
-
-
-
-    def _on_dialog_close(self):
-        self.dialog.destroy()
-
-    def _on_barcode_edited(self, event=None):
-        code = self.barcode_entry.get().strip()
-        if code:
-            self._show_barcode_preview(code)
-        else:
-            self.barcode_preview.configure(text="")
-
-    def _generate_barcode(self):
-        current = self.barcode_entry.get().strip()
-        if current:
-            if not messagebox.askyesno(
-                "Barcode Already Generated",
-                f"Barcode '{current}' already exists for this product.\n\nDo you want to generate a new one?"
-            ):
-                return
-        existing = set()
-        for row in db.execute_query("SELECT barcode FROM products WHERE barcode IS NOT NULL"):
-            existing.add(row["barcode"])
-        while True:
-            code = "PRD" + "".join(random.choices(string.digits, k=8))
-            if code not in existing:
-                break
-        self.barcode_entry.delete(0, "end")
-        self.barcode_entry.insert(0, code)
-        self._show_barcode_preview(code)
-        self.scan_info.configure(text="Barcode generated successfully", text_color="#4ade80")
-
-    def _show_barcode_preview(self, code):
-        try:
-            rv = io.BytesIO()
-            Code128(code, writer=ImageWriter()).write(rv)
-            rv.seek(0)
-            img = Image.open(rv)
-            img.thumbnail((160, 56))
-            ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=img.size)
-            self.barcode_preview.configure(image=ctk_img, text="")
-        except Exception:
-            pass
-
-    def _print_barcode(self):
-        code = self.barcode_entry.get().strip()
-        name = self.name_entry.get().strip() or "Product"
-        if not code:
-            messagebox.showwarning("No Barcode", "Please generate or enter a barcode first.")
-            return
-
-        from reportlab.lib.pagesizes import inch
-        from reportlab.pdfgen import canvas
-
-        img_path = os.path.join(tempfile.gettempdir(), f"barcode_{code}.png")
-        with open(img_path, "wb") as f:
-            Code128(code, writer=ImageWriter()).write(f)
-
-        pdf_path = os.path.join(tempfile.gettempdir(), f"barcode_{code}.pdf")
-        c = canvas.Canvas(pdf_path, pagesize=(4 * inch, 2 * inch))
-        c.setFont("Helvetica", 12)
-        c.drawString(0.5 * inch, 1.5 * inch, f"Product: {name}")
-        c.setFont("Helvetica", 10)
-        c.drawString(0.5 * inch, 1.3 * inch, f"Barcode: {code}")
-        c.drawImage(img_path, 0.5 * inch, 0.2 * inch, width=3 * inch, height=0.9 * inch)
-        c.save()
-
-        self.scan_info.configure(text=f"Barcode PDF saved: {pdf_path}", text_color="#60a5fa")
-        os.startfile(pdf_path)
-
-    def _show_qty_dialog(self):
-        """Show a custom CTk dialog for print quantity - matches app styling"""
-        dialog = ctk.CTkToplevel(self.parent)
-        dialog.title("Print Quantity")
-        dialog.geometry("400x200")
-        dialog.resizable(False, False)
-        dialog.attributes('-topmost', True)  # Keep on top
-        dialog.transient(self.parent)
-        
-        # Center dialog on parent
-        dialog.update_idletasks()
-        self.parent.update_idletasks()
-        
-        parent_x = self.parent.winfo_rootx()
-        parent_y = self.parent.winfo_rooty()
-        parent_width = self.parent.winfo_width()
-        parent_height = self.parent.winfo_height()
-        
-        x = parent_x + (parent_width // 2) - (200)
-        y = parent_y + (parent_height // 2) - (100)
-        dialog.geometry(f"400x200+{x}+{y}")
-        
-        # Make it modal
-        dialog.grab_set()
-        
-        result = {"qty": None}
-        
-        # Title
-        title_label = ctk.CTkLabel(
-            dialog, 
-            text="How many labels to print for this product?",
-            font=ctk.CTkFont(size=14, weight="bold")
-        )
-        title_label.pack(pady=(20, 10), padx=20)
-        
-        # Input frame
-        input_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        input_frame.pack(pady=10, padx=20, fill="x")
-        
-        label = ctk.CTkLabel(input_frame, text="Quantity:", font=ctk.CTkFont(size=12))
-        label.pack(side="left", padx=(0, 10))
-        
-        qty_entry = ctk.CTkEntry(
-            input_frame, 
-            font=ctk.CTkFont(size=12),
-            width=150
-        )
-        qty_entry.pack(side="left", fill="x", expand=True)
-        qty_entry.insert(0, "10")
-        
-        # Button frame
-        button_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        button_frame.pack(pady=(15, 20), padx=20, fill="x")
-        
-        def on_ok():
-            try:
-                qty_val = int(qty_entry.get().strip())
-                if qty_val < 1:
-                    messagebox.showwarning("Invalid Input", "Please enter a number greater than 0")
-                    return
-                result["qty"] = qty_val
-                dialog.destroy()
-            except ValueError:
-                messagebox.showerror("Invalid Input", "Please enter a valid number")
-        
-        def on_cancel():
-            dialog.destroy()
-        
-        ok_btn = ctk.CTkButton(
-            button_frame,
-            text="OK",
-            command=on_ok,
-            font=ctk.CTkFont(size=12, weight="bold"),
-            height=36
-        )
-        ok_btn.pack(side="left", padx=(0, 10), fill="x", expand=True)
-        
-        cancel_btn = ctk.CTkButton(
-            button_frame,
-            text="Cancel",
-            command=on_cancel,
-            font=ctk.CTkFont(size=12, weight="bold"),
-            height=36,
-            fg_color=("gray70", "gray30"),
-            text_color=("gray10", "gray90")
-        )
-        cancel_btn.pack(side="left", fill="x", expand=True)
-        
-        # Focus on entry and select all
-        qty_entry.focus()
-        qty_entry.select_range(0, len(qty_entry.get()))
-        
-        # Wait for dialog to close
-        dialog.wait_window()
-        
-        return result["qty"]
-
-    def _print_qr_in_template(self):
-        """Print Code128 barcodes (inside template boxes) + product name and price, for a user-selected quantity."""
-        from utils.format_utils import get_currency_symbol
-        
-        raw_code = (self.barcode_entry.get() or "").strip()
-        name = (self.name_entry.get() or "Product").strip() or "Product"
-        price_str = (self.normal_price_entry.get() or "").strip()
-        currency_symbol = get_currency_symbol()
-        
-        if not raw_code:
-            messagebox.showwarning("No Barcode", "Please generate or enter a barcode first.")
-            return
-
-        # Quantity prompt: custom CTk dialog for consistent styling
-        qty = self._show_qty_dialog()
-        if not qty:
-            return
-
-        # Start box prompt + preview for user-selected "start printing" box
-        start_box = self._show_start_box_dialog(qty)
-        if not start_box:
-            return
-
-        # start_box is 1-based; convert to 0-based offset for placement loop
-        offset = int(start_box) - 1
-
-        # Product-name-only template (no price)
-
-        payload = raw_code
-
-
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.units import mm
-        from reportlab.pdfgen import canvas
-
-        pdf_path = os.path.join(tempfile.gettempdir(), f"tpl_labels_{payload}.pdf")
-        c = canvas.Canvas(pdf_path, pagesize=A4)
-        w, h = A4
-
-        # Template sizing matched to Eddy SI-84 A4 label sheet (46mm x 11mm x 84)
-        # Each label: 46mm wide x 11mm tall
-        box_w = 46 * mm  # 46mm width
-        box_h = 11 * mm  # 11mm height
-        margin_left = 5 * mm
-        margin_bottom = 5 * mm
-        gap_x = 2 * mm  # Small gap between columns
-        gap_y = 2 * mm  # Small gap between rows
-
-        # Layout grid (how many boxes fit) - no header, just margins
-        footer_h = 15  # Minimal space for footer
-        cols = max(1, int((w - 2*margin_left) // (box_w + gap_x)))
-        available_height = h - margin_bottom - footer_h
-        rows = max(1, int(available_height // (box_h + gap_y)))
-
-        # Generate barcode image once and reuse for all boxes
-        # NOTE: python-barcode PNGs include quiet-zone padding. To ensure the bars
-        # never appear to "spill" outside the black template, we trim the image
-        # down to the non-white content bounding box once here.
-        barcode_png_path = os.path.join(tempfile.gettempdir(), f"tpl_barcode_{payload}.png")
-        barcode_trimmed_png_path = os.path.join(tempfile.gettempdir(), f"tpl_barcode_{payload}_trim.png")
-        rv = io.BytesIO()
-        Code128(payload, writer=ImageWriter()).write(rv)
-        rv.seek(0)
-        with open(barcode_png_path, "wb") as f:
-            f.write(rv.read())
-
-        # Quiet-zone trim (white background -> trim to bbox of non-white pixels)
-        try:
-            img = Image.open(barcode_png_path).convert("RGB")
-            # Treat near-white as background
-            px = img.load()
-            w_i, h_i = img.size
-            left, top, right, bottom = w_i, h_i, -1, -1
-            for yy in range(h_i):
-                for xx in range(w_i):
-                    r, g, b = px[xx, yy]
-                    if (r, g, b) != (255, 255, 255):
-                        left = min(left, xx)
-                        top = min(top, yy)
-                        right = max(right, xx)
-                        bottom = max(bottom, yy)
-
-            if right >= left and bottom >= top:
-                # Crop to the bounding box, but remove the numeric text at the bottom
-                # The numeric text is typically in the bottom 20% of the barcode image
-                barcode_only_bottom = int(bottom - (bottom - top) * 0.20)
-                cropped = img.crop((left, top, right + 1, barcode_only_bottom))
-            else:
-                cropped = img
-            cropped.save(barcode_trimmed_png_path)
-        except Exception:
-            # If trimming fails, fall back to original image
-            barcode_trimmed_png_path = barcode_png_path
-
-        def draw_box(x0, y0):
-            # Outer rectangle (white background with border)
-            x0 = int(x0)
-            y0 = int(y0)
-            box_w_i = int(box_w)
-            box_h_i = int(box_h)
-
-            # Draw white background with black border
-            c.setFillColorRGB(1, 1, 1)
-            c.setLineWidth(0.5)
-            c.setStrokeColorRGB(0, 0, 0)
-            c.rect(x0, y0, box_w_i, box_h_i, stroke=1, fill=1)
-
-            # For 46mm x 11mm labels: barcode at top, text at bottom
-            pad_horiz = 1.5 * mm  # Padding left and right
-            pad_vert = 0.05 * mm  # ~2px (at 96dpi) bottom padding
-
-            gap_between = 0.7 * mm  # ~2px gap between barcode and text
-            
-            content_x0 = x0 + pad_horiz
-            content_y0 = y0 + pad_vert
-            content_w = max(1, box_w_i - 2 * pad_horiz)
-            content_h = max(1, box_h_i - 2 * pad_vert)
-
-            # Split: ~60% barcode at TOP, ~40% for product name and price at BOTTOM (minus gap)
-            text_area_h = int(content_h * 0.40)
-            barcode_area_h = int(content_h - text_area_h - gap_between)
-            
-            # TEXT AREA: positioned at BOTTOM of box
-            text_start_y = content_y0
-            
-            if text_area_h > 1.5:
-                c.setFillColorRGB(0, 0, 0)
-                c.setFont("Helvetica-Bold", 7)  # Readable font size
-                
-                # Text baseline (vertical center of text area)
-                text_y = int(text_start_y + text_area_h / 2)
-                
-                # Line 1: Product name (left side) - allow up to 20 characters
-                name_display = name[:20] if len(name) <= 20 else name[:18] + ".."
-                c.drawString(int(content_x0), text_y, name_display)
-                
-                # Line 2: Price with currency symbol (right side) - separate from product name
-                if price_str:
-                    try:
-                        price_val = float(price_str)
-                        price_display = f"{currency_symbol} {price_val:.0f}"
-                        c.drawRightString(int(content_x0 + content_w), text_y, price_display)
-                    except ValueError:
-                        pass
-            
-            # BARCODE AREA: positioned at TOP of box with minimal margins for maximum size
-            barcode_margin_h = 0.3 * mm  # Minimal horizontal margin
-            barcode_margin_v = 0.2 * mm  # Minimal vertical margin
-            
-            barcode_w = int(content_w - 2 * barcode_margin_h)  # Use most of width
-            barcode_h = int(barcode_area_h - 2 * barcode_margin_v)  # Use most of height
-            
-            # Position barcode at TOP with gap between barcode and text
-            barcode_x = int(content_x0 + barcode_margin_h)
-            barcode_y = int(content_y0 + text_area_h + gap_between + barcode_margin_v)
-
-            c.drawImage(
-                barcode_trimmed_png_path,
-                barcode_x,
-                barcode_y,
-                width=barcode_w,
-                height=barcode_h,
-                preserveAspectRatio=False,  # Stretch to fill available space
-                mask='auto'
-            )
-
-        from datetime import datetime
-        total_boxes = qty
-        printed = offset
-        end_exclusive = offset + total_boxes
-
-        for _ in range(total_boxes):
-            if printed >= (cols * rows):
-                # Footer + new page
-                c.setFont("Helvetica", 8)
-                c.setFillGray(0.4)
-                c.drawString(int(margin_left), 10, datetime.now().strftime("%Y-%m-%d %H:%M"))
-                c.showPage()
-                printed = 0
-
-            page_index = printed
-            r = page_index // cols
-            cidx = page_index % cols
-
-            # Compute box position
-            x0 = margin_left + cidx * (box_w + gap_x)
-            y0_box = margin_bottom + (rows - 1 - r) * (box_h + gap_y)
-
-            draw_box(x0, y0_box)
-            printed += 1
-
-            if printed >= end_exclusive:
-                break
-
-
-        # Footer on last page
-        c.setFont("Helvetica", 8)
-        c.setFillGray(0.4)
-        c.drawString(int(margin_left), 10, datetime.now().strftime("%Y-%m-%d %H:%M"))
-
-        c.showPage()
-        c.save()
-
-        self.scan_info.configure(text=f"Template Labels PDF saved: {pdf_path}", text_color="#60a5fa")
-        os.startfile(pdf_path)
-
-    def _show_start_box_dialog(self, qty):
-        """Prompt user for which label box index to start printing from.
-
-        Returns:
-            int | None: 1-based start index, or None if cancelled.
-        """
-        if not qty or qty < 1:
-            messagebox.showwarning("Invalid Quantity", "Quantity must be at least 1.")
-            return None
-
-        dialog = ctk.CTkToplevel(self.parent)
-        dialog.title("Start Printing Box")
-        dialog.geometry("420x260")
-        dialog.resizable(False, False)
-        dialog.attributes('-topmost', True)
-        dialog.transient(self.parent)
-
-        # Center dialog on parent
-        dialog.update_idletasks()
-        pw = self.parent.winfo_rootx()
-        ph = self.parent.winfo_rooty()
-        pwidth = self.parent.winfo_width()
-        pheight = self.parent.winfo_height()
-        x = pw + (pwidth // 2) - (210)
-        y = ph + (pheight // 2) - (130)
-        dialog.geometry(f"420x260+{x}+{y}")
-
-        dialog.grab_set()
-
-        result = {"start": None}
-
-        header = ctk.CTkFrame(dialog, corner_radius=10, fg_color=("#3B82F6", "#2563EB"))
-        header.pack(fill="x", padx=15, pady=(15, 10))
-        ctk.CTkLabel(header, text="Choose Start Box", font=ctk.CTkFont(size=16, weight="bold"), text_color="white").pack(pady=12)
-
-        ctk.CTkLabel(dialog, text=f"Labels to print: {qty}", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", padx=20, pady=(10, 4))
-        ctk.CTkLabel(dialog, text="Printing will begin from the selected box (1-based).", font=ctk.CTkFont(size=11), text_color=("gray30", "gray60")).pack(anchor="w", padx=20, pady=(0, 10))
-
-        input_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        input_frame.pack(fill="x", padx=20, pady=(0, 12))
-
-        ctk.CTkLabel(input_frame, text="Start at:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left")
-
-        start_var = tk.StringVar(value="1")
-        start_entry = ctk.CTkEntry(input_frame, textvariable=start_var, width=120)
-        start_entry.pack(side="left", padx=(10, 0))
-        start_entry.focus()
-        start_entry.select_range(0, len(start_var.get()))
-
-        # Button row
-        btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        btn_frame.pack(fill="x", padx=20, pady=(0, 12))
-
-        def on_ok():
-            try:
-                v = int(start_var.get().strip())
-                if v < 1 or v > qty:
-                    messagebox.showwarning("Invalid Input", f"Enter a value between 1 and {qty}.")
-                    return
-                result["start"] = v
-                dialog.destroy()
-            except ValueError:
-                messagebox.showwarning("Invalid Input", "Please enter a whole number.")
-
-        def on_cancel():
-            result["start"] = None
-            dialog.destroy()
-
-        ok_btn = ctk.CTkButton(btn_frame, text="✓ Start", command=on_ok, fg_color=("#10B981", "#059669"), hover_color=("#059669", "#047857"), height=36)
-        ok_btn.pack(side="left", fill="x", expand=True, padx=(0, 10))
-
-        cancel_btn = ctk.CTkButton(btn_frame, text="Cancel", command=on_cancel, fg_color=("#EF4444", "#B91C1C"), hover_color=("#DC2626", "#991B1B"), height=36)
-        cancel_btn.pack(side="left", fill="x", expand=True)
-
-        self.parent.wait_window(dialog)
-        return result["start"]
-
-
 
 
 class CategoryDialog:
@@ -3986,17 +3032,19 @@ class CategoryDialog:
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Header with icon
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#4CAF50", "#2E7D32"))
+        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color="#4CAF50")
         header_frame.pack(fill="x", padx=10, pady=(10, 15))
         
-        ctk.CTkLabel(header_frame, text="📁", font=ctk.CTkFont(size=24)).pack(pady=(10, 5))
+        category_icon = ctk.CTkLabel(header_frame, text="Category", font=ctk.CTkFont(size=24))
+        category_icon.pack(pady=(10, 5))
         
-        ctk.CTkLabel(
+        header_label = ctk.CTkLabel(
             header_frame,
             text="Category Information",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color="white"
-        ).pack(pady=(0, 10))
+        )
+        header_label.pack(pady=(0, 10))
         
         # Form fields container
         fields_frame = ctk.CTkFrame(main_frame)
@@ -4049,8 +3097,8 @@ class CategoryDialog:
             command=self.save_category,
             width=140,
             height=40,
-            fg_color=("#4CAF50", "#2E7D32"),
-            hover_color=("#43A047", "#1B5E20"),
+            fg_color="#4CAF50",
+            hover_color="#45A049",
             font=ctk.CTkFont(size=13, weight="bold")
         )
         save_btn.pack(side="left", padx=15, pady=15)
@@ -4061,8 +3109,8 @@ class CategoryDialog:
             command=self.cancel,
             width=100,
             height=40,
-            fg_color=("#EF4444", "#B91C1C"),
-            hover_color=("#DC2626", "#991B1B"),
+            fg_color="#f44336",
+            hover_color="#d32f2f",
             font=ctk.CTkFont(size=13, weight="bold")
         )
         cancel_btn.pack(side="right", padx=15, pady=15)
@@ -4143,15 +3191,16 @@ class SubCategoryDialog:
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Header
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#8BC34A", "#558B2F"))
+        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color="#8BC34A")
         header_frame.pack(fill="x", padx=10, pady=(10, 15))
         
-        ctk.CTkLabel(
+        header_label = ctk.CTkLabel(
             header_frame,
             text="Sub Category Information",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color="white"
-        ).pack(pady=15)
+        )
+        header_label.pack(pady=15)
         
         # Form fields container
         fields_frame = ctk.CTkFrame(main_frame)
@@ -4233,8 +3282,8 @@ class SubCategoryDialog:
             command=self.save_sub_category,
             width=160,
             height=40,
-            fg_color=("#8BC34A", "#558B2F"),
-            hover_color=("#7CB342", "#33691E"),
+            fg_color="#8BC34A",
+            hover_color="#7CB342",
             font=ctk.CTkFont(size=13, weight="bold")
         )
         save_btn.pack(side="left", padx=15, pady=15)
@@ -4245,8 +3294,8 @@ class SubCategoryDialog:
             command=self.cancel,
             width=100,
             height=40,
-            fg_color=("#EF4444", "#B91C1C"),
-            hover_color=("#DC2626", "#991B1B"),
+            fg_color="#f44336",
+            hover_color="#d32f2f",
             font=ctk.CTkFont(size=13, weight="bold")
         )
         cancel_btn.pack(side="right", padx=15, pady=15)
@@ -4339,15 +3388,16 @@ class BrandDialog:
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Header
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#FF9800", "#E65100"))
+        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color="#FF9800")
         header_frame.pack(fill="x", padx=10, pady=(10, 15))
         
-        ctk.CTkLabel(
+        header_label = ctk.CTkLabel(
             header_frame,
             text="Brand Information",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color="white"
-        ).pack(pady=15)
+        )
+        header_label.pack(pady=15)
         
         # Form fields container
         fields_frame = ctk.CTkFrame(main_frame)
@@ -4400,8 +3450,8 @@ class BrandDialog:
             command=self.save_brand,
             width=140,
             height=40,
-            fg_color=("#FF9800", "#E65100"),
-            hover_color=("#F57C00", "#BF360C"),
+            fg_color="#FF9800",
+            hover_color="#F57C00",
             font=ctk.CTkFont(size=13, weight="bold")
         )
         save_btn.pack(side="left", padx=15, pady=15)
@@ -4412,8 +3462,8 @@ class BrandDialog:
             command=self.cancel,
             width=100,
             height=40,
-            fg_color=("#EF4444", "#B91C1C"),
-            hover_color=("#DC2626", "#991B1B"),
+            fg_color="#f44336",
+            hover_color="#d32f2f",
             font=ctk.CTkFont(size=13, weight="bold")
         )
         cancel_btn.pack(side="right", padx=15, pady=15)
@@ -4493,15 +3543,16 @@ class SubBrandDialog:
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Header
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#FFB74D", "#EF6C00"))
+        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color="#FFB74D")
         header_frame.pack(fill="x", padx=10, pady=(10, 15))
         
-        ctk.CTkLabel(
+        header_label = ctk.CTkLabel(
             header_frame,
             text="Sub Brand Information",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color="white"
-        ).pack(pady=15)
+        )
+        header_label.pack(pady=15)
         
         # Form fields
         fields_frame = ctk.CTkFrame(main_frame)
@@ -4583,8 +3634,8 @@ class SubBrandDialog:
             command=self.save_sub_brand,
             width=160,
             height=40,
-            fg_color=("#FFB74D", "#EF6C00"),
-            hover_color=("#FFA726", "#E65100"),
+            fg_color="#FFB74D",
+            hover_color="#FFA726",
             font=ctk.CTkFont(size=13, weight="bold")
         )
         save_btn.pack(side="left", padx=15, pady=15)
@@ -4595,8 +3646,8 @@ class SubBrandDialog:
             command=self.cancel,
             width=100,
             height=40,
-            fg_color=("#EF4444", "#B91C1C"),
-            hover_color=("#DC2626", "#991B1B"),
+            fg_color="#f44336",
+            hover_color="#d32f2f",
             font=ctk.CTkFont(size=13, weight="bold")
         )
         cancel_btn.pack(side="right", padx=15, pady=15)
@@ -4735,9 +3786,15 @@ class SearchableDropdown(ctk.CTkFrame):
         
         # Create dropdown window
         self.dropdown_window = ctk.CTkToplevel(self.winfo_toplevel())
-        self.dropdown_window.withdraw()
         self.dropdown_window.overrideredirect(True)  # Remove window decorations
-        self.dropdown_window.transient(self.winfo_toplevel())
+        self.dropdown_window.attributes("-topmost", True)
+        
+        # Position dropdown below the container
+        x = self.container.winfo_rootx()
+        y = self.container.winfo_rooty() + self.container.winfo_height() + 2
+        width = self.container.winfo_width()
+        
+        self.dropdown_window.geometry(f"{width}x350+{x}+{y}")
         
         # Dropdown frame
         dropdown_frame = ctk.CTkFrame(self.dropdown_window, fg_color=("white", "#2D2D2D"),
@@ -4767,9 +3824,10 @@ class SearchableDropdown(ctk.CTkFrame):
         separator = ctk.CTkFrame(dropdown_frame, height=1, fg_color=("#E5E7EB", "#404040"))
         separator.pack(fill="x", padx=10, pady=5)
         
+        # Add New button (if add_command is provided)
         if hasattr(self, 'add_command') and self.add_command:
             add_btn = ctk.CTkButton(dropdown_frame, text="+ Add New", width=100, height=28,
-                                    fg_color=("#3B82F6", "#2563EB"), hover_color=("#2563EB", "#1D4ED8"),
+                                    fg_color="#3B82F6", hover_color="#2563EB",
                                     font=ctk.CTkFont(size=11), command=self._on_add_new)
             add_btn.pack(anchor="w", padx=10, pady=(0, 5))
             
@@ -4784,11 +3842,11 @@ class SearchableDropdown(ctk.CTkFrame):
         scrollbar = ctk.CTkScrollbar(list_frame)
         scrollbar.pack(side="right", fill="y")
         
-        is_dark = ctk.get_appearance_mode() == "Dark"
+        # Listbox
         self.listbox = tk.Listbox(list_frame, font=("Segoe UI", 12), 
-                                   bg="#2D2D2D" if is_dark else "#FFFFFF",
-                                   fg="#E0E0E0" if is_dark else "#1F2937",
-                                   selectbackground=("#3B82F6", "#2563EB")[is_dark],
+                                   bg="#2D2D2D" if ctk.get_appearance_mode() == "Dark" else "white",
+                                   fg="white" if ctk.get_appearance_mode() == "Dark" else "black",
+                                   selectbackground="#3B82F6", 
                                    selectforeground="white",
                                    borderwidth=0, highlightthickness=0,
                                    activestyle="none",
@@ -4810,15 +3868,6 @@ class SearchableDropdown(ctk.CTkFrame):
         
         # Bind click outside to close
         self.winfo_toplevel().bind("<Button-1>", self._on_click_outside, add="+")
-        
-        # Position and show
-        x = self.container.winfo_rootx()
-        y = self.container.winfo_rooty() + self.container.winfo_height() + 2
-        width = self.container.winfo_width()
-        self.dropdown_window.geometry(f"{width}x350+{x}+{y}")
-        self.dropdown_window.deiconify()
-        self.dropdown_window.lift()
-        self.dropdown_window.focus_force()
     
     def close_dropdown(self):
         """Close the dropdown window"""
@@ -4945,10 +3994,8 @@ class SelectionDialog:
     
     def create_ui(self):
         """Create the selection UI"""
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        
         # Header
-        header = ctk.CTkFrame(self.dialog, corner_radius=0, fg_color=("#3B82F6", "#2563EB"))
+        header = ctk.CTkFrame(self.dialog, corner_radius=0, fg_color="#3B82F6")
         header.pack(fill="x", pady=0)
         ctk.CTkLabel(header, text=self.dialog.title(), font=ctk.CTkFont(size=16, weight="bold"), text_color="white").pack(pady=15)
         
@@ -4957,7 +4004,7 @@ class SelectionDialog:
         search_frame.pack(fill="x", padx=20, pady=15)
         
         ctk.CTkLabel(search_frame, text="Search:", font=ctk.CTkFont(size=12)).pack(side="left", padx=(0, 10))
-        self.search_var = ctk.StringVar()
+        self.search_var = tk.StringVar()
         self.search_var.trace('w', self.filter_items)
         search_entry = ctk.CTkEntry(search_frame, textvariable=self.search_var, width=280, placeholder_text="Type to search...")
         search_entry.pack(side="left")
@@ -4966,11 +4013,9 @@ class SelectionDialog:
         list_frame = ctk.CTkFrame(self.dialog)
         list_frame.pack(fill="both", expand=True, padx=20, pady=(0, 15))
         
-        self.listbox = tk.Listbox(list_frame, font=("Segoe UI", 12),
-                                  bg="#2D2D2D" if is_dark else "#FFFFFF",
-                                  fg="#E0E0E0" if is_dark else "#1F2937",
-                                  selectbackground=("#3B82F6", "#2563EB")[is_dark],
-                                  selectforeground="white",
+        # Create listbox with scrollbar
+        self.listbox = tk.Listbox(list_frame, font=("Segoe UI", 12), bg="#2D2D2D", fg="white",
+                                  selectbackground="#3B82F6", selectforeground="white",
                                   borderwidth=0, highlightthickness=0)
         scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.listbox.yview)
         self.listbox.configure(yscrollcommand=scrollbar.set)
@@ -4978,19 +4023,20 @@ class SelectionDialog:
         self.listbox.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         
+        # Bind double-click
         self.listbox.bind("<Double-1>", lambda e: self.select_item())
+        
+        # Populate list
         self.populate_list()
         
         # Buttons
         button_frame = ctk.CTkFrame(self.dialog, fg_color="transparent")
         button_frame.pack(fill="x", padx=20, pady=(0, 20))
         
-        ctk.CTkButton(button_frame, text="Select", command=self.select_item,
-                     fg_color=("#3B82F6", "#2563EB"), hover_color=("#2563EB", "#1D4ED8"),
-                     width=100).pack(side="left", padx=(0, 10))
-        ctk.CTkButton(button_frame, text="Cancel", command=self.cancel,
-                     fg_color=("#6B7280", "#4B5563"), hover_color=("#4B5563", "#374151"),
-                     width=100).pack(side="left")
+        ctk.CTkButton(button_frame, text="Select", command=self.select_item, 
+                     fg_color="#3B82F6", width=100).pack(side="left", padx=(0, 10))
+        ctk.CTkButton(button_frame, text="Cancel", command=self.cancel, 
+                     fg_color="#6B7280", width=100).pack(side="left")
     
     def populate_list(self):
         """Populate the listbox with items"""

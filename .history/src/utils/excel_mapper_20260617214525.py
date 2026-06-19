@@ -846,10 +846,7 @@ class ExcelColumnMapper:
                         if pd.isna(col_value):
                             col_name = f"Column {col_idx + 1}"
                         else:
-                            # Normalize header to improve auto-mapping robustness
-                            # (e.g., "Whole sale price " -> "whole sale price")
-                            raw = str(col_value)
-                            col_name = " ".join(raw.split()).strip()
+                            col_name = str(col_value).strip()
                         columns.append(col_name)
 
                     # Extract data rows after the header row
@@ -1775,11 +1772,9 @@ class ExcelColumnMapper:
                         if workshop_price_val > 0:
                             workshop_price = workshop_price_val
 
-                        # If Excel doesn't have cost price, keep it as 0 (there is no cost data in the sheet)
-                        # Otherwise, use the parsed cost_price value.
-                        if cost_price is None:
-                            cost_price = 0
-                        # If parsed cost_price is 0/empty, leave it as 0.
+                        # Cost price should be wholesale/workshop price
+                        if cost_price == 0:
+                            cost_price = workshop_price
 
                         reorder_level = self._to_int(product_data.get('reorder_level', max(stock + 5, 10) if stock < 5 else 10))
 

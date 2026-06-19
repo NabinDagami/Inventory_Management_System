@@ -24,25 +24,24 @@ class PurchasesView:
     
     def create_purchases_interface(self):
         """Create the purchases management interface"""
-        # Main container with gradient background
-        main_frame = ctk.CTkFrame(self.parent, corner_radius=15)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        # Main container
+        main_frame = ctk.CTkFrame(self.parent)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=(20, 0))
         
         # Header with tabs
-        header_frame = ctk.CTkFrame(main_frame, height=80, corner_radius=12)
-        header_frame.pack(fill="x", padx=15, pady=(15, 10))
+        header_frame = ctk.CTkFrame(main_frame)
+        header_frame.pack(fill="x", padx=10, pady=(10, 0))
         
-        # Tab buttons with improved styling
+        # Tab buttons
         tab_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
-        tab_frame.pack(side="left", padx=15, pady=15)
+        tab_frame.pack(side="left", padx=10, pady=10)
         
         self.new_purchase_btn = ctk.CTkButton(
             tab_frame,
             text="🛒 New Purchase",
-            width=140,
-            height=45,
-            font=ctk.CTkFont(size=14, weight="bold"),
-            corner_radius=10,
+            width=120,
+            height=35,
+            font=ctk.CTkFont(size=12, weight="bold"),
             command=lambda: self.switch_tab("new_purchase")
         )
         self.new_purchase_btn.pack(side="left", padx=(0, 15))
@@ -50,13 +49,12 @@ class PurchasesView:
         self.purchase_history_btn = ctk.CTkButton(
             tab_frame,
             text="📋 Purchase History",
-            width=140,
-            height=45,
-            font=ctk.CTkFont(size=14, weight="bold"),
+            width=120,
+            height=35,
+            font=ctk.CTkFont(size=12, weight="bold"),
             fg_color=("gray85", "gray25"),
             hover_color=("gray75", "gray35"),
             text_color=("gray10", "gray90"),
-            corner_radius=10,
             command=lambda: self.switch_tab("purchase_history")
         )
         self.purchase_history_btn.pack(side="left")
@@ -64,8 +62,8 @@ class PurchasesView:
         # Current tab tracking
         self.current_tab = "new_purchase"
         
-        # Content container
-        self.content_container = ctk.CTkFrame(main_frame)
+        # Content container — scrollable to prevent clipping of the PO section
+        self.content_container = ctk.CTkScrollableFrame(main_frame)
         self.content_container.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         
         # Create both interfaces
@@ -77,6 +75,18 @@ class PurchasesView:
     
     def switch_tab(self, tab_name):
         """Switch between tabs"""
+        # Close any floating overrideredirect Toplevel popups
+        try:
+            root = self.parent.winfo_toplevel()
+            for w in root.winfo_children():
+                if isinstance(w, tk.Toplevel) and w.winfo_exists():
+                    try:
+                        if w.overrideredirect():
+                            w.destroy()
+                    except Exception:
+                        pass
+        except Exception:
+            pass
         self.current_tab = tab_name
         
         # Update button styles
@@ -102,78 +112,53 @@ class PurchasesView:
     
     def create_new_purchase_interface(self):
         """Create the new purchase interface"""
-        self.new_purchase_frame = ctk.CTkFrame(self.content_container, corner_radius=12)
+        self.new_purchase_frame = ctk.CTkFrame(self.content_container)
         
-        # Supplier selection header with improved styling
-        header_frame = ctk.CTkFrame(self.new_purchase_frame, height=80, corner_radius=10, fg_color=("#f0f0f0", "#2b2b2b"))
-        header_frame.pack(fill="x", padx=15, pady=15)
-        
-        # Supplier selection with icon
-        supplier_icon = ctk.CTkLabel(header_frame, text="🏢", font=ctk.CTkFont(size=20))
-        supplier_icon.pack(side="left", padx=(15, 5), pady=15)
+        # Supplier selection header
+        header_frame = ctk.CTkFrame(self.new_purchase_frame)
+        header_frame.pack(fill="x", padx=10, pady=10)
         
         supplier_label = ctk.CTkLabel(header_frame, text="Supplier:", font=ctk.CTkFont(size=14, weight="bold"))
-        supplier_label.pack(side="left", padx=(0, 8), pady=15)
+        supplier_label.pack(side="left", padx=(10, 5), pady=10)
         
         self.supplier_var = tk.StringVar(value="Select Supplier...")
         self.supplier_dropdown = ctk.CTkOptionMenu(
             header_frame, 
             variable=self.supplier_var,
             command=self.on_supplier_selected,
-            width=220,
-            height=35,
-            corner_radius=8,
-            font=ctk.CTkFont(size=12)
+            width=220
         )
-        self.supplier_dropdown.pack(side="left", padx=8, pady=15)
-        
-        # Payment method with icon
-        payment_icon = ctk.CTkLabel(header_frame, text="💳", font=ctk.CTkFont(size=18))
-        payment_icon.pack(side="left", padx=(20, 5), pady=15)
+        self.supplier_dropdown.pack(side="left", padx=5, pady=10)
         
         payment_label = ctk.CTkLabel(header_frame, text="Payment:", font=ctk.CTkFont(size=14, weight="bold"))
-        payment_label.pack(side="left", padx=(0, 8), pady=15)
+        payment_label.pack(side="left", padx=(20, 5), pady=10)
         
         self.payment_var = tk.StringVar(value="Cash")
         payment_dropdown = ctk.CTkOptionMenu(
             header_frame,
             variable=self.payment_var,
             values=["Cash", "Credit"],
-            width=120,
-            height=35,
-            corner_radius=8,
-            font=ctk.CTkFont(size=12)
+            width=100
         )
-        payment_dropdown.pack(side="left", padx=8, pady=15)
-        
-        # Expected delivery date with icon
-        delivery_icon = ctk.CTkLabel(header_frame, text="📅", font=ctk.CTkFont(size=18))
-        delivery_icon.pack(side="left", padx=(20, 5), pady=15)
+        payment_dropdown.pack(side="left", padx=5, pady=10)
         
         delivery_label = ctk.CTkLabel(header_frame, text="Expected Delivery:", font=ctk.CTkFont(size=14, weight="bold"))
-        delivery_label.pack(side="left", padx=(0, 8), pady=15)
+        delivery_label.pack(side="left", padx=(20, 5), pady=10)
         
         self.delivery_entry = ctk.CTkEntry(
             header_frame,
             placeholder_text="YYYY-MM-DD",
-            width=140,
-            height=35,
-            corner_radius=8,
-            font=ctk.CTkFont(size=12)
+            width=140
         )
-        self.delivery_entry.pack(side="left", padx=8, pady=15)
+        self.delivery_entry.pack(side="left", padx=5, pady=10)
         
-        # Content area with two columns and improved spacing
-        content_frame = ctk.CTkFrame(self.new_purchase_frame, corner_radius=10)
-        content_frame.pack(fill="both", expand=True, padx=15, pady=(10, 15))
-        content_frame.grid_columnconfigure(0, weight=4)  # Products section 
-        content_frame.grid_columnconfigure(1, weight=6)  # Purchase order section gets more space
+        # Content area - single column layout (embedded PO inside product_frame)
+        content_frame = ctk.CTkFrame(self.new_purchase_frame)
+        content_frame.pack(fill="x", padx=10, pady=(6, 10))
+        content_frame.grid_columnconfigure(0, weight=1)
         
-        # Left side - Product selection
+        # Product selection with embedded purchase order section
         self.create_product_selection(content_frame)
-        
-        # Right side - Purchase order items
-        self.create_purchase_order_section(content_frame)
     
     def create_purchase_history_interface(self):
         """Create the purchase history interface"""
@@ -264,202 +249,167 @@ class PurchasesView:
         self.purchase_history_tree.bind("<Double-1>", lambda e: self.view_purchase_details())
     
     def create_product_selection(self, parent):
-        """Create product selection area"""
-        # Use regular frame with proper grid layout
-        product_frame = ctk.CTkFrame(parent, corner_radius=6)
+        """Create product selection area with product table + sales-style cart."""
+        product_frame = ctk.CTkFrame(parent, fg_color=("#F5F5F5", "#252535"), corner_radius=6)
         product_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=0)
-        
-        # Configure frame to expand properly
-        product_frame.grid_rowconfigure(2, weight=1)  # Make table area expand (row 2)
         product_frame.grid_columnconfigure(0, weight=1)
-        
-        # Title label
-        title_label = ctk.CTkLabel(
-            product_frame, 
-            text="📦 Select Products", 
+        self.product_frame = product_frame
+
+        # Row 0: Title
+        ctk.CTkLabel(
+            product_frame, text="📦 Select Products",
             font=ctk.CTkFont(size=16, weight="bold")
-        )
-        title_label.grid(row=0, column=0, sticky="w", padx=15, pady=(15, 8))
-        
-        # Search box
-        search_frame = ctk.CTkFrame(product_frame)
-        search_frame.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 5))
+        ).grid(row=0, column=0, sticky="w", padx=15, pady=(15, 6))
+
+        # Row 1: Search entry
+        search_frame = ctk.CTkFrame(product_frame, fg_color="transparent")
+        search_frame.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 4))
         search_frame.grid_columnconfigure(1, weight=1)
-        
-        search_label = ctk.CTkLabel(search_frame, text="Search:")
-        search_label.grid(row=0, column=0, padx=(8, 5), pady=6)
-        
+
+        ctk.CTkLabel(search_frame, text="🔍", font=ctk.CTkFont(size=13)).grid(row=0, column=0, padx=(4, 4))
+
         self.search_var = tk.StringVar()
         self.search_var.trace('w', self.filter_products)
-        search_entry = ctk.CTkEntry(
-            search_frame, 
-            textvariable=self.search_var,
-            placeholder_text="Product name or SKU..."
+        self.search_entry = ctk.CTkEntry(
+            search_frame, textvariable=self.search_var,
+            placeholder_text="Search products...",
+            height=32
         )
-        search_entry.grid(row=0, column=1, sticky="ew", padx=(5, 8), pady=6)
-        
-        # Products table container - this should expand to fill remaining space
-        products_table_frame = ctk.CTkFrame(product_frame)
-        products_table_frame.grid(row=2, column=0, sticky="nsew", padx=12, pady=(0, 5))
-        products_table_frame.grid_rowconfigure(0, weight=1)
-        products_table_frame.grid_columnconfigure(0, weight=1)
-        
-        # Create container for products table
-        products_container = ctk.CTkFrame(products_table_frame)
-        products_container.grid(row=0, column=0, sticky="nsew")
-        products_container.grid_rowconfigure(0, weight=1)
+        self.search_entry.grid(row=0, column=1, sticky="ew", padx=(0, 4))
+
+        # Row 2: Products table — fixed height
+        products_container = ctk.CTkFrame(product_frame, fg_color="transparent")
+        products_container.grid(row=2, column=0, sticky="ew", padx=12, pady=(0, 4))
         products_container.grid_columnconfigure(0, weight=1)
-        
-        # Create treeview for products with enhanced styling
+
         columns = ("SKU", "Name", "Current Stock", "Reorder Level", "Cost Price")
-        self.products_tree = ttk.Treeview(products_container, columns=columns, show="headings")
-        
-        # Apply centralized styling
+        self.products_tree = ttk.Treeview(products_container, columns=columns, show="headings", height=6)
+
         table_styles.apply_purchase_products_style(self.products_tree)
-        
-        # Define headings with better spacing
+
         column_widths = {"SKU": 120, "Name": 200, "Current Stock": 100, "Reorder Level": 100, "Cost Price": 100}
         for col in columns:
             self.products_tree.heading(col, text=f"  {col}  ", anchor="center")
             self.products_tree.column(col, width=column_widths.get(col, 120), anchor="center" if col != "Name" else "w", minwidth=70)
-        
-        # Add both scrollbars
+
         v_scrollbar = ttk.Scrollbar(products_container, orient="vertical", command=self.products_tree.yview)
-        h_scrollbar = ttk.Scrollbar(products_container, orient="horizontal", command=self.products_tree.xview)
-        self.products_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
-        
-        # Grid layout for proper scrollbar positioning
-        self.products_tree.grid(row=0, column=0, sticky="nsew")
-        v_scrollbar.grid(row=0, column=1, sticky="ns")
-        h_scrollbar.grid(row=1, column=0, sticky="ew")
-        
-        # Add to purchase order buttons
-        button_frame = ctk.CTkFrame(product_frame)
-        button_frame.grid(row=3, column=0, sticky="ew", padx=12, pady=(5, 8))
-        
+        self.products_tree.configure(yscrollcommand=v_scrollbar.set)
+
+        self.products_tree.pack(side="left", fill="both", expand=True)
+        v_scrollbar.pack(side="right", fill="y")
+
+        # Row 3: Action buttons
+        button_frame = ctk.CTkFrame(product_frame, fg_color="transparent")
+        button_frame.grid(row=3, column=0, sticky="ew", padx=12, pady=(0, 4))
+
         add_one_button = ctk.CTkButton(
             button_frame,
             text="➕ Add 1 to PO",
             command=lambda: self.add_to_purchase_order(1),
             font=ctk.CTkFont(size=12, weight="bold"),
-            height=36,
-            width=140,
-            corner_radius=8,
+            height=32,
+            width=130,
+            corner_radius=6,
             fg_color="#4CAF50",
             hover_color="#45A049"
         )
-        add_one_button.pack(side="left", padx=(8, 5), pady=5)
-        
+        add_one_button.pack(side="left", padx=(0, 6))
+
         add_custom_button = ctk.CTkButton(
             button_frame,
             text="📝 Add Custom Qty",
             command=self.add_custom_quantity_po,
             font=ctk.CTkFont(size=12, weight="bold"),
-            height=36,
+            height=32,
             width=140,
-            corner_radius=8,
+            corner_radius=6,
             fg_color="#2196F3",
             hover_color="#1976D2"
         )
-        add_custom_button.pack(side="left", padx=(5, 8), pady=5)
-        
-        # Bind double-click to add 1 to purchase order
+        add_custom_button.pack(side="left")
+
         self.products_tree.bind("<Double-1>", lambda e: self.add_to_purchase_order(1))
-    
-    def create_purchase_order_section(self, parent):
-        """Create purchase order section"""
-        po_frame = ctk.CTkScrollableFrame(parent, label_text="📋 Purchase Order Items")
-        po_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0), pady=0)
-        
-        # Purchase order items table - make responsive
-        po_table_frame = ctk.CTkFrame(po_frame)
-        po_table_frame.pack(fill="both", expand=True, padx=12, pady=(8, 10))
-        
-        # Create container for purchase order table
-        po_container = ctk.CTkFrame(po_table_frame)
-        po_container.pack(fill="both", expand=True, padx=5, pady=5)
-        
-        # Create treeview for purchase order with enhanced styling
-        po_columns = ("Product", "Qty", "Unit Cost", "Total")
-        self.po_tree = ttk.Treeview(po_container, columns=po_columns, show="headings")
-        
-        # Apply centralized styling
-        table_styles.apply_purchase_order_style(self.po_tree)
-        
-        # Define headings with better spacing
-        column_widths = {"Product": 160, "Qty": 60, "Unit Cost": 90, "Total": 90}
-        for col in po_columns:
-            self.po_tree.heading(col, text=f"  {col}  ", anchor="center")
-            self.po_tree.column(col, width=column_widths.get(col, 100), anchor="center" if col != "Product" else "w", minwidth=60)
-        
-        # Add both scrollbars
-        v_scrollbar = ttk.Scrollbar(po_container, orient="vertical", command=self.po_tree.yview)
-        h_scrollbar = ttk.Scrollbar(po_container, orient="horizontal", command=self.po_tree.xview)
-        self.po_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
-        
-        # Grid layout for proper scrollbar positioning
-        self.po_tree.grid(row=0, column=0, sticky="nsew")
-        v_scrollbar.grid(row=0, column=1, sticky="ns")
-        h_scrollbar.grid(row=1, column=0, sticky="ew")
-        
-        # Configure grid weights
-        po_container.grid_rowconfigure(0, weight=1)
-        po_container.grid_columnconfigure(0, weight=1)
-        
-        # Purchase order actions
-        actions_frame = ctk.CTkFrame(po_frame)
-        actions_frame.pack(fill="x", padx=12, pady=(8, 10))
-        
-        remove_button = ctk.CTkButton(
-            actions_frame,
-            text="❌ Remove Item",
-            command=self.remove_from_purchase_order,
-            width=100,
-            height=32,
-            font=ctk.CTkFont(size=11, weight="bold")
+
+        # Row 4: Purchase order cart (sales-style, compact)
+        self._build_purchase_order_in_product(product_frame)
+
+    def _build_purchase_order_in_product(self, parent):
+        """Build the purchase-order cart (sales-style item rows, compact)."""
+        cart_outer = ctk.CTkFrame(parent, fg_color=("#F5F5F5", "#252535"),
+                                   border_width=1, border_color=("#CBD5E1", "#334155"),
+                                   corner_radius=6)
+        cart_outer.grid(row=4, column=0, sticky="ew", padx=10, pady=(0, 6))
+
+        # ── Header ─────────────────────────────────────────────────────
+        header_frame = ctk.CTkFrame(cart_outer, fg_color="transparent")
+        header_frame.pack(fill="x", padx=12, pady=(6, 2))
+        ctk.CTkLabel(header_frame, text="📋 Purchase Order Items",
+                      font=ctk.CTkFont(size=15, weight="bold")).pack(side="left")
+        self.po_badge = ctk.CTkLabel(
+            header_frame, text="(0)",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color="white", fg_color="#3b82f6",
+            corner_radius=8, padx=8, pady=2
         )
-        remove_button.pack(side="left", padx=(8, 5))
-        
-        clear_button = ctk.CTkButton(
-            actions_frame,
-            text="🗑️ Clear All",
-            command=self.clear_purchase_order,
-            width=100,
-            height=32,
-            font=ctk.CTkFont(size=11, weight="bold")
-        )
-        clear_button.pack(side="left", padx=(5, 8))
-        
-        # Totals section
-        totals_frame = ctk.CTkFrame(po_frame)
-        totals_frame.pack(fill="x", padx=10, pady=10)
-        
-        self.subtotal_label = ctk.CTkLabel(
-            totals_frame, 
-            text="Subtotal: Rs0.00",
-            font=ctk.CTkFont(size=13, weight="bold")
-        )
-        self.subtotal_label.pack(pady=(8, 2))
-        
-        self.total_label = ctk.CTkLabel(
-            totals_frame, 
-            text="Total: Rs0.00",
-            font=ctk.CTkFont(size=15, weight="bold")
-        )
-        self.total_label.pack(pady=(2, 8))
-        
-        # Create purchase order button
-        create_po_button = ctk.CTkButton(
-            po_frame,
+        self.po_badge.pack(side="left", padx=(8, 0))
+
+        # ── Scrollable items area (max 200px, scrollbar when overflow) ──
+        po_scroll = ctk.CTkScrollableFrame(cart_outer, fg_color="transparent", height=200)
+        po_scroll.pack(fill="x", padx=6, pady=(2, 4))
+
+        # Column headers (packed FIRST so they stay at top)
+        po_header = ctk.CTkFrame(po_scroll, fg_color=("#F1F5F9", "#0F172A"), height=26)
+        po_header.pack(fill="x", padx=0, pady=(0, 2))
+        po_header.pack_propagate(False)
+        ctk.CTkLabel(po_header, text="Product", font=ctk.CTkFont(size=10, weight="bold"),
+                      text_color=("#475569", "#94A3B8")).pack(side="left", padx=(8, 0))
+        ctk.CTkLabel(po_header, text="Qty", font=ctk.CTkFont(size=10, weight="bold"),
+                      text_color=("#475569", "#94A3B8")).pack(side="left", padx=(50, 0))
+        ctk.CTkLabel(po_header, text="Unit Cost", font=ctk.CTkFont(size=10, weight="bold"),
+                      text_color=("#475569", "#94A3B8")).pack(side="right", padx=(0, 60))
+        ctk.CTkLabel(po_header, text="Total", font=ctk.CTkFont(size=10, weight="bold"),
+                      text_color=("#475569", "#94A3B8")).pack(side="right", padx=(0, 8))
+
+        # Items container (packed SECOND, below header)
+        self.po_items_container = ctk.CTkFrame(po_scroll, fg_color=("#FFFFFF", "#1E1E2E"))
+        self.po_items_container.pack(fill="x", padx=0, pady=0)
+
+        # ── Bottom bar: Clear Cart (left) | Subtotal / Total (right) ──
+        bottom_bar = ctk.CTkFrame(cart_outer, fg_color="transparent")
+        bottom_bar.pack(fill="x", padx=10, pady=(2, 4))
+
+        ctk.CTkButton(
+            bottom_bar, text="🗑 Clear Cart",
+            command=self.clear_purchase_order, width=85, height=24,
+            font=ctk.CTkFont(size=9, weight="bold"),
+            fg_color=("#E2E8F0", "#334155"),
+            text_color=("#475569", "#94A3B8"),
+            hover_color=("#CBD5E1", "#475569")
+        ).pack(side="left")
+
+        self.total_value = ctk.CTkLabel(bottom_bar, text="Rs 0.00",
+                                         font=ctk.CTkFont(size=16, weight="bold"),
+                                         text_color="#10b981", anchor="e")
+        self.total_value.pack(side="right", padx=(0, 2))
+
+        self.subtotal_value = ctk.CTkLabel(bottom_bar, text="Subtotal: Rs0.00",
+                                            font=ctk.CTkFont(size=11))
+        self.subtotal_value.pack(side="right", padx=(0, 4))
+
+        # ── Create PO button (full-width, green when enabled) ──────────
+        self.create_po_btn = ctk.CTkButton(
+            cart_outer,
             text="📋 Create Purchase Order",
             command=self.create_purchase_order,
             font=ctk.CTkFont(size=14, weight="bold"),
-            height=45,
-            fg_color="green",
-            hover_color="darkgreen"
+            height=44,
+            state="disabled",
+            fg_color="#374151",
+            text_color="#9CA3AF",
+            hover_color="#374151"
         )
-        create_po_button.pack(fill="x", padx=10, pady=8)
-    
+        self.create_po_btn.pack(fill="x", padx=10, pady=(0, 8))
+
     def load_suppliers(self):
         """Load suppliers for dropdown"""
         try:
@@ -488,18 +438,15 @@ class PurchasesView:
                 ORDER BY p.name
             """
             products = db.execute_query(query)
+            self.all_products = products
             
-            # Clear existing items
+            # Populate products tree
             for item in self.products_tree.get_children():
                 self.products_tree.delete(item)
-            
-            # Add products to tree
             for product in products:
-                # Highlight products that need restocking
                 stock_display = f"{product['stock']}"
                 if product['stock'] <= product['reorder_level']:
                     stock_display += " ⚠️"
-                
                 self.products_tree.insert("", "end", values=(
                     product['sku'],
                     product['name'],
@@ -508,28 +455,19 @@ class PurchasesView:
                     f"Rs{product['cost_price']:.2f}" if product['cost_price'] else "N/A"
                 ))
             
-            self.all_products = products
-            
         except Exception as e:
             print(f"Error loading products: {e}")
     
     def filter_products(self, *args):
-        """Filter products based on search"""
+        """Filter products tree based on search term."""
         search_term = self.search_var.get().lower()
-        
-        # Clear tree
         for item in self.products_tree.get_children():
             self.products_tree.delete(item)
-        
-        # Filter and add matching products
         for product in self.all_products:
-            if (search_term in product['name'].lower() or 
-                search_term in product['sku'].lower()):
-                
+            if search_term in product['name'].lower() or search_term in product['sku'].lower():
                 stock_display = f"{product['stock']}"
                 if product['stock'] <= product['reorder_level']:
                     stock_display += " ⚠️"
-                
                 self.products_tree.insert("", "end", values=(
                     product['sku'],
                     product['name'],
@@ -543,160 +481,123 @@ class PurchasesView:
         self.current_supplier = self.suppliers_data.get(supplier_name)
         self.update_purchase_order_display()
     
-    def add_to_purchase_order(self, quantity=1, unit_cost=None):
-        """Add selected product to purchase order with specified quantity"""
-        selection = self.products_tree.selection()
-        if not selection:
-            messagebox.showwarning("Warning", "Please select a product first.")
-            return
-        
+    def add_to_purchase_order(self, quantity=1, product=None, unit_cost=None):
+        """Add a product to the purchase order.
+        If product is None, uses the currently selected row in the products tree.
+        """
         if not self.current_supplier or not self.current_supplier['supplier_id']:
             messagebox.showwarning("Warning", "Please select a supplier first.")
             return
-        
-        # Debug: Check if we have products data
-        if not hasattr(self, 'all_products') or not self.all_products:
-            messagebox.showerror("Error", "Products data not loaded. Please refresh the page.")
-            return
-        
-        # Get product details
-        try:
-            item_values = self.products_tree.item(selection[0], 'values')
-            if not item_values:
-                messagebox.showerror("Error", "Unable to get product details.")
+
+        # Resolve product from tree selection if not provided directly
+        if product is None:
+            selection = self.products_tree.selection()
+            if not selection:
+                messagebox.showwarning("Warning", "Please select a product from the list above.")
                 return
-            
+            item_values = self.products_tree.item(selection[0], 'values')
             sku = item_values[0]
-            
-            # Find product in data
-            product = None
             for p in self.all_products:
                 if p['sku'] == sku:
                     product = p
                     break
-            
             if not product:
-                # Try to reload products and search again
-                self.load_products()
-                for p in self.all_products:
-                    if p['sku'] == sku:
-                        product = p
-                        break
-                
-                if not product:
-                    messagebox.showerror("Error", f"Product with SKU '{sku}' not found in database.")
-                    return
-        
-        except Exception as e:
-            messagebox.showerror("Error", f"Error getting product details: {e}")
-            return
-        
-        # Use the current cost price or provided unit cost
+                messagebox.showerror("Error", "Product not found.")
+                return
+
         if unit_cost is None:
-            unit_cost = product['cost_price'] if product['cost_price'] else 0.0
-        
-        # Validate quantity
+            unit_cost = product.get('cost_price', 0) or 0.0
+
         if quantity <= 0:
             messagebox.showerror("Error", "Quantity must be greater than 0")
             return
-        
+
         # Check if product already in purchase order
-        existing_item = None
         for item in self.purchase_items:
             if item['product_id'] == product['product_id']:
-                existing_item = item
-                break
-        
-        if existing_item:
-            # Update quantity and cost
-            existing_item['quantity'] += quantity
-            existing_item['unit_cost'] = unit_cost
-        else:
-            # Add new item
-            po_item = {
-                'product_id': product['product_id'],
-                'sku': product['sku'],
-                'name': product['name'],
-                'quantity': quantity,
-                'unit_cost': unit_cost
-            }
-            self.purchase_items.append(po_item)
-        
+                item['quantity'] += quantity
+                item['unit_cost'] = unit_cost
+                self.update_purchase_order_display()
+                return
+
+        # New item
+        self.purchase_items.append({
+            'product_id': product['product_id'],
+            'sku': product['sku'],
+            'name': product['name'],
+            'quantity': quantity,
+            'unit_cost': unit_cost
+        })
         self.update_purchase_order_display()
-    
+
     def add_custom_quantity_po(self):
-        """Add product to purchase order with custom quantity and cost"""
+        """Add product to purchase order with custom quantity and cost."""
         selection = self.products_tree.selection()
         if not selection:
             messagebox.showwarning("Warning", "Please select a product first.")
             return
-        
-        if not self.current_supplier or not self.current_supplier['supplier_id']:
-            messagebox.showwarning("Warning", "Please select a supplier first.")
-            return
-        
-        # Get product details
         item_values = self.products_tree.item(selection[0], 'values')
         sku = item_values[0]
-        
-        # Find product in data
         product = None
         for p in self.all_products:
             if p['sku'] == sku:
                 product = p
                 break
-        
         if not product:
             messagebox.showerror("Error", "Product not found.")
             return
-        
-        # Ask for quantity
-        quantity_str = tk.simpledialog.askstring(
-            "Quantity", 
-            f"Enter quantity for {product['name']}"
-        )
-        
-        if quantity_str:
-            try:
-                quantity = int(quantity_str)
-                if quantity <= 0:
-                    messagebox.showerror("Error", "Quantity must be greater than 0")
-                    return
-                
-                # Ask for unit cost
-                default_cost = product['cost_price'] if product['cost_price'] else 0.0
-                cost_str = tk.simpledialog.askstring(
-                    "Unit Cost", 
-                    f"Enter unit cost for {product['name']}\n(Current cost: Rs{default_cost:.2f})",
-                    initialvalue=str(default_cost)
-                )
-                
-                if cost_str:
-                    try:
-                        unit_cost = float(cost_str)
-                        if unit_cost < 0:
-                            messagebox.showerror("Error", "Unit cost cannot be negative")
-                            return
-                        
-                        self.add_to_purchase_order(quantity, unit_cost)
-                    except ValueError:
-                        messagebox.showerror("Error", "Please enter a valid cost")
-            except ValueError:
-                messagebox.showerror("Error", "Please enter a valid quantity")
-    
-    def remove_from_purchase_order(self):
-        """Remove selected item from purchase order"""
-        selection = self.po_tree.selection()
-        if not selection:
-            messagebox.showwarning("Warning", "Please select an item to remove.")
+
+        qty_str = tk.simpledialog.askstring("Quantity", f"Enter quantity for {product['name']}")
+        if not qty_str:
             return
-        
-        # Get selected item index
-        item_index = self.po_tree.index(selection[0])
-        
-        # Remove from purchase order
-        if 0 <= item_index < len(self.purchase_items):
-            self.purchase_items.pop(item_index)
+        try:
+            quantity = int(qty_str)
+            if quantity <= 0:
+                messagebox.showerror("Error", "Quantity must be greater than 0")
+                return
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid quantity")
+            return
+
+        default_cost = product.get('cost_price', 0) or 0.0
+        cost_str = tk.simpledialog.askstring(
+            "Unit Cost",
+            f"Enter unit cost for {product['name']}\n(Current cost: Rs{default_cost:.2f})",
+            initialvalue=str(default_cost)
+        )
+        if not cost_str:
+            return
+        try:
+            unit_cost = float(cost_str)
+            if unit_cost < 0:
+                messagebox.showerror("Error", "Unit cost cannot be negative")
+                return
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid cost")
+            return
+
+        self.add_to_purchase_order(quantity, product, unit_cost)
+    
+    # ── Inline item helpers (sales-style) ─────────────────────────────
+
+    def _inc_po_item(self, index):
+        """Increment quantity of PO item at index."""
+        if 0 <= index < len(self.purchase_items):
+            self.purchase_items[index]['quantity'] += 1
+            self.update_purchase_order_display()
+
+    def _dec_po_item(self, index):
+        """Decrement quantity of PO item at index. Removes item if qty reaches 0."""
+        if 0 <= index < len(self.purchase_items):
+            self.purchase_items[index]['quantity'] -= 1
+            if self.purchase_items[index]['quantity'] <= 0:
+                self.purchase_items.pop(index)
+            self.update_purchase_order_display()
+
+    def _remove_po_item(self, index):
+        """Remove PO item at index."""
+        if 0 <= index < len(self.purchase_items):
+            self.purchase_items.pop(index)
             self.update_purchase_order_display()
     
     def clear_purchase_order(self):
@@ -707,28 +608,116 @@ class PurchasesView:
                 self.update_purchase_order_display()
     
     def update_purchase_order_display(self):
-        """Update purchase order display and totals"""
-        # Clear purchase order tree
-        for item in self.po_tree.get_children():
-            self.po_tree.delete(item)
-        
+        """Update cart display with inline controls and totals (sales-style)."""
+        # Clear inline items
+        for w in self.po_items_container.winfo_children():
+            w.destroy()
+
         subtotal = 0
-        
-        # Add items to purchase order tree
-        for item in self.purchase_items:
+
+        for idx, item in enumerate(self.purchase_items):
             total_cost = item['unit_cost'] * item['quantity']
             subtotal += total_cost
-            
-            self.po_tree.insert("", "end", values=(
-                item['name'][:20] + "..." if len(item['name']) > 20 else item['name'],
-                item['quantity'],
-                f"Rs{item['unit_cost']:.2f}",
-                f"Rs{total_cost:.2f}"
-            ))
-        
-        # Update totals
-        self.subtotal_label.configure(text=f"Subtotal: Rs{subtotal:.2f}")
-        self.total_label.configure(text=f"Total: Rs{subtotal:.2f}")
+
+            bg = "#FFFFFF" if idx % 2 == 0 else "#F8FAFC"
+            is_dark = ctk.get_appearance_mode() == "Dark"
+            if is_dark:
+                bg = "#1E1E2E" if idx % 2 == 0 else "#1A1A2E"
+
+            row_frame = ctk.CTkFrame(self.po_items_container, fg_color=bg, height=34)
+            row_frame.pack(fill="x", padx=1, pady=(0, 1))
+            row_frame.pack_propagate(False)
+
+            # Product name
+            name = item['name'][:18] + ".." if len(item['name']) > 18 else item['name']
+            ctk.CTkLabel(row_frame, text=name, font=ctk.CTkFont(size=10),
+                         anchor="w").pack(side="left", padx=(8, 0), expand=True, fill="x")
+
+            # [-] button
+            dec_btn = ctk.CTkButton(
+                row_frame, text="−", width=26, height=24,
+                font=ctk.CTkFont(size=13, weight="bold"),
+                fg_color=("#FF6B35", "#D35400"), hover_color=("#E55A2B", "#B64900"),
+                command=lambda i=idx: self._dec_po_item(i)
+            )
+            dec_btn.pack(side="left", padx=(2, 1))
+            if item['quantity'] <= 1:
+                dec_btn.configure(state="disabled")
+
+            # Qty label
+            ctk.CTkLabel(row_frame, text=str(item['quantity']),
+                          font=ctk.CTkFont(size=11, weight="bold"), width=22).pack(side="left", padx=(1, 1))
+
+            # [+] button
+            inc_btn = ctk.CTkButton(
+                row_frame, text="+", width=26, height=24,
+                font=ctk.CTkFont(size=13, weight="bold"),
+                fg_color=("#2196F3", "#1565C0"), hover_color=("#1976D2", "#0D47A1"),
+                command=lambda i=idx: self._inc_po_item(i)
+            )
+            inc_btn.pack(side="left", padx=(1, 4))
+
+            # Unit cost — editable entry
+            cost_var = tk.StringVar(value=f"{item['unit_cost']:.2f}")
+            cost_entry = ctk.CTkEntry(
+                row_frame, textvariable=cost_var, width=80, height=24,
+                font=ctk.CTkFont(size=10),
+                justify="right",
+                border_width=1,
+                fg_color=("#FFFFFF", "#1E1E2E"),
+                text_color=("#64748B", "#94A3B8")
+            )
+            cost_entry.pack(side="right", padx=(0, 4))
+            def on_cost_change(e, i=idx, var=cost_var):
+                try:
+                    new_cost = float(var.get())
+                    if new_cost >= 0:
+                        self.purchase_items[i]['unit_cost'] = new_cost
+                        self.update_purchase_order_display()
+                except ValueError:
+                    pass
+            cost_entry.bind("<FocusOut>", on_cost_change)
+            cost_entry.bind("<Return>", on_cost_change)
+
+            # Total label
+            ctk.CTkLabel(row_frame, text=f"Rs{total_cost:.2f}",
+                         font=ctk.CTkFont(size=10, weight="bold")).pack(side="right", padx=(0, 4))
+
+            # [×] remove button
+            remove_btn = ctk.CTkButton(
+                row_frame, text="×", width=24, height=22,
+                font=ctk.CTkFont(size=12, weight="bold"),
+                fg_color=("#FEE2E2", "#3B0A0A"), hover_color=("#FECACA", "#5B1A1A"),
+                text_color=("#DC2626", "#FCA5A5"),
+                command=lambda i=idx: self._remove_po_item(i)
+            )
+            remove_btn.pack(side="right", padx=(2, 4))
+
+        # Update summary
+        self.subtotal_value.configure(text=f"Subtotal: Rs{subtotal:.2f}")
+        self.total_value.configure(text=f"Rs {subtotal:,.2f}")
+
+        # Update badge
+        count = len(self.purchase_items)
+        self.po_badge.configure(text=f"({count})")
+
+        # Enable/disable create button
+        if count > 0:
+            self.create_po_btn.configure(
+                text=f"📋 Create Purchase Order — Rs {subtotal:,.2f}",
+                state="normal",
+                fg_color="#10B981",
+                text_color="#FFFFFF",
+                hover_color="#059669"
+            )
+        else:
+            self.create_po_btn.configure(
+                text="📋 Create Purchase Order",
+                state="disabled",
+                fg_color="#374151",
+                text_color="#9CA3AF",
+                hover_color="#374151"
+            )
     
     def create_purchase_order(self):
         """Create the purchase order"""
@@ -866,8 +855,53 @@ class PurchasesView:
         messagebox.showinfo("Info", "Purchase details feature coming soon!")
     
     def mark_as_received(self):
-        """Mark selected purchase order as received"""
-        messagebox.showinfo("Info", "Mark as received feature coming soon!")
+        """Mark selected purchase order as received and update stock"""
+        selected = self.purchase_history_tree.selection()
+        if not selected:
+            messagebox.showwarning("Warning", "Please select a purchase order first.")
+            return
+
+        values = self.purchase_history_tree.item(selected[0], "values")
+        po_number = values[0]
+
+        # Look up purchase_id from stored data
+        purchase_id = None
+        for p in self.all_purchase_data:
+            if p['po_number'] == po_number:
+                purchase_id = p['purchase_id']
+                break
+
+        if not purchase_id:
+            messagebox.showerror("Error", "Could not find purchase order data.")
+            return
+
+        confirm = messagebox.askyesno("Confirm", f"Mark {po_number} as received?\n\nThis will update product stock levels.")
+        if not confirm:
+            return
+
+        try:
+            # Get purchase items
+            items = db.execute_query("""
+                SELECT product_id, quantity FROM purchase_items WHERE purchase_id = ?
+            """, (purchase_id,))
+
+            # Update stock for each item
+            for item in items:
+                db.execute_update("""
+                    UPDATE products SET stock = stock + ? WHERE product_id = ?
+                """, (item['quantity'], item['product_id']))
+
+            # Update purchase status
+            db.execute_update("""
+                UPDATE purchases SET status = 'received' WHERE id = ?
+            """, (purchase_id,))
+
+            messagebox.showinfo("Success", f"{po_number} marked as received.\nStock levels updated.")
+            self.load_purchase_history()
+
+        except Exception as e:
+            print(f"Error marking as received: {e}")
+            messagebox.showerror("Error", f"Failed to mark as received: {e}")
     
     def show_add_product_dialog(self, product):
         """Show custom dialog for adding product to purchase order"""

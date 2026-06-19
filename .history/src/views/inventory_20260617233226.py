@@ -20,6 +20,7 @@ from utils.sku_generator import SKUGenerator
 import utils.simple_table_styles as table_styles
 from utils.export_manager import ExportManager
 # from utils.camera_scanner import CameraBarcodeReader
+from utils.barcode_server import BarcodeServer
 
 
 class _FilterPopup(ctk.CTkToplevel):
@@ -113,7 +114,10 @@ class ScrollableFilter(ctk.CTkFrame):
         popup = _FilterPopup(self)
         popup.withdraw()
         popup.overrideredirect(True)
-        # Click-outside closes the popup; click falls through to the intended widget.
+        popup.attributes("-topmost", True)
+        # NO transient() and NO grab_set() — they block all input to the parent
+        # window on Windows. Instead _on_global_click closes the popup when
+        # clicking outside, and the click falls through to the intended widget.
 
         main = ctk.CTkFrame(popup, corner_radius=8,
                             fg_color=("white", "#262626"),
@@ -623,20 +627,11 @@ class InventoryView:
         if not self.data_tree.winfo_exists():
             return
         is_dark = ctk.get_appearance_mode() == "Dark"
-        row_fg = "#E0E0E0" if is_dark else "black"
-        self.data_tree.tag_configure("evenrow", background="#1A1A2E" if is_dark else "#F8FAFC", foreground=row_fg)
-        self.data_tree.tag_configure("oddrow",  background="#1E1E2E" if is_dark else "#FFFFFF", foreground=row_fg)
+        self.data_tree.tag_configure("evenrow", background="#F8FAFC" if not is_dark else "#1A1A2E")
+        self.data_tree.tag_configure("oddrow",  background="#FFFFFF" if not is_dark else "#1E1E2E")
         self.data_tree.tag_configure("stock_zero", foreground=("#DC2626" if not is_dark else "#F87171"), font=("Segoe UI", 11, "bold"))
         self.data_tree.tag_configure("stock_low",  foreground=("#D97706" if not is_dark else "#FBBF24"), font=("Segoe UI", 11, "bold"))
         self.data_tree.tag_configure("stock_ok",   foreground=("#059669" if not is_dark else "#34D399"), font=("Segoe UI", 11))
-        # Update category/brand styles for dark mode
-        current_tab = getattr(self, 'current_tab', None)
-        if current_tab in ("categories", "sub_categories"):
-            table_styles.apply_category_style(self.data_tree, is_dark)
-        elif current_tab in ("brands", "sub_brands"):
-            table_styles.apply_brand_style(self.data_tree, is_dark)
-        else:
-            table_styles.apply_product_style(self.data_tree)
         # Update context menu colors
         if hasattr(self, 'context_menu') and self.context_menu:
             try:
@@ -768,12 +763,11 @@ class InventoryView:
         
         columns = ("ID", "Name", "Description", "Created")
         self.data_tree = ttk.Treeview(parent, columns=columns, show="headings", height=25)
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        table_styles.apply_category_style(self.data_tree, is_dark)
+        table_styles.apply_category_style(self.data_tree)
         
-        row_fg = "#E0E0E0" if is_dark else "black"
-        self.data_tree.tag_configure("evenrow", background="#1A1A2E" if is_dark else "#F8FAFC", foreground=row_fg)
-        self.data_tree.tag_configure("oddrow",  background="#1E1E2E" if is_dark else "#FFFFFF", foreground=row_fg)
+        is_dark = ctk.get_appearance_mode() == "Dark"
+        self.data_tree.tag_configure("evenrow", background="#F8FAFC" if not is_dark else "#1A1A2E")
+        self.data_tree.tag_configure("oddrow",  background="#FFFFFF" if not is_dark else "#1E1E2E")
         
         column_widths = {"ID": 80, "Name": 250, "Description": 450, "Created": 180}
         for col in columns:
@@ -797,12 +791,11 @@ class InventoryView:
         
         columns = ("ID", "Name", "Category", "Description", "Created")
         self.data_tree = ttk.Treeview(parent, columns=columns, show="headings", height=25)
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        table_styles.apply_category_style(self.data_tree, is_dark)
+        table_styles.apply_category_style(self.data_tree)
         
-        row_fg = "#E0E0E0" if is_dark else "black"
-        self.data_tree.tag_configure("evenrow", background="#1A1A2E" if is_dark else "#F8FAFC", foreground=row_fg)
-        self.data_tree.tag_configure("oddrow",  background="#1E1E2E" if is_dark else "#FFFFFF", foreground=row_fg)
+        is_dark = ctk.get_appearance_mode() == "Dark"
+        self.data_tree.tag_configure("evenrow", background="#F8FAFC" if not is_dark else "#1A1A2E")
+        self.data_tree.tag_configure("oddrow",  background="#FFFFFF" if not is_dark else "#1E1E2E")
         
         column_widths = {"ID": 80, "Name": 200, "Category": 150, "Description": 350, "Created": 180}
         for col in columns:
@@ -826,12 +819,11 @@ class InventoryView:
         
         columns = ("ID", "Name", "Description", "Created")
         self.data_tree = ttk.Treeview(parent, columns=columns, show="headings", height=25)
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        table_styles.apply_brand_style(self.data_tree, is_dark)
+        table_styles.apply_brand_style(self.data_tree)
         
-        row_fg = "#E0E0E0" if is_dark else "black"
-        self.data_tree.tag_configure("evenrow", background="#1A1A2E" if is_dark else "#F8FAFC", foreground=row_fg)
-        self.data_tree.tag_configure("oddrow",  background="#1E1E2E" if is_dark else "#FFFFFF", foreground=row_fg)
+        is_dark = ctk.get_appearance_mode() == "Dark"
+        self.data_tree.tag_configure("evenrow", background="#F8FAFC" if not is_dark else "#1A1A2E")
+        self.data_tree.tag_configure("oddrow",  background="#FFFFFF" if not is_dark else "#1E1E2E")
         
         column_widths = {"ID": 80, "Name": 250, "Description": 450, "Created": 180}
         for col in columns:
@@ -855,12 +847,11 @@ class InventoryView:
         
         columns = ("ID", "Name", "Brand", "Description", "Created")
         self.data_tree = ttk.Treeview(parent, columns=columns, show="headings", height=25)
-        is_dark = ctk.get_appearance_mode() == "Dark"
-        table_styles.apply_brand_style(self.data_tree, is_dark)
+        table_styles.apply_brand_style(self.data_tree)
         
-        row_fg = "#E0E0E0" if is_dark else "black"
-        self.data_tree.tag_configure("evenrow", background="#1A1A2E" if is_dark else "#F8FAFC", foreground=row_fg)
-        self.data_tree.tag_configure("oddrow",  background="#1E1E2E" if is_dark else "#FFFFFF", foreground=row_fg)
+        is_dark = ctk.get_appearance_mode() == "Dark"
+        self.data_tree.tag_configure("evenrow", background="#F8FAFC" if not is_dark else "#1A1A2E")
+        self.data_tree.tag_configure("oddrow",  background="#FFFFFF" if not is_dark else "#1E1E2E")
         
         column_widths = {"ID": 80, "Name": 200, "Brand": 150, "Description": 350, "Created": 180}
         for col in columns:
@@ -878,18 +869,6 @@ class InventoryView:
     
     def switch_tab(self, tab_name):
         """Switch between tabs"""
-        # Close any floating overrideredirect Toplevel popups
-        try:
-            root = self.parent.winfo_toplevel()
-            for w in root.winfo_children():
-                if isinstance(w, tk.Toplevel) and w.winfo_exists():
-                    try:
-                        if w.overrideredirect():
-                            w.destroy()
-                    except Exception:
-                        pass
-        except Exception:
-            pass
         self.current_tab = tab_name
         
         active_fg = ("#3B82F6", "#2563EB")
@@ -1899,21 +1878,17 @@ class InventoryView:
             progress_bar.set(1.0)
             _append_text("\n" + "=" * 40 + "\n")
             _append_text("✓ IMPORT COMPLETE!\n\n")
-
-            stats = getattr(importer, "stats", {}) or {}
-
-            _append_text(f"Sheets processed:    {stats.get('sheets_processed', 0)}\n")
+            _append_text(f"Sheets processed:    {importer.stats['sheets_processed']}\n")
             _append_text(f"Products imported:   {total_imported}\n")
-            _append_text(f"Duplicates skipped:  {stats.get('products_skipped', 0)}\n")
-            _append_text(f"Categories created:  {stats.get('categories_created', 0)}\n")
-            _append_text(f"Brands created:      {stats.get('brands_created', 0)}\n")
-
-            errors = stats.get('errors', []) or []
-            if errors:
-                _append_text(f"\nErrors: {len(errors)}\n")
-                for error in errors[:5]:
+            _append_text(f"Duplicates skipped:  {importer.stats['products_skipped']}\n")
+            _append_text(f"Categories created:  {importer.stats['categories_created']}\n")
+            _append_text(f"Brands created:      {importer.stats['brands_created']}\n")
+            
+            if importer.stats['errors']:
+                _append_text(f"\nErrors: {len(importer.stats['errors'])}\n")
+                for error in importer.stats['errors'][:5]:
                     _append_text(f"  - {error}\n")
-
+            
             status_label.configure(text="Import completed!", text_color=("#10B981", "#34D399"))
             close_btn.configure(state="normal", text="Close & Refresh")
             self.load_data()
@@ -3026,6 +3001,8 @@ class ProductDialog:
     def __init__(self, parent, title, product_data=None):
         self.parent = parent
         self.result = None
+        self._barcode_server = None
+        self._server_url = None
         
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
@@ -3127,6 +3104,11 @@ class ProductDialog:
             command=self._start_camera_scanner
         )
         self.cam_btn.pack(side="left", padx=(0, 3))
+        self.phone_btn = ctk.CTkButton(
+            barcode_row, text="Phone", width=65,
+            command=self._start_phone_scanner
+        )
+        self.phone_btn.pack(side="left")
         # Second row: preview + action buttons
         barcode_row2 = ctk.CTkFrame(main_frame, fg_color="transparent")
         barcode_row2.pack(fill="x", pady=(0, 5))
@@ -3432,6 +3414,7 @@ class ProductDialog:
                 'reorder_level': reorder_level
             }
             
+            self._stop_barcode_server()
             self.dialog.destroy()
             
         except ValueError:
@@ -3445,9 +3428,6 @@ class ProductDialog:
         if barcode:
             self.barcode_entry.configure(border_color="green")
             self.parent.after(2000, lambda: self._reset_barcode_border())
-            # Select all so next scan naturally replaces, not appends
-            self.barcode_entry.select_range(0, "end")
-            self.barcode_entry.icursor("end")
 
     def _reset_barcode_border(self):
         try:
@@ -3456,24 +3436,14 @@ class ProductDialog:
         except Exception:
             pass
 
-    def _start_camera_scanner(self):
-        """
-        Start barcode camera scanner.
-
-        NOTE: CameraBarcodeReader import is currently commented out in this file.
-        Implement a safe behavior to avoid crashing when the user clicks Camera.
-        """
-        try:
-            # If CameraBarcodeReader exists/import is enabled, prefer it.
-            from utils.camera_scanner import CameraBarcodeReader  # type: ignore
-            reader = CameraBarcodeReader(self.dialog, self._on_camera_barcode)
-            reader.start()
-        except Exception:
-            messagebox.showinfo(
-                "Camera Scanner Unavailable",
-                "Camera scanning is not available in this build.\n"
-                "Use Phone scanning or type the barcode manually."
-            )
+    # def _start_camera_scanner(self):
+    #     try:
+    #         reader = CameraBarcodeReader(self.dialog, self._on_camera_barcode)
+    #         reader.start()
+    #     except RuntimeError as e:
+    #         messagebox.showerror("Camera Error", str(e))
+    #     except Exception as e:
+    #         messagebox.showerror("Error", f"Failed to start camera: {e}")
 
     def _on_camera_barcode(self, code):
         try:
@@ -3488,8 +3458,50 @@ class ProductDialog:
 
 
 
+    def _stop_barcode_server(self):
+        if self._barcode_server:
+            try:
+                self._barcode_server.stop()
+            except Exception:
+                pass
+            self._barcode_server = None
+            self._server_url = None
+
     def _on_dialog_close(self):
+        self._stop_barcode_server()
         self.dialog.destroy()
+
+    def _start_phone_scanner(self):
+        try:
+            if self._barcode_server:
+                self.scan_info.configure(
+                    text=f"Open {self._server_url} on your phone (Chrome on Android recommended). Make sure both devices are on the same Wi-Fi.",
+                    text_color="#60a5fa"
+                )
+                return
+            self._barcode_server = BarcodeServer(port=8766)
+            self._barcode_server.start(self._on_remote_scan)
+            self._server_url = self._barcode_server.url
+            self.scan_info.configure(
+                text=f"Open {self._server_url} on your phone (Chrome on Android recommended). Same Wi-Fi required.",
+                text_color="#60a5fa"
+            )
+        except Exception as e:
+            self.scan_info.configure(text=f"Phone scanner error: {e}", text_color="#ef4444")
+
+    def _on_remote_scan(self, code):
+        self.parent.after(0, lambda: self._set_phone_barcode(code))
+
+    def _set_phone_barcode(self, code):
+        try:
+            if not self.dialog.winfo_exists():
+                return
+            self.barcode_entry.delete(0, "end")
+            self.barcode_entry.insert(0, code)
+            self.barcode_entry.configure(border_color="green")
+            self.parent.after(2000, lambda: self._reset_barcode_border())
+        except Exception:
+            pass
 
     def _on_barcode_edited(self, event=None):
         code = self.barcode_entry.get().strip()
@@ -4737,7 +4749,7 @@ class SearchableDropdown(ctk.CTkFrame):
         self.dropdown_window = ctk.CTkToplevel(self.winfo_toplevel())
         self.dropdown_window.withdraw()
         self.dropdown_window.overrideredirect(True)  # Remove window decorations
-        self.dropdown_window.transient(self.winfo_toplevel())
+        self.dropdown_window.attributes("-topmost", True)
         
         # Dropdown frame
         dropdown_frame = ctk.CTkFrame(self.dropdown_window, fg_color=("white", "#2D2D2D"),

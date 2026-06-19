@@ -19,80 +19,11 @@ class SimpleExcelImporter:
     
     COLUMN_MAPPINGS = {
         'company': ['Company', 'company', 'BRAND', 'Brand'],
-        'bikes_names': [
-            'Bikes names', 'Bikes Names', 'Bike Names', 'bike names',
-            'Items', 'items', 'Company names', 'Company Names',
-            'Scooter Name', 'Scooter Names', 'Scooter names',
-            'Helmet Name', 'Helmet name',
-            'Bearing Size', 'Bearing size',
-            'Bikes Tyre Sizes',
-        ],
-        'wholesale_price': [
-            'Wholesale Price',
-            'Wholesale price',
-            'wholesale price',
-            'W/S Price',
-            'W/S',
-            # Observed variants:
-            'Wholesale Price/SET',
-            'Wholesale Price/PCS',
-            'Wholesale Price / SET',
-            'Wholesale Price / PCS',
-            'Wholesale Price/ SET',
-            'Wholesale Price/ PCS',
-            'Wholesale Price/Set',
-            'Wholesale Price/Pcs',
-            'Wholesale Price/set',
-            # Space-before-slash variants:
-            'Wholesale Price /SET',
-            'Wholesale Price /PCS',
-            'Wholesale Price /set',
-            'Wholesale Price /Pcs',
-            # Other unit variants:
-            'Wholesale Price/Box',
-            'Wholesale Price/Case',
-            # Generic single price column (used as wholesale when only one price col exists)
-            'Price',
-        ],
-        # Excel header observed variants:
-        # "Retail Price / Last Price"
-        # and also "Retail Price/SET", "Retail Price/PCS" (with spacing differences)
-        'retail_price': [
-            'Retail Price',
-            'Retail price',
-            'retail price',
-            'Retail Price / Last Price',
-            'Retail Price/Last Price',
-            'Retail Price /Last Price',
-            'Retail Price/ Last Price',
-            # Observed variants:
-            'Retail Price/SET',
-            'Retail Price/PCS',
-            'Retail Price / SET',
-            'Retail Price / PCS',
-            'Retail Price/ SET',
-            'Retail Price/ PCS',
-            'Retail Price/Set',
-            'Retail Price/Pcs',
-            # Space-before-slash variants:
-            'Retail Price /SET',
-            'Retail Price /PCS',
-            'Retail Price /set',
-            'Retail Price /Pcs',
-            # Single price column aliases:
-            'Price',
-            'Last Price', 'Last price', 'last price',
-        ],
-        'qty_in_hand': [
-            'Qty in Hand', 'Qty in hand', 'qty in hand',
-            'Stock', 'stock', 'Qty',
-            'Qty in Hand/PCS', 'Qty in Hand/SET', 'Qty in Hand (PCS)',
-        ],
-        'qty_sold': [
-            'Qty Sold', 'Qty sold', 'qty sold',
-            'Sold', 'sold', 'Quantity Sold',
-            'Qty Sold/PCS', 'Qty Sold/SET', 'Qty Sold/CS', 'Qty Sold/PCs',
-        ],
+        'bikes_names': ['Bikes names', 'Bikes Names', 'Bike Names', 'bike names', 'Items', 'items', 'Company names'],
+        'wholesale_price': ['Wholesale Price', 'Wholesale price', 'wholesale price', 'W/S Price', 'W/S'],
+        'retail_price': ['Retail Price', 'Retail price', 'retail price'],
+        'qty_in_hand': ['Qty in Hand', 'Qty in hand', 'qty in hand', 'Stock', 'stock', 'Qty'],
+        'qty_sold': ['Qty Sold', 'Qty sold', 'qty sold', 'Sold', 'sold', 'Quantity Sold']
     }
     
     EXCLUDE_SHEETS = ['Home', 'Home ', 'Dashboard', 'Sheet1', 'Daya form', '/']
@@ -185,23 +116,20 @@ class SimpleExcelImporter:
                             brand = current_company
                     
                     # Get prices
-                    workshop_price = 0
+                    cost_price = 0
                     normal_price = 0
                     
                     if wholesale_col:
                         wp = row.get(wholesale_col)
                         if pd.notna(wp):
                             wholesale, retail = self._parse_price(wp)
-                            workshop_price = wholesale
+                            cost_price = wholesale
                             normal_price = retail
                     
-                    if retail_col and retail_col != wholesale_col:
+                    if retail_col:
                         rp = row.get(retail_col)
                         if pd.notna(rp):
-                            ws, rt = self._parse_price(rp)
-                            if not wholesale_col:
-                                workshop_price = ws
-                            normal_price = rt
+                            _, normal_price = self._parse_price(rp)
                     
                     # Get stock
                     stock = 0
@@ -217,7 +145,7 @@ class SimpleExcelImporter:
                         'sheet': sheet_name,
                         'name': product_name,
                         'brand': brand,
-                        'cost': workshop_price,
+                        'cost': cost_price,
                         'price': normal_price,
                         'stock': stock
                     })
@@ -274,19 +202,12 @@ class SimpleExcelImporter:
                 return idx
         return None
     
-    def _normalize_header(self, s):
-        """Normalize Excel header text for matching."""
-        import re
-        # Collapse whitespace, then strip spaces around slashes
-        return re.sub(r'\s*/\s*', '/', re.sub(r'\s+', ' ', str(s).strip().lower()))
-
     def _find_column(self, df, field_name):
-        """Find column by possible names (case/whitespace-insensitive)."""
+        """Find column by possible names"""
         possible_names = self.COLUMN_MAPPINGS.get(field_name, [field_name])
-        normalized_possible = {self._normalize_header(n) for n in possible_names}
-
         for col in df.columns:
-            if self._normalize_header(col) in normalized_possible:
+            col_str = str(col).strip()
+            if col_str in possible_names:
                 return col
         return None
     
@@ -301,50 +222,36 @@ class SimpleExcelImporter:
         return val
     
     def _parse_price(self, price_val):
-        """Parse price value, tolerating currency symbols and thousand separators."""
+        """Parse price value"""
         if pd.isna(price_val):
             return 0, 0
-
+        
         price_str = str(price_val).strip()
-        if not price_str:
-            return 0, 0
-
-        def parse_one(part: str) -> float:
-            import re
-            # Keep digits, dot and comma; then normalize:
-            # - Remove currency symbols / spaces
-            # - Treat comma as thousand separator unless it looks like decimal separator
-            s = str(part).strip()
-
-            # Remove any currency text and spaces
-            s = re.sub(r'[^\d,.\-]', '', s)
-            if not s:
-                return 0.0
-
-            # If both comma and dot exist, assume comma is thousand sep.
-            if ',' in s and '.' in s:
-                s = s.replace(',', '')
-            else:
-                # If only commas exist, treat them as thousand separators.
-                if ',' in s and '.' not in s:
-                    s = s.replace(',', '')
-
-            try:
-                return float(s) if s else 0.0
-            except:
-                return 0.0
-
+        
         if '/' in price_str:
             parts = price_str.split('/')
-            nums = [parse_one(p) for p in parts if str(p).strip() != '']
-            nums = [n for n in nums if n != 0.0 or len(nums) == 2]  # keep zeros if both parts present
+            nums = []
+            for part in parts:
+                try:
+                    cleaned = ''.join(c for c in part if c.isdigit() or c == '.')
+                    if cleaned:
+                        nums.append(float(cleaned))
+                except:
+                    pass
             if len(nums) >= 2:
                 return nums[0], nums[1]
-            if len(nums) == 1:
+            elif len(nums) == 1:
                 return nums[0], nums[0]
-
-        p = parse_one(price_str)
-        return p, p
+        
+        try:
+            cleaned = ''.join(c for c in price_str if c.isdigit() or c == '.')
+            if cleaned:
+                p = float(cleaned)
+                return p, p
+        except:
+            pass
+        
+        return 0, 0
     
     def _get_or_create_category(self, name):
         """Get or create category"""
@@ -405,16 +312,6 @@ class SimpleExcelImporter:
             
             if not bikes_col:
                 return 0
-
-            # Debug/help for "prices not importing" cases:
-            # If wholesale/retail columns weren't detected, surface available headers.
-            if wholesale_col is None or retail_col is None:
-                available_headers = [str(c) for c in df_data.columns]
-                self.stats['errors'].append(
-                    f"Sheet '{sheet_name}': column detection failed. "
-                    f"wholesale_col={wholesale_col}, retail_col={retail_col}. "
-                    f"Available headers={available_headers[:25]}"
-                )
             
             imported = 0
             current_company = None
@@ -441,27 +338,20 @@ class SimpleExcelImporter:
                     brand_id = self._get_or_create_brand(brand)
                     
                     # Prices
-                    # Semantics:
-                    # - price_normal = retail / normal / last price (what customers pay)
-                    # - price_workshop = wholesale / workshop price (only for workshops)
-                    # - cost_price = 0 (not tracked currently)
-                    workshop_price = 0
+                    cost_price = 0
                     normal_price = 0
                     
                     if wholesale_col:
                         wp = self._clean_value(row.get(wholesale_col))
                         if wp:
                             wholesale, retail = self._parse_price(wp)
-                            workshop_price = wholesale
+                            cost_price = wholesale
                             normal_price = retail
                     
-                    if retail_col and retail_col != wholesale_col:
+                    if retail_col:
                         rp = self._clean_value(row.get(retail_col))
                         if rp:
-                            ws, rt = self._parse_price(rp)
-                            if not wholesale_col:
-                                workshop_price = ws
-                            normal_price = rt
+                            _, normal_price = self._parse_price(rp)
                     
                     # Stock
                     stock = 0
@@ -487,12 +377,15 @@ class SimpleExcelImporter:
                     sku = SKUGenerator.generate_sku(category_id, brand_id)
                     
                     # Insert product
+                    # Semantics:
+                    # - retail/normal -> price_normal
+                    # - wholesale/workshop -> price_workshop (and also cost_price)
                     db.execute_insert("""
                         INSERT INTO products (name, sku, category_id, brand_id, stock, qty_sold,
                                             price_normal, price_workshop, cost_price, reorder_level, is_active)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (product_name, sku, category_id, brand_id, stock, qty_sold,
-                          normal_price, workshop_price, 0, 10, 1))
+                          normal_price, cost_price, cost_price, 10, 1))
                     
                     imported += 1
                     

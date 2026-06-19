@@ -846,10 +846,7 @@ class ExcelColumnMapper:
                         if pd.isna(col_value):
                             col_name = f"Column {col_idx + 1}"
                         else:
-                            # Normalize header to improve auto-mapping robustness
-                            # (e.g., "Whole sale price " -> "whole sale price")
-                            raw = str(col_value)
-                            col_name = " ".join(raw.split()).strip()
+                            col_name = str(col_value).strip()
                         columns.append(col_name)
 
                     # Extract data rows after the header row

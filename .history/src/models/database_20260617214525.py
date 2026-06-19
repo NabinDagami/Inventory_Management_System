@@ -94,13 +94,7 @@ class Database:
                 cursor.execute("ALTER TABLE products ADD COLUMN qty_sold INTEGER DEFAULT 0")
             except sqlite3.OperationalError:
                 pass  # Column already exists
-
-            # Add barcode column if it doesn't exist (for existing databases)
-            try:
-                cursor.execute("ALTER TABLE products ADD COLUMN barcode VARCHAR(100)")
-            except sqlite3.OperationalError:
-                pass  # Column already exists
-
+            
             # Add available_stock as a regular column for compatibility
             # We'll calculate it in code as (stock - qty_sold)
             # Using a regular column instead of generated column for broader compatibility

@@ -133,6 +133,18 @@ class StatementsView:
     
     def switch_tab(self, tab_name):
         """Switch between tabs"""
+        # Close any floating overrideredirect Toplevel popups
+        try:
+            root = self.parent.winfo_toplevel()
+            for w in root.winfo_children():
+                if isinstance(w, tk.Toplevel) and w.winfo_exists():
+                    try:
+                        if w.overrideredirect():
+                            w.destroy()
+                    except Exception:
+                        pass
+        except Exception:
+            pass
         self.current_tab = tab_name
         
         # Update button styles

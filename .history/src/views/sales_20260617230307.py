@@ -3,21 +3,13 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 import sys
 import os
-import tempfile
 from datetime import datetime
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-from reportlab.lib.units import inch
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.database import db
-from views.settings import SettingsView
 import utils.simple_table_styles as table_styles
-from utils.format_utils import format_price_with_decimals as _fmt, format_price as _fmt_int
 
 
 def center_window_on_screen(window, width, height):
@@ -77,20 +69,7 @@ class SearchableDropdown(ctk.CTkFrame):
         """Setup the click-outside binding after widget is fully created"""
         try:
             toplevel = self.winfo_toplevel()
-            self._toplevel = toplevel
-            func_id = toplevel.bind('<Button-1>', self.on_click_outside, add='+')
-            self._click_binding_func_id = func_id
-            self.bind('<Destroy>', self._cleanup_binding)
-        except:
-            pass
-    
-    def _cleanup_binding(self, event=None):
-        """Remove the global click binding to prevent memory leaks"""
-        try:
-            if hasattr(self, '_toplevel') and self._toplevel and self._toplevel.winfo_exists():
-                func_id = getattr(self, '_click_binding_func_id', None)
-                if func_id:
-                    self._toplevel.unbind('<Button-1>', funcid=func_id)
+            toplevel.bind('<Button-1>', self.on_click_outside, add='+')
         except:
             pass
     
@@ -297,7 +276,7 @@ class SalesView:
         self.create_sales_interface()
         self.load_customers()
         self.load_products()
-
+    
     def create_sales_interface(self):
         """Create the sales management interface"""
         # Main container
@@ -365,16 +344,6 @@ class SalesView:
     
     def switch_tab(self, tab_name):
         """Switch between tabs"""
-        self._hide_search_dropdown()
-        # Close any floating overrideredirect Toplevel popups
-        root = self.parent.winfo_toplevel()
-        for w in root.winfo_children():
-            if isinstance(w, tk.Toplevel) and w.winfo_exists():
-                try:
-                    if w.overrideredirect():
-                        w.destroy()
-                except Exception:
-                    pass
         self.current_tab = tab_name
 
         # Update button styles
@@ -443,34 +412,19 @@ class SalesView:
             width=100
         )
         payment_dropdown.pack(side="left", padx=5, pady=10)
-
-        # Customer info display
-        self.customer_info_frame = ctk.CTkFrame(self.new_sale_frame, fg_color="transparent")
-        self.customer_info_frame.pack(fill="x", padx=10, pady=(0, 5))
-
-        info_inner = ctk.CTkFrame(self.customer_info_frame, fg_color=("#F8FAFC", "#1E293B"))
-        info_inner.pack(fill="x", padx=0, pady=0, ipady=2)
-
-        ctk.CTkLabel(info_inner, text="Name:", font=ctk.CTkFont(size=10), text_color=("gray50", "gray60")).pack(side="left", padx=(10, 3))
-        self.customer_name_val = ctk.CTkLabel(info_inner, text="Walk-in Customer", font=ctk.CTkFont(size=10, weight="bold"))
-        self.customer_name_val.pack(side="left", padx=(0, 12))
-
-        ctk.CTkLabel(info_inner, text="Phone:", font=ctk.CTkFont(size=10), text_color=("gray50", "gray60")).pack(side="left", padx=(0, 3))
-        self.customer_phone_val = ctk.CTkLabel(info_inner, text="N/A", font=ctk.CTkFont(size=10, weight="bold"))
-        self.customer_phone_val.pack(side="left", padx=(0, 12))
-
-        ctk.CTkLabel(info_inner, text="Credit:", font=ctk.CTkFont(size=10), text_color=("gray50", "gray60")).pack(side="left", padx=(0, 3))
-        self.customer_credit_val = ctk.CTkLabel(info_inner, text="Rs 0.00", font=ctk.CTkFont(size=10, weight="bold"))
-        self.customer_credit_val.pack(side="left", padx=(0, 12))
         
-        # Content area — single-column layout (cart lives inside product frame)
+        # Content area with two columns
         content_frame = ctk.CTkFrame(self.new_sale_frame)
         content_frame.pack(fill="both", expand=True, padx=10, pady=(10, 10))
-        content_frame.grid_columnconfigure(0, weight=1)
-        content_frame.grid_rowconfigure(0, weight=1)
+        content_frame.grid_columnconfigure(0, weight=4)  # Products section 
+        content_frame.grid_columnconfigure(1, weight=6)  # Cart section gets more space
+        content_frame.grid_rowconfigure(0, weight=1)     # Allow row to expand fully
         
-        # Full-width — Product selection + Cart
+        # Left side - Product selection
         self.create_product_selection(content_frame)
+        
+        # Right side - Cart and total
+        self.create_cart_section(content_frame)
     
     def create_sales_history_interface(self):
         """Create the sales history interface"""
@@ -484,7 +438,7 @@ class SalesView:
         search_label = ctk.CTkLabel(header_frame, text="Search:", font=ctk.CTkFont(size=12, weight="bold"))
         search_label.pack(side="left", padx=(10, 5), pady=10)
         
-        self.sales_search_var = ctk.StringVar()
+        self.sales_search_var = tk.StringVar()
         self.sales_search_var.trace('w', self.filter_sales_history)
         search_entry = ctk.CTkEntry(
             header_frame,
@@ -504,15 +458,13 @@ class SalesView:
         )
         refresh_btn.pack(side="right", padx=(0, 10), pady=10)
         
-        # Sales history table
+        # Sales history table - make fully scrollable
         table_frame = ctk.CTkFrame(self.sales_history_frame)
         table_frame.pack(fill="both", expand=True, padx=10, pady=0)
         
-        # Create container for the table (plain CTkFrame, not CTkScrollableFrame)
-        table_container = ctk.CTkFrame(table_frame)
+        # Create scrollable frame for the table
+        table_container = ctk.CTkScrollableFrame(table_frame)
         table_container.pack(fill="both", expand=True)
-        table_container.grid_rowconfigure(0, weight=1)
-        table_container.grid_columnconfigure(0, weight=1)
         
         # Create treeview for sales history with enhanced styling
         columns = ("Invoice", "Date", "Customer", "Payment", "Items", "Discount", "Paid", "Credit", "Total", "Status")
@@ -538,6 +490,10 @@ class SalesView:
         self.sales_history_tree.grid(row=0, column=0, sticky="nsew")
         v_scrollbar.grid(row=0, column=1, sticky="ns")
         h_scrollbar.grid(row=1, column=0, sticky="ew")
+        
+        # Configure grid weights
+        table_container.grid_rowconfigure(0, weight=1)
+        table_container.grid_columnconfigure(0, weight=1)
         
         # Action buttons
         actions_frame = ctk.CTkFrame(self.sales_history_frame)
@@ -576,18 +532,6 @@ class SalesView:
         )
         export_btn.pack(side="left", padx=5)
 
-        print_btn = ctk.CTkButton(
-            actions_frame,
-            text="🖨️ Print Bill",
-            command=self.print_invoice,
-            width=120,
-            height=35,
-            fg_color="#F59E0B",
-            hover_color="#D97706",
-            font=ctk.CTkFont(size=12, weight="bold")
-        )
-        print_btn.pack(side="left", padx=5)
-
         # Double-click to view details
         self.sales_history_tree.bind("<Double-1>", lambda e: self.view_sale_details())
     
@@ -611,8 +555,8 @@ class SalesView:
             for item in self.sales_history_tree.get_children():
                 self.sales_history_tree.delete(item)
             
-            # Add sales to tree with zebra striping
-            for idx, sale in enumerate(sales):
+            # Add sales to tree
+            for sale in sales:
                 customer_name = sale['customer_name'] or "Walk-in Customer"
                 payment_method = sale['payment_method'].title()
                 status = sale['status'].title()
@@ -624,10 +568,10 @@ class SalesView:
                     customer_name,
                     payment_method,
                     sale['item_count'],
-                    _fmt(discount_amount) if discount_amount > 0 else "-",
-                    _fmt(sale['paid_amount']),
-                    _fmt(sale['total_amount'] - sale['paid_amount']),
-                    _fmt(sale['total_amount']),
+                    f"Rs{discount_amount:.2f}" if discount_amount > 0 else "-",
+                    f"Rs{sale['paid_amount']:.2f}",
+                    f"Rs{sale['total_amount'] - sale['paid_amount']:.2f}",
+                    f"Rs{sale['total_amount']:.2f}",
                     status
                 ))
             
@@ -649,7 +593,7 @@ class SalesView:
             return
         
         # Filter and display matching sales
-        for idx, sale in enumerate(self.all_sales_data):
+        for sale in self.all_sales_data:
             customer_name = sale['customer_name'] or "Walk-in Customer"
             
             if (search_term in sale['invoice_number'].lower() or
@@ -665,10 +609,10 @@ class SalesView:
                     customer_name,
                     payment_method,
                     sale['item_count'],
-                    _fmt(discount_amount) if discount_amount > 0 else "-",
-                    _fmt(sale['paid_amount']),
-                    _fmt(sale['total_amount'] - sale['paid_amount']),
-                    _fmt(sale['total_amount']),
+                    f"Rs{discount_amount:.2f}" if discount_amount > 0 else "-",
+                    f"Rs{sale['paid_amount']:.2f}",
+                    f"Rs{sale['total_amount'] - sale['paid_amount']:.2f}",
+                    f"Rs{sale['total_amount']:.2f}",
                     status
                 ))
     
@@ -698,620 +642,277 @@ class SalesView:
         SaleDetailsDialog(self.parent, selected_sale)
     
     def create_product_selection(self, parent):
-        """Create product selection area with search, barcode, Browse button + modal"""
-        product_frame = ctk.CTkFrame(parent, fg_color=("#F5F5F5", "#252535"), corner_radius=6)
+        """Create product selection area"""
+        # Use regular frame instead of scrollable frame
+        product_frame = ctk.CTkFrame(parent, corner_radius=6)
         product_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=0)
-        product_frame.grid_rowconfigure(2, weight=1)
+        
+        # Configure frame to expand properly
+        product_frame.grid_rowconfigure(2, weight=1)  # Make table area expand (row 2)
         product_frame.grid_columnconfigure(0, weight=1)
-        self.product_frame = product_frame
-
-        # Row 0: Title
-        ctk.CTkLabel(
-            product_frame, text="📦 Select Products",
+        
+        # Title label
+        title_label = ctk.CTkLabel(
+            product_frame, 
+            text="📦 Select Products", 
             font=ctk.CTkFont(size=16, weight="bold")
-        ).grid(row=0, column=0, sticky="w", padx=15, pady=(15, 8))
-
-        # Row 1: Search + Barcode + Browse Products
-        search_frame = ctk.CTkFrame(product_frame, fg_color="transparent")
-        search_frame.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 6))
+        )
+        title_label.grid(row=0, column=0, sticky="w", padx=15, pady=(15, 8))
+        
+        # Search box
+        search_frame = ctk.CTkFrame(product_frame)
+        search_frame.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 5))
         search_frame.grid_columnconfigure(1, weight=1)
-
-        ctk.CTkLabel(search_frame, text="🔍", font=ctk.CTkFont(size=13)).grid(row=0, column=0, padx=(4, 4))
-
-        self.search_var = ctk.StringVar()
-        self.search_entry = ctk.CTkEntry(
-            search_frame, textvariable=self.search_var,
-            placeholder_text="Search products...",
-            height=32
-        )
-        self.search_entry.grid(row=0, column=1, sticky="ew", padx=(0, 4))
-        self.search_entry.bind("<KeyRelease>", self._on_search_keyrelease)
-        self.search_entry.bind("<Return>", self._on_search_enter)
-        self.search_entry.bind("<Escape>", lambda e: self._hide_search_dropdown())
-        self.search_entry.bind("<Down>", self._on_search_arrow_down)
-
-        # Browse Products button — immediately after search entry
-        self.browse_btn = ctk.CTkButton(
-            search_frame,
-            text="📦  Browse Products",
-            command=lambda: self._open_product_browser(self.search_var.get()),
-            font=ctk.CTkFont(size=12),
-            height=35,
-            width=150,
-            fg_color="#3b82f6",
-            hover_color="#2563eb",
-            corner_radius=6
-        )
-        self.browse_btn.grid(row=0, column=2, padx=(0, 8))
-
-        ctk.CTkLabel(search_frame, text="📷", font=ctk.CTkFont(size=13)).grid(row=0, column=3, padx=(4, 4))
-
-        self.barcode_var = ctk.StringVar()
-        self.barcode_entry = ctk.CTkEntry(
-            search_frame, textvariable=self.barcode_var,
-            placeholder_text="Scan barcode...",
-            width=130, height=32
-        )
-        self.barcode_entry.grid(row=0, column=4, padx=(0, 2))
-        self.barcode_entry.bind("<Return>", self._on_barcode_scanned)
-
-        self.barcode_status = ctk.CTkLabel(
-            search_frame, text="", font=ctk.CTkFont(size=11),
-            anchor="w", width=110
-        )
-        self.barcode_status.grid(row=0, column=5, padx=(0, 4))
-
-        # Search dropdown overlay (hidden by default)
-        self._search_dropdown = None
-        self._tooltip = None
-
-        # === Row 2: Cart section (fills remaining space) ===
-        self._build_cart_in_product(product_frame)
-
-    # ── Cart embedded in product frame ──────────────────────────────
-
-    def _build_cart_in_product(self, parent):
-        """Build the shopping cart inside the product selection frame."""
-        cart_outer = ctk.CTkFrame(parent, fg_color=("#F5F5F5", "#252535"),
-                                   border_width=1, border_color=("#CBD5E1", "#334155"),
-                                   corner_radius=6)
-        cart_outer.grid(row=2, column=0, sticky="nsew", padx=10, pady=(0, 8))
-        cart_outer.grid_rowconfigure(1, weight=1)
-        cart_outer.grid_columnconfigure(0, weight=1)
-
-        # Header
-        header_frame = ctk.CTkFrame(cart_outer, fg_color="transparent")
-        header_frame.grid(row=0, column=0, sticky="ew", padx=12, pady=(8, 2))
-        ctk.CTkLabel(header_frame, text="🛒 Shopping Cart",
-                      font=ctk.CTkFont(size=15, weight="bold")).pack(side="left")
-        self.cart_badge = ctk.CTkLabel(
-            header_frame, text="(0)",
-            font=ctk.CTkFont(size=11, weight="bold"),
-            text_color="white", fg_color="#3b82f6",
-            corner_radius=8, padx=8, pady=2
-        )
-        self.cart_badge.pack(side="left", padx=(8, 0))
-
-        # Scrollable body — items, discount, totals, proceed
-        self.cart_scroll_body = ctk.CTkScrollableFrame(cart_outer, fg_color="transparent")
-        self.cart_scroll_body.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
-
-        # Items container
-        cart_table_frame = ctk.CTkFrame(self.cart_scroll_body, fg_color="transparent")
-        cart_table_frame.pack(fill="both", expand=True, padx=10, pady=(5, 8))
-
-        self.cart_items_container = ctk.CTkFrame(cart_table_frame, fg_color=("#FFFFFF", "#1E1E2E"))
-        self.cart_items_container.pack(fill="both", expand=True, padx=2, pady=2)
-
-        # Column headers
-        self.cart_header_frame = ctk.CTkFrame(cart_table_frame, fg_color=("#F1F5F9", "#0F172A"), height=28)
-        self.cart_header_frame.pack(fill="x", padx=2, pady=(0, 2))
-        self.cart_header_frame.pack_propagate(False)
-        ctk.CTkLabel(self.cart_header_frame, text="Product", font=ctk.CTkFont(size=10, weight="bold"),
-                      text_color=("#475569", "#94A3B8")).pack(side="left", padx=(8, 0))
-        ctk.CTkLabel(self.cart_header_frame, text="Qty", font=ctk.CTkFont(size=10, weight="bold"),
-                      text_color=("#475569", "#94A3B8")).pack(side="left", padx=(50, 0))
-        ctk.CTkLabel(self.cart_header_frame, text="Price", font=ctk.CTkFont(size=10, weight="bold"),
-                      text_color=("#475569", "#94A3B8")).pack(side="right", padx=(0, 60))
-        ctk.CTkLabel(self.cart_header_frame, text="Total", font=ctk.CTkFont(size=10, weight="bold"),
-                      text_color=("#475569", "#94A3B8")).pack(side="right", padx=(0, 8))
-
-        clear_btn = ctk.CTkButton(
-            cart_table_frame, text="🗑 Clear Cart",
-            command=self.clear_cart, width=85, height=22,
-            font=ctk.CTkFont(size=9, weight="bold"),
-            fg_color=("#E2E8F0", "#334155"),
-            text_color=("#475569", "#94A3B8"),
-            hover_color=("#CBD5E1", "#475569")
-        )
-        clear_btn.pack(anchor="e", pady=(3, 0))
-
-        # Discount section
-        discount_frame = ctk.CTkFrame(self.cart_scroll_body, fg_color="transparent")
-        discount_frame.pack(fill="x", padx=8, pady=(5, 5))
-        ctk.CTkLabel(discount_frame, text="💸 Discount",
-                      font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(5, 3))
-
-        quick_pct_frame = ctk.CTkFrame(discount_frame, fg_color="transparent")
-        quick_pct_frame.pack(fill="x", padx=8, pady=(0, 5))
-        for pct, color in [("5%", "#059669"), ("10%", "#0284c7"), ("15%", "#7c3aed"), ("20%", "#dc2626")]:
-            btn = ctk.CTkButton(quick_pct_frame, text=pct, width=45, height=26,
-                                font=ctk.CTkFont(size=10, weight="bold"),
-                                fg_color=color, hover_color=color,
-                                command=lambda v=pct: self._quick_discount_percentage(v))
-            btn.pack(side="left", padx=(0, 4))
-        ctk.CTkButton(quick_pct_frame, text="Clear", width=45, height=26,
-                       font=ctk.CTkFont(size=10, weight="bold"),
-                       fg_color="#6B7280", hover_color="#4B5563",
-                       command=self.clear_inline_discount).pack(side="left")
-
-        discount_type_frame = ctk.CTkFrame(discount_frame, fg_color="transparent")
-        discount_type_frame.pack(fill="x", padx=8, pady=(0, 3))
-        self.discount_type_var = tk.StringVar(value="amount")
-        ctk.CTkRadioButton(discount_type_frame, text="Amount (Rs)",
-                            variable=self.discount_type_var, value="amount",
-                            command=self.on_discount_type_change,
-                            font=ctk.CTkFont(size=11)).pack(side="left", padx=(8, 15))
-        ctk.CTkRadioButton(discount_type_frame, text="Percentage (%)",
-                            variable=self.discount_type_var, value="percentage",
-                            command=self.on_discount_type_change,
-                            font=ctk.CTkFont(size=11)).pack(side="left")
-
-        discount_input_frame = ctk.CTkFrame(discount_frame, fg_color="transparent")
-        discount_input_frame.pack(fill="x", padx=8, pady=(0, 5))
-        self.discount_entry = ctk.CTkEntry(discount_input_frame,
-                                            placeholder_text="Enter discount...",
-                                            width=120, height=28,
-                                            font=ctk.CTkFont(size=11))
-        self.discount_entry.pack(side="left", padx=(8, 5), pady=5)
-        self.discount_entry.bind('<KeyRelease>', self.on_discount_change)
-        ctk.CTkButton(discount_input_frame, text="Apply",
-                       command=self.apply_inline_discount,
-                       width=50, height=28,
-                       font=ctk.CTkFont(size=11, weight="bold"),
-                       fg_color="#FF6B35", hover_color="#E55A2B"
-                       ).pack(side="left")
-
-        # Summary
-        summary_frame = ctk.CTkFrame(self.cart_scroll_body, fg_color=("#F0FDF4", "#0F172A"))
-        summary_frame.pack(fill="x", padx=8, pady=(5, 8))
-        inner = ctk.CTkFrame(summary_frame, fg_color="transparent")
-        inner.pack(fill="x", padx=12, pady=8)
-
-        def _summary_row(parent, label, attr, color=None):
-            r = ctk.CTkFrame(parent, fg_color="transparent")
-            r.pack(fill="x", pady=(0, 2))
-            ctk.CTkLabel(r, text=label, font=ctk.CTkFont(size=12)).pack(side="left")
-            v = ctk.CTkLabel(r, text=_fmt(0), font=ctk.CTkFont(size=12, weight="bold"),
-                              anchor="e", text_color=color or ("gray10", "gray90"))
-            v.pack(side="right")
-            return v
-
-        self.subtotal_value = _summary_row(inner, "Subtotal", "subtotal")
-        self.discount_value = _summary_row(inner, "Discount", "discount", "#FF6B35")
-        ctk.CTkFrame(inner, height=1, fg_color=("#CBD5E1", "#334155")).pack(fill="x", pady=4)
-
-        total_row = ctk.CTkFrame(inner, fg_color="transparent")
-        total_row.pack(fill="x", pady=(2, 0))
-        ctk.CTkLabel(total_row, text="GRAND TOTAL", font=ctk.CTkFont(size=14, weight="bold")).pack(side="left")
-        self.total_value = ctk.CTkLabel(total_row, text="Rs 0.00",
-                                         font=ctk.CTkFont(size=16, weight="bold"),
-                                         text_color="#10b981", anchor="e")
-        self.total_value.pack(side="right")
-
-        # Proceed button
-        self.proceed_btn = ctk.CTkButton(
-            self.cart_scroll_body,
-            text="Proceed Sale - Rs 0.00",
-            command=self._on_proceed_sale,
-            font=ctk.CTkFont(size=14, weight="bold"),
-            height=50,
-            state="disabled",
-            fg_color="#374151",
-            text_color="#9CA3AF",
-            hover_color="#374151"
-        )
-        self.proceed_btn.pack(fill="x", padx=8, pady=(5, 12))
-
-    # ── Search Dropdown ──────────────────────────────────────────────
-
-    def _show_search_dropdown(self, matches):
-        """Show a CTkFrame dropdown below the search entry using place()."""
-        self._hide_search_dropdown()
-        if not matches or not hasattr(self, 'search_entry') or not self.search_entry.winfo_exists():
-            return
-
-        pf = self.product_frame
-        pf.update_idletasks()
-        rel_x = self.search_entry.winfo_rootx() - pf.winfo_rootx()
-        rel_y = self.search_entry.winfo_rooty() - pf.winfo_rooty() + self.search_entry.winfo_height() + 4
-        w = max(self.search_entry.winfo_width(), 100)
-
-        self._search_dropdown = ctk.CTkFrame(
-            pf, fg_color="#1f2937", corner_radius=6,
-            border_width=1, border_color="#4B5563"
-        )
-        self._search_dropdown.place(x=rel_x, y=rel_y, anchor="nw")
-
-        inner = ctk.CTkScrollableFrame(self._search_dropdown, fg_color="#1f2937",
-                                        scrollbar_button_hover_color="#4B5563",
-                                        corner_radius=0)
-        inner.pack(fill="both", expand=True)
-
-        # Available width for text
-        btn_w = w - 16
-
-        for p in matches:
-            avail = self.get_available_stock(p)
-            stock_part = f"  —  Stock: {avail}" if avail > 0 else "  —  Out of Stock"
-            name = p['name']
-            full_label = f"{name}{stock_part}"
-
-            # Truncate name if the full label won't fit
-            est_w = len(full_label) * 7
-            display = full_label
-            if est_w > btn_w:
-                max_name_chars = max((btn_w - len(stock_part) * 7) // 7 - 3, 10)
-                display = f"{name[:max_name_chars]}...{stock_part}"
-
-            row = ctk.CTkFrame(inner, fg_color="transparent", height=32)
-            row.pack(fill="x", padx=4, pady=(0, 1))
-            row.pack_propagate(False)
-
-            lbl = ctk.CTkLabel(
-                row, text=display,
-                anchor="w", justify="left",
-                font=ctk.CTkFont(size=12),
-                text_color="#F8FAFC",
-                padx=10
-            )
-            lbl.pack(side="left", fill="x", expand=True)
-
-            def _make_enter(prod, r, t):
-                def _on_enter(_):
-                    r.configure(fg_color="#374151")
-                    self._show_tooltip(_, t)
-                return _on_enter
-            def _make_leave(r):
-                def _on_leave(_):
-                    r.configure(fg_color="transparent")
-                    self._hide_tooltip()
-                return _on_leave
-            on_enter = _make_enter(p, row, full_label)
-            on_leave = _make_leave(row)
-            row.bind("<Enter>", on_enter)
-            row.bind("<Leave>", on_leave)
-            lbl.bind("<Enter>", on_enter)
-            lbl.bind("<Leave>", on_leave)
-            row.bind("<Button-1>", lambda e, prod=p: self._search_dropdown_add(prod))
-            lbl.bind("<Button-1>", lambda e, prod=p: self._search_dropdown_add(prod))
-
-        # Constrain height — minimum 200px when showing results
-        pf_h = pf.winfo_height()
-        max_h = max(pf_h - rel_y - 10, 80)
-        desired = len(matches) * 34 + 10
-        h = max(min(desired, max_h, 350), min(200, desired))
-        self._search_dropdown.configure(width=max(w, 50), height=max(h, 30))
-
-        self._search_dropdown.lift()
-        self._bind_dropdown_close()
-
-    def _show_tooltip(self, event, text):
-        """Show a tooltip with the full product name on hover."""
-        self._hide_tooltip()
-        pf = self.product_frame
-        tip = ctk.CTkFrame(pf, fg_color="#1e293b", corner_radius=4,
-                           border_width=1, border_color="#4B5563")
-        # Position near cursor, relative to product_frame
-        x = event.x_root - pf.winfo_rootx() + 12
-        y = event.y_root - pf.winfo_rooty() + 12
-        tip.place(x=x, y=y, anchor="nw")
-        lbl = ctk.CTkLabel(tip, text=text, text_color="#F8FAFC",
-                            font=ctk.CTkFont(size=11), padx=10, pady=4)
-        lbl.pack()
-        tip.update_idletasks()
-        self._tooltip = tip
-
-    def _hide_tooltip(self):
-        """Hide the tooltip."""
-        if self._tooltip:
-            try:
-                self._tooltip.destroy()
-            except Exception:
-                pass
-            self._tooltip = None
-
-        self._search_dropdown.lift()
-        self._bind_dropdown_close()
-
-    def _search_dropdown_add(self, product):
-        """Add the selected product from the dropdown and clean up."""
-        self.add_to_cart(quantity=1, product=product)
-        self.search_var.set("")
-        self._hide_search_dropdown()
-        self.search_entry.focus_set()
-
-    def _hide_search_dropdown(self):
-        """Hide the search dropdown."""
-        if self._search_dropdown:
-            try:
-                self._search_dropdown.place_forget()
-                self._search_dropdown.destroy()
-            except Exception:
-                pass
-            self._search_dropdown = None
-        try:
-            self.product_frame.unbind("<Button-1>", self._dropdown_close_id)
-        except Exception:
-            pass
-
-    def _bind_dropdown_close(self):
-        """Bind a click-outside handler to close the dropdown."""
-        try:
-            self.product_frame.unbind("<Button-1>", self._dropdown_close_id)
-        except Exception:
-            pass
-        self._dropdown_close_id = self.product_frame.bind(
-            "<Button-1>", self._on_dropdown_outside_click, add="+"
-        )
-
-    def _on_dropdown_outside_click(self, event):
-        """Close the search dropdown when clicking outside it."""
-        if not self._search_dropdown or not self._search_dropdown.winfo_exists():
-            return
-        try:
-            dx = self._search_dropdown.winfo_rootx()
-            dy = self._search_dropdown.winfo_rooty()
-            dw = self._search_dropdown.winfo_width()
-            dh = self._search_dropdown.winfo_height()
-            if (dx <= event.x_root <= dx + dw and dy <= event.y_root <= dy + dh):
-                return
-        except Exception:
-            pass
-        self._hide_search_dropdown()
-
-    def _on_search_keyrelease(self, event=None):
-        """Handle typing in the search entry — show dropdown with matches."""
-        if event and event.keysym in ("Down", "Up", "Return", "Escape"):
-            return
-        term = self.search_var.get().strip()
-        if not term or len(term) < 1:
-            self._hide_search_dropdown()
-            return
-        matches = [
-            p for p in self.all_products
-            if term in p['name'].lower() or term in p['sku'].lower()
-        ][:8]
-        self._show_search_dropdown(matches)
-
-    def _on_search_enter(self, event=None):
-        """Enter key — add first search result or open browse modal."""
-        term = self.search_var.get().strip()
-        if not term:
-            self._hide_search_dropdown()
-            self._open_product_browser()
-            return
-        # Try to find first match
-        for p in self.all_products:
-            if term.lower() in p['name'].lower() or term.lower() in p['sku'].lower():
-                self._hide_search_dropdown()
-                self._search_dropdown_add(p)
-                return
-        # No match — open modal
-        self._hide_search_dropdown()
-        self._open_product_browser(term)
-
-    def _on_search_arrow_down(self, event=None):
-        pass
-
-    def _open_product_browser(self, initial_search=""):
-        """Open a modal window to browse and select products."""
-        modal = ctk.CTkToplevel(self.parent)
-        modal.title("Select Products")
-        modal.geometry("900x600")
-        modal.minsize(600, 400)
-        modal.transient(self.parent)
-        modal.grab_set()
-        modal.resizable(True, True)
-
-        # ── Header ──
-        header = ctk.CTkFrame(modal, fg_color=("#F1F5F9", "#0F172A"), height=40)
-        header.pack(fill="x", padx=0, pady=0)
-        header.pack_propagate(False)
-
-        ctk.CTkLabel(
-            header, text="Select Products",
-            font=ctk.CTkFont(size=15, weight="bold")
-        ).pack(side="left", padx=(15, 0))
-
-        ctk.CTkButton(
-            header, text="×", width=30, height=26,
-            font=ctk.CTkFont(size=16, weight="bold"),
-            fg_color="transparent", hover_color=("#E2E8F0", "#334155"),
-            text_color=("#475569", "#CBD5E1"),
-            command=modal.destroy
-        ).pack(side="right", padx=(0, 8))
-
-        # ── Search + Barcode row ──
-        search_row = ctk.CTkFrame(modal, fg_color="transparent")
-        search_row.pack(fill="x", padx=12, pady=(10, 6))
-
-        search_var = ctk.StringVar()
+        
+        search_label = ctk.CTkLabel(search_frame, text="Search:")
+        search_label.grid(row=0, column=0, padx=(8, 5), pady=6)
+        
+        self.search_var = tk.StringVar()
+        self.search_var.trace('w', self.filter_products)
         search_entry = ctk.CTkEntry(
-            search_row, textvariable=search_var,
-            placeholder_text="Search by name, SKU, or barcode...",
-            height=32
+            search_frame, 
+            textvariable=self.search_var,
+            placeholder_text="Product name or SKU..."
         )
-        search_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
-
-        barcode_var = ctk.StringVar()
-        barcode_entry = ctk.CTkEntry(
-            search_row, textvariable=barcode_var,
-            placeholder_text="Scan barcode...",
-            width=140, height=32
+        search_entry.grid(row=0, column=1, sticky="ew", padx=(5, 8), pady=6)
+        
+        # Products table container - this should expand to fill remaining space
+        products_table_frame = ctk.CTkFrame(product_frame)
+        products_table_frame.grid(row=2, column=0, sticky="nsew", padx=12, pady=(0, 5))
+        products_table_frame.grid_rowconfigure(0, weight=1)
+        products_table_frame.grid_columnconfigure(0, weight=1)
+        
+        # Create container for products table
+        products_container = ctk.CTkFrame(products_table_frame)
+        products_container.grid(row=0, column=0, sticky="nsew")
+        products_container.grid_rowconfigure(0, weight=1)
+        products_container.grid_columnconfigure(0, weight=1)
+        
+        # Create treeview for products with enhanced styling
+        columns = ("SKU", "Name", "Stock", "Normal Price", "Workshop Price")
+        self.products_tree = ttk.Treeview(products_container, columns=columns, show="headings")
+        
+        # Apply centralized styling
+        table_styles.apply_sales_products_style(self.products_tree)
+        
+        # Define headings with optimized spacing
+        column_widths = {"SKU": 120, "Name": 220, "Stock": 80, "Normal Price": 110, "Workshop Price": 120}
+        for col in columns:
+            self.products_tree.heading(col, text=f"  {col}  ", anchor="center")
+            self.products_tree.column(col, width=column_widths.get(col, 120), anchor="center" if col != "Name" else "w", minwidth=70)
+        
+        # Add both scrollbars
+        v_scrollbar = ttk.Scrollbar(products_container, orient="vertical", command=self.products_tree.yview)
+        h_scrollbar = ttk.Scrollbar(products_container, orient="horizontal", command=self.products_tree.xview)
+        self.products_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        
+        # Grid layout for proper scrollbar positioning
+        self.products_tree.grid(row=0, column=0, sticky="nsew")
+        v_scrollbar.grid(row=0, column=1, sticky="ns")
+        h_scrollbar.grid(row=1, column=0, sticky="ew")
+        
+        # Add to cart button - positioned at bottom
+        button_frame = ctk.CTkFrame(product_frame)
+        button_frame.grid(row=3, column=0, sticky="ew", padx=12, pady=(5, 8))
+        
+        add_cart_button = ctk.CTkButton(
+            button_frame,
+            text="🛒 Add to Cart",
+            command=lambda: self.add_to_cart(1),
+            font=ctk.CTkFont(size=13, weight="bold"),
+            height=42,
+            width=200,
+            corner_radius=8,
+            fg_color="#4CAF50",
+            hover_color="#45A049"
         )
-        barcode_entry.pack(side="left", padx=(0, 0))
-
-        # ── Product tree ──
-        tree_frame = ctk.CTkFrame(modal)
-        tree_frame.pack(fill="both", expand=True, padx=12, pady=6)
-        tree_frame.grid_rowconfigure(0, weight=1)
-        tree_frame.grid_columnconfigure(0, weight=1)
-
-        cols = ("SKU", "Name", "Stock", "Normal Price", "Workshop Price")
-        tree = ttk.Treeview(tree_frame, columns=cols, show="headings")
-        tree.grid(row=0, column=0, sticky="nsew")
-
-        tree.tag_configure("stock_zero", background="#7F1D1D", foreground="#FFFFFF",
-                           font=("Segoe UI", 11, "bold"))
-        tree.tag_configure("stock_low", background="#7F1D1D", foreground="#FFFFFF",
-                           font=("Segoe UI", 11, "bold"))
-        tree.tag_configure("stock_ok", background="#1E293B", foreground="#F8FAFC",
-                           font=("Segoe UI", 11))
-
-        col_widths = {"SKU": 90, "Name": 350, "Stock": 100, "Normal Price": 110, "Workshop Price": 110}
-        for col in cols:
-            anchor = "w" if col == "Name" else "center"
-            tree.heading(col, text=col, anchor=anchor)
-            tree.column(col, width=col_widths[col], anchor=anchor, minwidth=60)
-
-        v_sb = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
-        h_sb = ttk.Scrollbar(tree_frame, orient="horizontal", command=tree.xview)
-        tree.configure(yscrollcommand=v_sb.set, xscrollcommand=h_sb.set)
-        v_sb.grid(row=0, column=1, sticky="ns")
-        h_sb.grid(row=1, column=0, sticky="ew")
-
-        # ── Footer ──
-        footer = ctk.CTkFrame(modal, fg_color=("#F8FAFC", "#1E293B"), height=42)
-        footer.pack(fill="x", padx=0, pady=0)
-        footer.pack_propagate(False)
-
-        count_label = ctk.CTkLabel(footer, text="", font=ctk.CTkFont(size=11))
-        count_label.pack(side="left", padx=(12, 0))
-
-        add_btn = ctk.CTkButton(
-            footer, text="🛒  Add to Cart",
-            font=ctk.CTkFont(size=12, weight="bold"),
-            height=32, width=140,
-            fg_color="#4CAF50", hover_color="#45A049",
-            state="disabled"
-        )
-        add_btn.pack(side="right", padx=(0, 12))
-
-        # ── Populate helpers ──
-        _current_filtered = []
-
-        def _populate(product_list):
-            nonlocal _current_filtered
-            _current_filtered = list(product_list)
-            for item in tree.get_children():
-                tree.delete(item)
-            for idx, p in enumerate(product_list):
-                avail = self.get_available_stock(p)
-                reorder = p['reorder_level']
-                if avail <= 0:
-                    tag = "stock_zero"
-                    disp = f"{avail}  Out of Stock"
-                elif avail <= reorder:
-                    tag = "stock_low"
-                    disp = f"{avail}  Low"
-                else:
-                    tag = "stock_ok"
-                    disp = f"{avail}"
-                tree.insert("", "end", values=(
-                    p['sku'], p['name'], disp,
-                    _fmt(p['price_normal']), _fmt(p['price_workshop'])
-                ), tags=(tag,))
-            count_label.configure(
-                text=f"Showing {len(product_list)} of {len(self.all_products)} products"
-            )
-
-        def _do_filter(*_):
-            term = search_var.get().lower()
-            if not term:
-                _populate(self.all_products)
-            else:
-                filtered = [
-                    p for p in self.all_products
-                    if term in p['name'].lower()
-                    or term in p['sku'].lower()
-                    or (p.get('barcode') and term in p['barcode'].lower())
-                ]
-                _populate(filtered)
-                if not filtered:
-                    count_label.configure(text="No products found")
-
-        def _add_selected():
-            sel = tree.selection()
-            if not sel:
-                return
-            idx = tree.index(sel[0])
-            if 0 <= idx < len(_current_filtered):
-                product = _current_filtered[idx]
-                self.add_to_cart(quantity=1, product=product)
-                # flash‑feedback on the add button
-                add_btn.configure(text="✅  Added!", fg_color="#10B981")
-                modal.after(800, lambda: add_btn.configure(
-                    text="🛒  Add to Cart", fg_color="#4CAF50"
-                ))
-
-        def _on_select(_=None):
-            sel = tree.selection()
-            add_btn.configure(state="normal" if sel else "disabled")
-
-        def _on_double_click(_=None):
-            _add_selected()
-
-        # ── Barcode handler ──
-        def _on_modal_barcode(_=None):
-            code = barcode_var.get().strip()
-            if not code:
-                return
-            barcode_var.set("")
-            for p in self.all_products:
-                if p.get('barcode') and p['barcode'] == code:
-                    self.add_to_cart(quantity=1, product=p)
-                    add_btn.configure(text="✅  Added!", fg_color="#10B981")
-                    modal.after(800, lambda: add_btn.configure(
-                        text="🛒  Add to Cart", fg_color="#4CAF50"
-                    ))
-                    # Highlight in tree
-                    for item_id in tree.get_children():
-                        vals = tree.item(item_id, 'values')
-                        if vals and vals[0] == p['sku']:
-                            tree.selection_set(item_id)
-                            tree.focus(item_id)
-                            tree.see(item_id)
-                            _on_select()
-                            break
-                    return
-            # Not found — flash red on entry
-            barcode_entry.configure(border_color="#ef4444")
-            modal.after(1500, lambda: barcode_entry.configure(
-                border_color=("#565b5e", "#949A9F")
-            ))
-
-        # ── Bindings ──
-        search_var.trace('w', _do_filter)
-        barcode_entry.bind("<Return>", _on_modal_barcode)
-        tree.bind("<<TreeviewSelect>>", _on_select)
-        tree.bind("<Double-1>", _on_double_click)
-        add_btn.configure(command=_add_selected)
-        modal.bind("<Escape>", lambda e: modal.destroy())
-        modal.protocol("WM_DELETE_WINDOW", modal.destroy)
-
-        # ── Initial population ──
-        if initial_search:
-            search_var.set(initial_search)
-            _do_filter()
-        else:
-            _populate(self.all_products)
-        search_entry.focus_set()
-
+        add_cart_button.pack(pady=3)
+        
+        # Bind double-click to add to cart
+        self.products_tree.bind("<Double-1>", lambda e: self.add_to_cart())
+    
     def create_cart_section(self, parent):
-        """(Deprecated) Kept for backward compat — cart is now built inside product_frame."""
-        self._build_cart_in_product(parent)
-
+        """Create shopping cart section"""
+        cart_frame = ctk.CTkScrollableFrame(parent, label_text="🛒 Shopping Cart")
+        cart_frame.grid(row=0, column=1, sticky="nsew", padx=(5, 0), pady=0)
+        
+        
+        # Cart items table - make responsive with minimum height
+        cart_table_frame = ctk.CTkFrame(cart_frame)
+        cart_table_frame.pack(fill="both", expand=True, padx=12, pady=(8, 10))
+        
+        # Create container for cart table
+        cart_container = ctk.CTkFrame(cart_table_frame)
+        cart_container.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Create treeview for cart with enhanced styling
+        cart_columns = ("Product", "Qty", "Price", "Total")
+        self.cart_tree = ttk.Treeview(cart_container, columns=cart_columns, show="headings")
+        
+        # Apply centralized styling
+        table_styles.apply_cart_style(self.cart_tree)
+        
+        # Define headings with optimized spacing
+        column_widths = {"Product": 160, "Qty": 60, "Price": 90, "Total": 90}
+        for col in cart_columns:
+            self.cart_tree.heading(col, text=f"  {col}  ", anchor="center")
+            self.cart_tree.column(col, width=column_widths.get(col, 100), anchor="center" if col != "Product" else "w", minwidth=60)
+        
+        # Add both scrollbars
+        v_scrollbar = ttk.Scrollbar(cart_container, orient="vertical", command=self.cart_tree.yview)
+        h_scrollbar = ttk.Scrollbar(cart_container, orient="horizontal", command=self.cart_tree.xview)
+        self.cart_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        
+        # Grid layout for proper scrollbar positioning
+        self.cart_tree.grid(row=0, column=0, sticky="nsew")
+        v_scrollbar.grid(row=0, column=1, sticky="ns")
+        h_scrollbar.grid(row=1, column=0, sticky="ew")
+        
+        # Configure grid weights
+        cart_container.grid_rowconfigure(0, weight=1)
+        cart_container.grid_columnconfigure(0, weight=1)
+        
+        # Cart actions
+        actions_frame = ctk.CTkFrame(cart_frame)
+        actions_frame.pack(fill="x", padx=12, pady=(8, 10))
+        
+        remove_button = ctk.CTkButton(
+            actions_frame,
+            text="❌ Remove Item",
+            command=self.remove_from_cart,
+            width=100,
+            height=32,
+            font=ctk.CTkFont(size=11, weight="bold")
+        )
+        remove_button.pack(side="left", padx=(8, 5))
+        
+        clear_button = ctk.CTkButton(
+            actions_frame,
+            text="🗑 Clear Cart",
+            command=self.clear_cart,
+            width=100,
+            height=32,
+            font=ctk.CTkFont(size=11, weight="bold")
+        )
+        clear_button.pack(side="left", padx=(5, 8))
+        
+        # No discount button here - moved to totals section
+        
+        # Discount section
+        discount_frame = ctk.CTkFrame(cart_frame)
+        discount_frame.pack(fill="x", padx=10, pady=(5, 10))
+        
+        discount_header = ctk.CTkLabel(
+            discount_frame,
+            text="💸 Discount",
+            font=ctk.CTkFont(size=14, weight="bold")
+        )
+        discount_header.pack(pady=(8, 5))
+        
+        # Discount type selection
+        discount_type_frame = ctk.CTkFrame(discount_frame)
+        discount_type_frame.pack(fill="x", padx=8, pady=(0, 5))
+        
+        self.discount_type_var = tk.StringVar(value="amount")
+        
+        amount_radio = ctk.CTkRadioButton(
+            discount_type_frame,
+            text="Amount (Rs)",
+            variable=self.discount_type_var,
+            value="amount",
+            command=self.on_discount_type_change,
+            font=ctk.CTkFont(size=11)
+        )
+        amount_radio.pack(side="left", padx=(8, 15))
+        
+        percentage_radio = ctk.CTkRadioButton(
+            discount_type_frame,
+            text="Percentage (%)",
+            variable=self.discount_type_var,
+            value="percentage",
+            command=self.on_discount_type_change,
+            font=ctk.CTkFont(size=11)
+        )
+        percentage_radio.pack(side="left", padx=(0, 8))
+        
+        # Discount input section
+        discount_input_frame = ctk.CTkFrame(discount_frame)
+        discount_input_frame.pack(fill="x", padx=8, pady=(0, 5))
+        
+        self.discount_entry = ctk.CTkEntry(
+            discount_input_frame,
+            placeholder_text="Enter discount amount...",
+            width=120,
+            height=28,
+            font=ctk.CTkFont(size=11)
+        )
+        self.discount_entry.pack(side="left", padx=(8, 5), pady=5)
+        
+        # Bind entry changes to update totals
+        self.discount_entry.bind('<KeyRelease>', self.on_discount_change)
+        
+        apply_discount_btn = ctk.CTkButton(
+            discount_input_frame,
+            text="Apply",
+            command=self.apply_inline_discount,
+            width=60,
+            height=28,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            fg_color="#FF6B35",
+            hover_color="#E55A2B"
+        )
+        apply_discount_btn.pack(side="left", padx=(0, 5), pady=5)
+        
+        clear_discount_btn = ctk.CTkButton(
+            discount_input_frame,
+            text="Clear",
+            command=self.clear_inline_discount,
+            width=50,
+            height=28,
+            font=ctk.CTkFont(size=11, weight="bold"),
+            fg_color="#6B7280",
+            hover_color="#4B5563"
+        )
+        clear_discount_btn.pack(side="left", padx=(0, 8), pady=5)
+        
+        # Totals section
+        totals_frame = ctk.CTkFrame(cart_frame)
+        totals_frame.pack(fill="x", padx=10, pady=10)
+        
+        self.subtotal_label = ctk.CTkLabel(
+            totals_frame, 
+            text="Subtotal: Rs0.00",
+            font=ctk.CTkFont(size=13, weight="bold")
+        )
+        self.subtotal_label.pack(pady=(8, 2))
+        
+        self.discount_label = ctk.CTkLabel(
+            totals_frame, 
+            text="",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#FF6B35"
+        )
+        self.discount_label.pack(pady=2)
+        
+        self.total_label = ctk.CTkLabel(
+            totals_frame, 
+            text="Total: Rs0.00",
+            font=ctk.CTkFont(size=15, weight="bold")
+        )
+        self.total_label.pack(pady=(2, 8))
+        
+        # Process sale button
+        process_button = ctk.CTkButton(
+            cart_frame,
+            text="💰 Process Sale",
+            command=self.process_sale,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            height=45,
+            fg_color="green",
+            hover_color="darkgreen"
+        )
+        process_button.pack(fill="x", padx=10, pady=8)
+    
     def load_customers(self):
         """Load customers for dropdown"""
         try:
@@ -1334,130 +935,100 @@ class SalesView:
             print(f"Error loading customers: {e}")
     
     def load_products(self):
-        """Load products into memory for the modal browser."""
+        """Load products for selection"""
         try:
             query = """
                 SELECT p.product_id, p.sku, p.name, p.stock, p.price_normal, 
-                       p.price_workshop, p.reorder_level, p.barcode
+                       p.price_workshop, p.reorder_level
                 FROM products p
                 WHERE p.is_active = 1 AND p.stock > 0
                 ORDER BY p.name
             """
-            self.all_products = db.execute_query(query)
+            products = db.execute_query(query)
+            
+            # Clear existing items
+            for item in self.products_tree.get_children():
+                self.products_tree.delete(item)
+            
+            # Add products to tree
+            for product in products:
+                # Show stock status
+                stock_display = f"{product['stock']}"
+                if product['stock'] <= product['reorder_level']:
+                    stock_display += " ⚠️"
+                
+                self.products_tree.insert("", "end", values=(
+                    product['sku'],
+                    product['name'],
+                    stock_display,
+                    f"Rs{product['price_normal']:.2f}",
+                    f"Rs{product['price_workshop']:.2f}"
+                ))
+            
+            self.all_products = products
+            
         except Exception as e:
             print(f"Error loading products: {e}")
-            self.all_products = []
     
-    def refresh_table_tags(self):
-        """Re-apply stock status tag colors."""
-        # Sales history tree
-        if hasattr(self, 'sales_history_tree') and self.sales_history_tree and self.sales_history_tree.winfo_exists():
-            pass
+    def filter_products(self, *args):
+        """Filter products based on search"""
+        search_term = self.search_var.get().lower()
+        
+        # Clear tree
+        for item in self.products_tree.get_children():
+            self.products_tree.delete(item)
+        
+        # Filter and add matching products
+        for product in self.all_products:
+            if (search_term in product['name'].lower() or 
+                search_term in product['sku'].lower()):
+                
+                stock_display = f"{product['stock']}"
+                if product['stock'] <= product['reorder_level']:
+                    stock_display += " ⚠️"
+                
+                self.products_tree.insert("", "end", values=(
+                    product['sku'],
+                    product['name'],
+                    stock_display,
+                    f"Rs{product['price_normal']:.2f}",
+                    f"Rs{product['price_workshop']:.2f}"
+                ))
     
-    def get_cart_quantity(self, product_id):
-        """Get total quantity of a product currently in the cart."""
-        total = 0
-        for item in self.cart_items:
-            if item['product_id'] == product_id:
-                total += item['quantity']
-        return total
-
-    def get_available_stock(self, product):
-        """Calculate available stock = actual stock - quantity in cart."""
-        in_cart = self.get_cart_quantity(product['product_id'])
-        return product['stock'] - in_cart
-
     def on_customer_selected(self, customer_name):
         """Handle customer selection"""
         self.current_customer = self.customers_data.get(customer_name)
         self.update_cart_display()
-        self._update_customer_info()
-
-    def _update_customer_info(self):
-        """Update customer info display below dropdown"""
-        if not hasattr(self, 'customer_info_frame'):
-            return
-        customer = self.current_customer
-        if not customer or customer.get('customer_id') is None:
-            data = db.execute_query(
-                "SELECT name, contact, credit_balance FROM customers WHERE name = 'Walk-in Customer'"
-            )
-            if data:
-                c = data[0]
-                self.customer_name_val.configure(text=c['name'])
-                self.customer_phone_val.configure(text=c.get('contact', 'N/A') or 'N/A')
-                self.customer_credit_val.configure(text=f"Rs {c.get('credit_balance', 0):,.2f}")
-                return
-            self.customer_name_val.configure(text="Walk-in Customer")
-            self.customer_phone_val.configure(text="N/A")
-            self.customer_credit_val.configure(text="Rs 0.00")
-        else:
-            data = db.execute_query(
-                "SELECT name, contact, credit_balance FROM customers WHERE customer_id = ?",
-                (customer['customer_id'],)
-            )
-            if data:
-                c = data[0]
-                self.customer_name_val.configure(text=c['name'])
-                self.customer_phone_val.configure(text=c.get('contact', 'N/A') or 'N/A')
-                self.customer_credit_val.configure(text=f"Rs {c.get('credit_balance', 0):,.2f}")
-
-    def _on_barcode_scanned(self, event=None):
-        """Barcode scanned — find product and add directly to cart."""
-        code = self.barcode_var.get().strip()
-        if not code:
-            return
-        self.barcode_var.set("")
-        product = None
-        for p in self.all_products:
-            if p.get('barcode') and p['barcode'] == code:
-                product = p
-                break
-        if not product:
-            self.barcode_entry.configure(border_color="#ef4444")
-            self.barcode_status.configure(text="❌ Not found", text_color="#ef4444")
-            self.parent.after(2000, lambda: (
-                self.barcode_entry.configure(border_color=("#565b5e", "#949A9F")),
-                self.barcode_status.configure(text="")
-            ))
-            self.barcode_entry.focus_set()
-            return
-        available = self.get_available_stock(product)
-        if available <= 0:
-            self.barcode_entry.configure(border_color="#ef4444")
-            self.barcode_status.configure(text="❌ Out of stock", text_color="#ef4444")
-            self.parent.after(2000, lambda: (
-                self.barcode_entry.configure(border_color=("#565b5e", "#949A9F")),
-                self.barcode_status.configure(text="")
-            ))
-            self.barcode_entry.focus_set()
-            return
-        self.add_to_cart(quantity=1, product=product)
-        self.barcode_entry.configure(border_color="#10b981")
-        self.barcode_status.configure(text="✅ Added to cart", text_color="#10b981")
-        self.parent.after(1000, lambda: (
-            self.barcode_entry.configure(border_color=("#565b5e", "#949A9F")),
-            self.barcode_status.configure(text="")
-        ))
-        self.barcode_entry.focus_set()
-
-    def add_to_cart(self, quantity=1, product=None):
-        """Add a product to cart. Pass a product dict directly, or it will show the browse prompt."""
-        if product is None:
-            messagebox.showinfo("Browse Products", "Please use the 'Browse Products' button to search and select products.")
+    
+    def add_to_cart(self, quantity=1):
+        """Add selected product to cart with specified quantity"""
+        selection = self.products_tree.selection()
+        if not selection:
+            messagebox.showwarning("Warning", "Please select a product first.")
             return
         
+        # Get product details
+        item_values = self.products_tree.item(selection[0], 'values')
+        sku = item_values[0]
+        
+        # Find product in data
+        product = None
+        for p in self.all_products:
+            if p['sku'] == sku:
+                product = p
+                break
+        
+        if not product:
+            messagebox.showerror("Error", "Product not found.")
+            return
+        
+        # Validate quantity
         if quantity <= 0:
             messagebox.showerror("Error", "Quantity must be greater than 0")
             return
-        
-        available = self.get_available_stock(product)
-        if quantity > available:
-            if available <= 0:
-                messagebox.showwarning("Warning", f"No more units available for {product['name']} (all in cart).")
-                return
-            messagebox.showwarning("Warning", f"Only {available} units available. Adding {available} to cart.")
-            quantity = available
+        if quantity > product['stock']:
+            messagebox.showwarning("Warning", f"Only {product['stock']} units available. Adding {product['stock']} to cart.")
+            quantity = product['stock']
         
         # Check if product already in cart
         existing_item = None
@@ -1467,11 +1038,12 @@ class SalesView:
                 break
         
         if existing_item:
+            # Update quantity
             new_quantity = existing_item['quantity'] + quantity
             if new_quantity > product['stock']:
-                avail = product['stock'] - existing_item['quantity']
-                if avail > 0:
-                    messagebox.showwarning("Warning", f"Only {avail} more units can be added.")
+                available = product['stock'] - existing_item['quantity']
+                if available > 0:
+                    messagebox.showwarning("Warning", f"Only {available} more units can be added.")
                     existing_item['quantity'] = product['stock']
                 else:
                     messagebox.showwarning("Warning", "Maximum quantity already in cart.")
@@ -1479,7 +1051,8 @@ class SalesView:
             else:
                 existing_item['quantity'] = new_quantity
         else:
-            self.cart_items.append({
+            # Add new item
+            cart_item = {
                 'product_id': product['product_id'],
                 'sku': product['sku'],
                 'name': product['name'],
@@ -1487,39 +1060,59 @@ class SalesView:
                 'price_normal': product['price_normal'],
                 'price_workshop': product['price_workshop'],
                 'stock': product['stock']
-            })
+            }
+            self.cart_items.append(cart_item)
         
         self.update_cart_display()
     
-    def _remove_cart_item(self, idx):
-        """Remove a cart item by index (inline button handler)."""
-        if 0 <= idx < len(self.cart_items):
-            self.cart_items.pop(idx)
-            self.update_cart_display()
-
-    def _dec_cart_item(self, idx):
-        """Decrease quantity of cart item by 1 (inline button handler)."""
-        if 0 <= idx < len(self.cart_items):
-            if self.cart_items[idx]['quantity'] > 1:
-                self.cart_items[idx]['quantity'] -= 1
-            else:
-                self.cart_items.pop(idx)
-            self.update_cart_display()
-
-    def _inc_cart_item(self, idx):
-        """Increase quantity of cart item by 1 (inline button handler)."""
-        if 0 <= idx < len(self.cart_items):
-            item = self.cart_items[idx]
-            product = None
-            for p in self.all_products:
-                if p['product_id'] == item['product_id']:
-                    product = p
-                    break
-            if product:
-                available = self.get_available_stock(product)
-                if available <= 0:
-                    return
-                self.cart_items[idx]['quantity'] += 1
+    def add_custom_quantity(self):
+        """Add product to cart with custom quantity"""
+        selection = self.products_tree.selection()
+        if not selection:
+            messagebox.showwarning("Warning", "Please select a product first.")
+            return
+        
+        # Get product details
+        item_values = self.products_tree.item(selection[0], 'values')
+        sku = item_values[0]
+        
+        # Find product in data
+        product = None
+        for p in self.all_products:
+            if p['sku'] == sku:
+                product = p
+                break
+        
+        if not product:
+            messagebox.showerror("Error", "Product not found.")
+            return
+        
+        # Ask for quantity
+        quantity_str = tk.simpledialog.askstring(
+            "Quantity", 
+            f"Enter quantity for {product['name']}\n(Max available: {product['stock']})"
+        )
+        
+        if quantity_str:
+            try:
+                quantity = int(quantity_str)
+                self.add_to_cart(quantity)
+            except ValueError:
+                messagebox.showerror("Error", "Please enter a valid number")
+    
+    def remove_from_cart(self):
+        """Remove selected item from cart"""
+        selection = self.cart_tree.selection()
+        if not selection:
+            messagebox.showwarning("Warning", "Please select an item to remove.")
+            return
+        
+        # Get selected item index
+        item_index = self.cart_tree.index(selection[0])
+        
+        # Remove from cart
+        if 0 <= item_index < len(self.cart_items):
+            self.cart_items.pop(item_index)
             self.update_cart_display()
     
     def clear_cart(self):
@@ -1528,18 +1121,19 @@ class SalesView:
             if messagebox.askyesno("Confirm", "Clear all items from cart?"):
                 self.cart_items = []
                 self.update_cart_display()
-
+    
     def update_cart_display(self):
-        """Update cart display with inline controls and totals"""
-        # Clear inline items
-        for w in self.cart_items_container.winfo_children():
-            w.destroy()
+        """Update cart display and totals"""
+        # Clear cart tree
+        for item in self.cart_tree.get_children():
+            self.cart_tree.delete(item)
         
         subtotal = 0
         customer_type = self.current_customer['type'] if self.current_customer else 'Normal'
-
-        # Build each cart item as a row with inline controls
-        for idx, item in enumerate(self.cart_items):
+        
+        # Add items to cart tree
+        for item in self.cart_items:
+            # Determine price based on customer type
             if customer_type == 'Workshop':
                 unit_price = item['price_workshop']
             else:
@@ -1547,122 +1141,40 @@ class SalesView:
             
             total_price = unit_price * item['quantity']
             subtotal += total_price
-
-            bg = "#FFFFFF" if idx % 2 == 0 else "#F8FAFC"
-            is_dark = ctk.get_appearance_mode() == "Dark"
-            if is_dark:
-                bg = "#1E1E2E" if idx % 2 == 0 else "#1A1A2E"
-
-            row_frame = ctk.CTkFrame(self.cart_items_container, fg_color=bg, height=34)
-            row_frame.pack(fill="x", padx=1, pady=(0, 1))
-            row_frame.pack_propagate(False)
-
-            # Product name
-            name = item['name'][:18] + ".." if len(item['name']) > 18 else item['name']
-            ctk.CTkLabel(row_frame, text=name, font=ctk.CTkFont(size=10),
-                         anchor="w").pack(side="left", padx=(8, 0), expand=True, fill="x")
-
-            # [-] button
-            dec_btn = ctk.CTkButton(
-                row_frame, text="−", width=26, height=24,
-                font=ctk.CTkFont(size=13, weight="bold"),
-                fg_color=("#FF6B35", "#D35400"), hover_color=("#E55A2B", "#B64900"),
-                command=lambda i=idx: self._dec_cart_item(i)
-            )
-            dec_btn.pack(side="left", padx=(2, 1))
-            if item['quantity'] <= 1:
-                dec_btn.configure(state="disabled")
-
-            # Qty label
-            qty_lbl = ctk.CTkLabel(row_frame, text=str(item['quantity']),
-                                    font=ctk.CTkFont(size=11, weight="bold"), width=22)
-            qty_lbl.pack(side="left", padx=(1, 1))
-
-            # [+] button
-            inc_btn = ctk.CTkButton(
-                row_frame, text="+", width=26, height=24,
-                font=ctk.CTkFont(size=13, weight="bold"),
-                fg_color=("#2196F3", "#1565C0"), hover_color=("#1976D2", "#0D47A1"),
-                command=lambda i=idx: self._inc_cart_item(i)
-            )
-            inc_btn.pack(side="left", padx=(1, 4))
-
-            # Check stock for inc button
-            product = None
-            for p in self.all_products:
-                if p['product_id'] == item['product_id']:
-                    product = p
-                    break
-            if product:
-                available = self.get_available_stock(product)
-                if available <= 0:
-                    inc_btn.configure(state="disabled")
             
-            # Price label
-            ctk.CTkLabel(row_frame, text=_fmt(unit_price),
-                         font=ctk.CTkFont(size=10),
-                         text_color=("#64748B", "#94A3B8")).pack(side="right", padx=(0, 4))
-
-            # Total label
-            ctk.CTkLabel(row_frame, text=_fmt(total_price),
-                         font=ctk.CTkFont(size=10, weight="bold")).pack(side="right", padx=(0, 4))
-
-            # [×] remove button
-            remove_btn = ctk.CTkButton(
-                row_frame, text="×", width=24, height=22,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                fg_color=("#FEE2E2", "#3B0A0A"), hover_color=("#FECACA", "#5B1A1A"),
-                text_color=("#DC2626", "#FCA5A5"),
-                command=lambda i=idx: self._remove_cart_item(i)
-            )
-            remove_btn.pack(side="right", padx=(2, 4))
-
+            self.cart_tree.insert("", "end", values=(
+                item['name'][:20] + "..." if len(item['name']) > 20 else item['name'],
+                item['quantity'],
+                f"Rs{unit_price:.2f}",
+                f"Rs{total_price:.2f}"
+            ))
+        
         # Calculate discount and final total
         discount_amount = 0
         if self.discount_amount > 0 or self.discount_percentage > 0:
             if self.discount_type == "amount":
                 discount_amount = min(self.discount_amount, subtotal)
-            else:
+                print(f"Debug update_cart_display: Amount discount applied - {discount_amount}")
+            else:  # percentage
                 discount_amount = (subtotal * self.discount_percentage) / 100
+                print(f"Debug update_cart_display: Percentage discount applied - {discount_amount} ({self.discount_percentage}%)")
         
         final_total = subtotal - discount_amount
-
-        # Update summary labels
-        self.subtotal_value.configure(text=_fmt(subtotal))
-
+        print(f"Debug update_cart_display: Subtotal={subtotal}, Discount={discount_amount}, Final Total={final_total}")
+        
+        # Update totals
+        self.subtotal_label.configure(text=f"Subtotal: Rs{subtotal:.2f}")
+        
         if discount_amount > 0:
             if self.discount_type == "amount":
-                self.discount_value.configure(text=f"-Rs{discount_amount:.2f}")
+                discount_text = f"Discount: -Rs{discount_amount:.2f}"
             else:
-                self.discount_value.configure(text=f"-Rs{discount_amount:.2f} ({self.discount_percentage:.1f}%)")
+                discount_text = f"Discount ({self.discount_percentage:.1f}%): -Rs{discount_amount:.2f}"
+            self.discount_label.configure(text=discount_text)
         else:
-            self.discount_value.configure(text="")
-
-        self.total_value.configure(text=f"Rs {final_total:,.2f}")
-
-        # Update cart badge
-        count = len(self.cart_items)
-        self.cart_badge.configure(text=f"({count})")
-
-        # Update proceed button
-        has_items = count > 0
-        if has_items:
-            self.proceed_btn.configure(
-                text=f"Proceed Sale - Rs {final_total:,.2f}",
-                state="normal",
-                fg_color="#10B981",
-                text_color="#FFFFFF",
-                hover_color="#059669"
-            )
-        else:
-            self.proceed_btn.configure(
-                text="Proceed Sale - Rs 0.00",
-                state="disabled",
-                fg_color="#374151",
-                text_color="#9CA3AF",
-                hover_color="#374151"
-            )
-
+            self.discount_label.configure(text="")
+        
+        self.total_label.configure(text=f"Total: Rs{final_total:.2f}")
     
     def create_credit_payments_interface(self):
         """Create the Credit Payments tab — shows all outstanding credit sales."""
@@ -1803,9 +1315,9 @@ class SalesView:
                     sale['invoice_number'],
                     sale['sale_date'],
                     customer_name,
-                    _fmt(sale['total_amount']),
-                    _fmt(sale['paid_amount']),
-                    _fmt(outstanding)
+                    f"Rs{sale['total_amount']:.2f}",
+                    f"Rs{sale['paid_amount']:.2f}",
+                    f"Rs{outstanding:.2f}"
                 ))
 
             self.all_credit_sales = sales
@@ -1835,7 +1347,7 @@ class SalesView:
                 FROM payments p
                 LEFT JOIN customers c ON p.customer_id = c.customer_id
                 LEFT JOIN sales s ON p.reference_number = s.invoice_number
-                WHERE p.payment_type = 'sale_credit_payment'
+                WHERE p.payment_type = 'credit_sale'
                 ORDER BY p.created_at DESC
             """
             records = db.execute_query(query)
@@ -1850,7 +1362,7 @@ class SalesView:
                 remaining = "-"
                 try:
                     if rec['notes'] and rec['notes'].startswith("remaining:"):
-                        remaining = _fmt(float(rec['notes'].split(':')[1]))
+                        remaining = f"Rs{float(rec['notes'].split(':')[1]):.2f}"
                 except Exception:
                     pass
 
@@ -1858,7 +1370,7 @@ class SalesView:
                     rec['payment_date'],
                     invoice,
                     customer_name,
-                    _fmt(rec['amount']),
+                    f"Rs{rec['amount']:.2f}",
                     remaining,
                     rec['created_at']
                 ))
@@ -2024,275 +1536,6 @@ class SalesView:
             messagebox.showinfo("Invoice Exported", f"✅ Invoice saved to:\n{filename}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save invoice: {e}")
-
-    def print_invoice(self):
-        """Print a PDF invoice for the selected sale with company info from settings."""
-        import threading as _threading
-
-        selection = self.sales_history_tree.selection()
-        if not selection:
-            messagebox.showwarning("Warning", "Please select a sale to print.")
-            return
-
-        item_values = self.sales_history_tree.item(selection[0], 'values')
-        invoice_number = item_values[0]
-
-        selected_sale = None
-        for sale in self.all_sales_data:
-            if sale['invoice_number'] == invoice_number:
-                selected_sale = sale
-                break
-
-        if not selected_sale:
-            messagebox.showerror("Error", "Sale not found.")
-            return
-
-        try:
-            items = db.execute_query("""
-                SELECT si.quantity, si.unit_price, si.total, p.name, p.sku
-                FROM sale_items si
-                JOIN products p ON si.product_id = p.product_id
-                WHERE si.sale_id = ?
-                ORDER BY p.name
-            """, (selected_sale['sale_id'],))
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to load sale items: {e}")
-            return
-
-        settings = SettingsView.get_settings()
-        company = settings.get('company', {})
-        defaults = settings.get('defaults', {})
-        currency = defaults.get('currency', 'Rs')
-        company_name = company.get('name', 'Your Company')
-        company_address = company.get('address', '')
-        company_phone = company.get('phone', '')
-        company_email = company.get('email', '')
-        logo_path = company.get('logo_path', '')
-        has_logo = bool(logo_path and os.path.exists(logo_path))
-
-        customer_name = selected_sale['customer_name'] or "Walk-in Customer"
-        discount = selected_sale['discount'] or 0
-
-        reports_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "reports")
-        os.makedirs(reports_dir, exist_ok=True)
-        filename = os.path.join(reports_dir, f"invoice_{invoice_number}.pdf")
-
-        # --- Loading overlay ---
-        loading = ctk.CTkToplevel(self.parent)
-        loading.title("")
-        loading.geometry("260x100")
-        loading.resizable(False, False)
-        loading.transient(self.parent)
-        loading.grab_set()
-        center_window_on_screen(loading, 260, 100)
-        ctk.CTkLabel(loading, text="Generating Invoice...",
-                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(20, 5))
-        ctk.CTkProgressBar(loading, mode="indeterminate", width=200).pack(pady=5, padx=30)
-        loading.update()
-
-        def _generate():
-            try:
-                doc = SimpleDocTemplate(filename, pagesize=letter,
-                                        topMargin=0.5*inch, bottomMargin=0.5*inch,
-                                        leftMargin=0.6*inch, rightMargin=0.6*inch)
-                styles = getSampleStyleSheet()
-                story = []
-
-                # --- Centered Company Header ---
-                from reportlab.lib.styles import ParagraphStyle
-                center_style = ParagraphStyle('Center', parent=styles['Normal'],
-                                              alignment=1, spaceAfter=2)
-                bold_center = ParagraphStyle('BoldCenter', parent=center_style,
-                                             fontSize=18, leading=22, spaceAfter=2)
-                addr_style = ParagraphStyle('Addr', parent=center_style,
-                                            fontSize=9, leading=12, textColor=colors.HexColor('#555555'))
-                contact_style = ParagraphStyle('Contact', parent=center_style,
-                                               fontSize=9, leading=12, textColor=colors.HexColor('#777777'))
-
-                header_elems = []
-
-                if has_logo:
-                    try:
-                        img = Image(logo_path, width=1.2*inch, height=0.6*inch)
-                        header_elems.append(img)
-                        header_elems.append(Spacer(1, 4))
-                    except Exception:
-                        pass
-
-                header_elems.append(Paragraph(company_name, bold_center))
-                if company_address:
-                    header_elems.append(Paragraph(company_address.replace('\n', '<br/>'), addr_style))
-                contact_parts = []
-                if company_phone:
-                    contact_parts.append(f"Phone: {company_phone}")
-                if company_email:
-                    contact_parts.append(f"Email: {company_email}")
-                if contact_parts:
-                    header_elems.append(Paragraph(" | ".join(contact_parts), contact_style))
-
-                for elem in header_elems:
-                    story.append(elem)
-                story.append(Spacer(1, 10))
-
-                # --- Separator ---
-                sep_style = TableStyle([('LINEBELOW', (0, 0), (-1, 0), 2, colors.HexColor('#1a1a2e'))])
-                sep_table = Table([[""]], colWidths=[6.3*inch])
-                sep_table.setStyle(sep_style)
-                story.append(sep_table)
-                story.append(Spacer(1, 8))
-
-                # --- Invoice Title ---
-                title_style = ParagraphStyle('InvoiceTitle', parent=styles['Heading2'],
-                                             textColor=colors.HexColor('#1a1a2e'),
-                                             alignment=1, spaceBefore=0, spaceAfter=6)
-                story.append(Paragraph("TAX INVOICE", title_style))
-                story.append(Spacer(1, 6))
-
-                # --- Invoice Details in bordered box ---
-                detail_data = [
-                    ["Invoice No.", invoice_number, "Date", selected_sale['sale_date']],
-                    ["Customer", customer_name, "Payment", selected_sale['payment_method'].title()],
-                    ["Status", selected_sale['status'].title(), "Amount", f"{currency} {selected_sale['total_amount']:.2f}"],
-                ]
-                detail_table = Table(detail_data,
-                                    colWidths=[0.9*inch, 2.3*inch, 0.7*inch, 2.3*inch])
-                detail_table.setStyle(TableStyle([
-                    ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-                    ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, -1), 9),
-                    ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#555555')),
-                    ('TEXTCOLOR', (2, 0), (2, -1), colors.HexColor('#555555')),
-                    ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
-                    ('FONTNAME', (3, 0), (3, -1), 'Helvetica'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 6),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-                    ('TOPPADDING', (0, 0), (-1, -1), 5),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f8f8f8')),
-                    ('BACKGROUND', (2, 0), (3, 0), colors.HexColor('#f8f8f8')),
-                ]))
-                story.append(detail_table)
-                story.append(Spacer(1, 14))
-
-                # --- Items Table ---
-                items_header = ["#", "Product", "SKU", "Qty", "Unit Price", "Total"]
-                items_data = [items_header]
-
-                for i, item in enumerate(items, 1):
-                    items_data.append([
-                        str(i),
-                        item['name'],
-                        item['sku'],
-                        str(item['quantity']),
-                        f"{currency} {item['unit_price']:.2f}",
-                        f"{currency} {item['total']:.2f}",
-                    ])
-
-                subtotal = selected_sale['total_amount'] + discount
-                if discount > 0:
-                    items_data.append(["", "", "", "", "Subtotal:", f"{currency} {subtotal:.2f}"])
-                    items_data.append(["", "", "", "", "Discount:", f"-{currency} {discount:.2f}"])
-                items_data.append(["", "", "", "", "Total:", f"{currency} {selected_sale['total_amount']:.2f}"])
-                items_data.append(["", "", "", "", "Paid:", f"{currency} {selected_sale['paid_amount']:.2f}"])
-                balance = selected_sale['total_amount'] - selected_sale['paid_amount']
-                if balance > 0:
-                    items_data.append(["", "", "", "", "Balance Due:", f"{currency} {balance:.2f}"])
-
-                col_widths = [0.3*inch, 2.2*inch, 0.8*inch, 0.5*inch, 0.9*inch, 1*inch]
-                items_table = Table(items_data, colWidths=col_widths, repeatRows=1)
-
-                style_cmds = [
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1a2e')),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 10),
-                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                    ('FONTSIZE', (0, 1), (-1, -1), 9),
-                    ('ALIGN', (0, 0), (0, -1), 'CENTER'),
-                    ('ALIGN', (3, 1), (-1, -1), 'RIGHT'),
-                    ('ALIGN', (3, 0), (3, 0), 'CENTER'),
-                    ('LINEBELOW', (0, 0), (-1, 0), 1, colors.white),
-                    ('TOPPADDING', (0, 0), (-1, -1), 4),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 4),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-                ]
-
-                summary_start = len(items_data) - (4 if balance > 0 else 3)
-                if discount > 0:
-                    summary_start -= 2
-                if summary_start > 1:
-                    style_cmds.append(('GRID', (0, 0), (-1, summary_start - 1), 0.5, colors.HexColor('#CBD5E1')))
-
-                items_table.setStyle(TableStyle(style_cmds))
-
-                for row_idx in range(summary_start, len(items_data)):
-                    if row_idx >= 1:
-                        cmds = [
-                            ('FONTNAME', (0, row_idx), (-1, row_idx), 'Helvetica-Bold'),
-                            ('FONTSIZE', (0, row_idx), (-1, row_idx), 10),
-                        ]
-                        if row_idx == summary_start:
-                            cmds.append(('LINEABOVE', (0, row_idx), (-1, row_idx), 1, colors.HexColor('#1a1a2e')))
-                        items_table.setStyle(TableStyle(cmds))
-
-                story.append(items_table)
-                story.append(Spacer(1, 20))
-
-                # --- Footer ---
-                story.append(Paragraph("Thank you for your business!", ParagraphStyle(
-                    'ThankYou', parent=styles['Normal'], alignment=1,
-                    fontSize=11, textColor=colors.HexColor('#888888'))))
-                story.append(Spacer(1, 4))
-                story.append(Paragraph(
-                    f"Printed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                    ParagraphStyle('PrintInfo', parent=styles['Normal'], alignment=1,
-                                   fontSize=8, textColor=colors.HexColor('#aaaaaa'))))
-
-                doc.build(story)
-                self.parent.after(0, lambda: self._on_invoice_ready(loading, filename))
-            except Exception as e:
-                self.parent.after(0, lambda: self._on_invoice_error(loading, str(e)))
-
-        _threading.Thread(target=_generate, daemon=True).start()
-
-    def _on_invoice_ready(self, loading, filename):
-        """Called when PDF generation succeeds."""
-        try:
-            loading.destroy()
-        except Exception:
-            pass
-        dialog = ctk.CTkToplevel(self.parent)
-        dialog.title("Invoice Generated")
-        dialog.geometry("380x180")
-        dialog.resizable(False, False)
-        dialog.transient(self.parent)
-        dialog.grab_set()
-        center_window_on_screen(dialog, 380, 180)
-        ctk.CTkLabel(dialog, text="✅ Invoice Generated Successfully",
-                     font=ctk.CTkFont(size=16, weight="bold"),
-                     text_color="#4CAF50").pack(pady=(25, 5))
-        ctk.CTkLabel(dialog, text=os.path.basename(filename),
-                     font=ctk.CTkFont(size=11)).pack(pady=2)
-        btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        btn_frame.pack(pady=(15, 0))
-        ctk.CTkButton(btn_frame, text="Open Invoice",
-                       command=lambda: [dialog.destroy(), os.startfile(filename)],
-                       width=120, height=35,
-                       fg_color="#2563EB", hover_color="#1D4ED8").pack(side="left", padx=5)
-        ctk.CTkButton(btn_frame, text="Close",
-                       command=dialog.destroy,
-                       width=100, height=35,
-                       fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
-
-    def _on_invoice_error(self, loading, error_msg):
-        """Called when PDF generation fails."""
-        try:
-            loading.destroy()
-        except Exception:
-            pass
-        messagebox.showerror("Error", f"Failed to generate invoice:\n{error_msg}")
 
     def ask_credit_paid_amount(self, total_amount):
         """Show a dialog asking how much the customer is paying now for a credit sale.
@@ -2507,34 +1750,6 @@ class SalesView:
             else:
                 messagebox.showinfo("Discount Removed", "Discount has been removed from the cart.")
     
-    def _quick_discount_percentage(self, pct_str):
-        """Apply a quick percentage discount button"""
-        pct = float(pct_str.replace("%", ""))
-        if not self.cart_items:
-            return
-        self.discount_type_var.set("percentage")
-        self.discount_type = "percentage"
-        self.discount_percentage = pct
-        self.discount_amount = 0
-        self.discount_entry.delete(0, tk.END)
-        self.discount_entry.insert(0, str(pct))
-        self.update_cart_display()
-
-    def _on_proceed_sale(self):
-        """Handle proceed sale button click with visual feedback"""
-        if not self.cart_items:
-            return
-        self.proceed_btn.configure(text="Processing...", state="disabled")
-        self.parent.after(50, self._do_process_sale)
-
-    def _do_process_sale(self):
-        """Execute the sale processing and revert button on completion"""
-        try:
-            self.process_sale()
-        finally:
-            self.proceed_btn.configure(state="normal")
-            self.update_cart_display()
-
     def on_discount_type_change(self):
         """Handle discount type change in inline controls"""
         discount_type = self.discount_type_var.get()
@@ -2568,6 +1783,8 @@ class SalesView:
             discount_value = float(self.discount_entry.get() or "0")
             discount_type = self.discount_type_var.get()
             
+            print(f"Debug: Applying discount - Value: {discount_value}, Type: {discount_type}")
+            
             if discount_value < 0:
                 messagebox.showerror("Error", "Discount value cannot be negative.")
                 return
@@ -2587,18 +1804,22 @@ class SalesView:
                     unit_price = item['price_normal']
                 subtotal += unit_price * item['quantity']
             
+            print(f"Debug: Subtotal: {subtotal}, Customer type: {customer_type}")
+            
             if discount_type == "amount":
                 if discount_value > subtotal:
                     messagebox.showerror("Error", f"Discount amount cannot exceed subtotal (Rs{subtotal:.2f}).")
                     return
                 self.discount_amount = discount_value
                 self.discount_percentage = 0
+                print(f"Debug: Applied amount discount: {self.discount_amount}")
             else:  # percentage
                 if discount_value > 100:
                     messagebox.showerror("Error", "Discount percentage cannot exceed 100%.")
                     return
                 self.discount_percentage = discount_value
                 self.discount_amount = 0
+                print(f"Debug: Applied percentage discount: {self.discount_percentage}%")
             
             self.discount_type = discount_type
             self.update_cart_display()
@@ -2609,9 +1830,11 @@ class SalesView:
             else:
                 messagebox.showinfo("Discount Applied", f"Percentage discount of {discount_value:.1f}% applied!")
             
-        except ValueError:
+        except ValueError as e:
+            print(f"Debug: ValueError in apply_inline_discount: {e}")
             messagebox.showerror("Error", "Please enter a valid discount value.")
         except Exception as e:
+            print(f"Debug: Unexpected error in apply_inline_discount: {e}")
             messagebox.showerror("Error", f"An error occurred: {e}")
     
     def clear_inline_discount(self):
@@ -2975,7 +2198,7 @@ class PaySaleCreditDialog:
                                       reference_number, notes, payment_date)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
-                'sale_credit_payment',
+                'credit_sale',
                 customer_id,
                 paying,
                 'cash',
@@ -2987,13 +2210,13 @@ class PaySaleCreditDialog:
             if new_status == 'completed':
                 messagebox.showinfo(
                     "Payment Recorded",
-                    _fmt(paying) + f" recorded.\nInvoice {self.sale_data['invoice_number']} is now FULLY PAID!",
+                    f"Rs{paying:.2f} recorded.\nInvoice {self.sale_data['invoice_number']} is now FULLY PAID!",
                     parent=self.dialog
                 )
             else:
                 messagebox.showinfo(
                     "Payment Recorded",
-                    _fmt(paying) + f" recorded.\nRemaining balance: {_fmt(new_balance)}",
+                    f"Rs{paying:.2f} recorded.\nRemaining balance: Rs{new_balance:.2f}",
                     parent=self.dialog
                 )
 
@@ -3139,8 +2362,8 @@ class SaleDetailsDialog:
                     item['sku'],
                     item['name'],
                     item['quantity'],
-                _fmt(item['unit_price']),
-                _fmt(item['total'])
+                    f"Rs{item['unit_price']:.2f}",
+                    f"Rs{item['total']:.2f}"
                 ))
                 
         except Exception as e:

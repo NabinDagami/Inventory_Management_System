@@ -43,7 +43,7 @@ def apply_product_style(treeview):
     # Apply to treeview
     treeview.configure(style="ProductsTable.Treeview")
 
-def apply_category_style(treeview):
+def apply_category_style(treeview, is_dark=False):
     """Apply green styling for categories tables"""
     style = ttk.Style()
     
@@ -52,11 +52,14 @@ def apply_category_style(treeview):
     except:
         pass
     
+    bg = "#1E1E2E" if is_dark else "white"
+    fg = "#E0E0E0" if is_dark else "black"
+    
     style.configure("CategoriesTable.Treeview", 
-                   background="white",
-                   foreground="black",
+                   background=bg,
+                   foreground=fg,
                    rowheight=35,
-                   fieldbackground="white")
+                   fieldbackground=bg)
     
     style.configure("CategoriesTable.Treeview.Heading", 
                    background="#4CAF50",
@@ -74,7 +77,7 @@ def apply_category_style(treeview):
     
     treeview.configure(style="CategoriesTable.Treeview")
 
-def apply_brand_style(treeview):
+def apply_brand_style(treeview, is_dark=False):
     """Apply orange styling for brands tables"""
     style = ttk.Style()
     
@@ -83,11 +86,14 @@ def apply_brand_style(treeview):
     except:
         pass
     
+    bg = "#1E1E2E" if is_dark else "white"
+    fg = "#E0E0E0" if is_dark else "black"
+    
     style.configure("BrandsTable.Treeview", 
-                   background="white",
-                   foreground="black",
+                   background=bg,
+                   foreground=fg,
                    rowheight=35,
-                   fieldbackground="white")
+                   fieldbackground=bg)
     
     style.configure("BrandsTable.Treeview.Heading", 
                    background="#FF9800",
@@ -289,7 +295,7 @@ def apply_sale_details_style(treeview):
 # ===== Purchases View Styles =====
 
 def apply_purchase_history_style(treeview):
-    """Apply styling for purchase history table"""
+    """Apply dark theme styling for purchase history table"""
     style = ttk.Style()
     style_name = f"PurchaseHistory{id(treeview)}.Treeview"
     heading_style = f"PurchaseHistory{id(treeview)}.Treeview.Heading"
@@ -300,25 +306,25 @@ def apply_purchase_history_style(treeview):
         pass
     
     style.configure(style_name,
-                   background="white",
-                   foreground="black",
+                   background="#1E293B",
+                   foreground="#F8FAFC",
                    rowheight=32,
-                   fieldbackground="white")
+                   fieldbackground="#1E293B")
     
     style.configure(heading_style,
-                   background="#9c27b0",
+                   background="#334155",
                    foreground="white",
                    font=("Arial", 10, "bold"),
                    relief="flat")
     
     style.map(heading_style,
-             background=[("active", "#7b1fa2")])
+              background=[("active", "#475569")])
     
     treeview.configure(style=style_name)
 
 
 def apply_purchase_products_style(treeview):
-    """Apply styling for purchase products selection table"""
+    """Apply dark theme styling for purchase products selection table"""
     style = ttk.Style()
     style_name = f"PurchaseProducts{id(treeview)}.Treeview"
     heading_style = f"PurchaseProducts{id(treeview)}.Treeview.Heading"
@@ -329,25 +335,25 @@ def apply_purchase_products_style(treeview):
         pass
     
     style.configure(style_name,
-                   background="white",
-                   foreground="black",
+                   background="#1E293B",
+                   foreground="#F8FAFC",
                    rowheight=30,
-                   fieldbackground="white")
+                   fieldbackground="#1E293B")
     
     style.configure(heading_style,
-                   background="#1976d2",
+                   background="#334155",
                    foreground="white",
                    font=("Arial", 10, "bold"),
                    relief="flat")
     
     style.map(heading_style,
-             background=[("active", "#1565c0")])
+              background=[("active", "#475569")])
     
     treeview.configure(style=style_name)
 
 
 def apply_purchase_order_style(treeview):
-    """Apply styling for purchase order items table"""
+    """Apply dark theme styling for purchase order items table"""
     style = ttk.Style()
     style_name = f"PurchaseOrder{id(treeview)}.Treeview"
     heading_style = f"PurchaseOrder{id(treeview)}.Treeview.Heading"
@@ -358,19 +364,19 @@ def apply_purchase_order_style(treeview):
         pass
     
     style.configure(style_name,
-                   background="white",
-                   foreground="black",
+                   background="#1E293B",
+                   foreground="#F8FAFC",
                    rowheight=30,
-                   fieldbackground="white")
+                   fieldbackground="#1E293B")
     
     style.configure(heading_style,
-                   background="#ff9800",
+                   background="#334155",
                    foreground="white",
                    font=("Arial", 10, "bold"),
                    relief="flat")
     
     style.map(heading_style,
-             background=[("active", "#f57c00")])
+              background=[("active", "#475569")])
     
     treeview.configure(style=style_name)
 
