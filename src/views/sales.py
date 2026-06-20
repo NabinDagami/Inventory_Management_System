@@ -481,7 +481,8 @@ class SalesView:
         header_frame.pack(fill="x", padx=10, pady=10)
         
         # Search
-        search_label = ctk.CTkLabel(header_frame, text="Search:", font=ctk.CTkFont(size=12, weight="bold"))
+        search_label = ctk.CTkLabel(header_frame, text="Search:", font=ctk.CTkFont(size=12, weight="bold"),
+                                     text_color=("#334155", "#F8FAFC"))
         search_label.pack(side="left", padx=(10, 5), pady=10)
         
         self.sales_search_var = ctk.StringVar()
@@ -490,7 +491,10 @@ class SalesView:
             header_frame,
             textvariable=self.sales_search_var,
             placeholder_text="Search by invoice number or customer...",
-            width=300
+            width=300,
+            fg_color=("#FFFFFF", "#334155"),
+            text_color=("#1E293B", "#F8FAFC"),
+            placeholder_text_color=("#94A3B8", "#64748B")
         )
         search_entry.pack(side="left", padx=5, pady=10)
         
@@ -500,13 +504,17 @@ class SalesView:
             text="🔄 Refresh",
             command=self.load_sales_history,
             width=100,
-            height=35
+            height=35,
+            fg_color="#2563EB",
+            hover_color="#1D4ED8",
+            font=ctk.CTkFont(size=12, weight="bold")
         )
         refresh_btn.pack(side="right", padx=(0, 10), pady=10)
         
-        # Sales history table
-        table_frame = ctk.CTkFrame(self.sales_history_frame)
-        table_frame.pack(fill="both", expand=True, padx=10, pady=0)
+        # Sales history table - fixed max height so it doesn't stretch
+        table_frame = ctk.CTkFrame(self.sales_history_frame, height=450)
+        table_frame.pack(fill="both", padx=10, pady=0)
+        table_frame.pack_propagate(False)
         
         # Create container for the table (plain CTkFrame, not CTkScrollableFrame)
         table_container = ctk.CTkFrame(table_frame)
@@ -539,58 +547,77 @@ class SalesView:
         v_scrollbar.grid(row=0, column=1, sticky="ns")
         h_scrollbar.grid(row=1, column=0, sticky="ew")
         
-        # Action buttons
+        # Action buttons at bottom (always visible)
         actions_frame = ctk.CTkFrame(self.sales_history_frame)
-        actions_frame.pack(fill="x", padx=10, pady=10)
-        
-        view_details_btn = ctk.CTkButton(
+        actions_frame.pack(fill="x", side="bottom", pady=(10, 10), padx=10)
+
+        self.history_view_btn = ctk.CTkButton(
             actions_frame,
-            text="👁️ View Details",
+            text="View Details",
             command=self.view_sale_details,
-            width=120,
-            height=35
+            width=120, height=35,
+            state="disabled",
+            fg_color="#3b82f6", hover_color="#2563eb",
+            text_color="#FFFFFF",
+            text_color_disabled="#9CA3AF",
+            font=ctk.CTkFont(family="Arial", size=12, weight="bold")
         )
-        view_details_btn.pack(side="left", padx=5)
+        self.history_view_btn.pack(side="left", padx=5)
 
-        pay_credit_btn = ctk.CTkButton(
+        self.history_pay_btn = ctk.CTkButton(
             actions_frame,
-            text="💰 Pay Credit",
+            text="Pay Credit",
             command=self.pay_credit_for_sale,
-            width=120,
-            height=35,
-            fg_color="#4CAF50",
-            hover_color="#45A049",
-            font=ctk.CTkFont(size=12, weight="bold")
+            width=120, height=35,
+            state="disabled",
+            fg_color="#10b981", hover_color="#059669",
+            text_color="#FFFFFF",
+            text_color_disabled="#9CA3AF",
+            font=ctk.CTkFont(family="Arial", size=12, weight="bold")
         )
-        pay_credit_btn.pack(side="left", padx=5)
+        self.history_pay_btn.pack(side="left", padx=5)
 
-        export_btn = ctk.CTkButton(
+        self.history_export_btn = ctk.CTkButton(
             actions_frame,
-            text="🖨️ Export Invoice",
+            text="Export Invoice",
             command=self.export_invoice,
-            width=130,
-            height=35,
-            fg_color="#8B5CF6",
-            hover_color="#7C3AED",
-            font=ctk.CTkFont(size=12, weight="bold")
+            width=120, height=35,
+            state="disabled",
+            fg_color="#8b5cf6", hover_color="#7c3aed",
+            text_color="#FFFFFF",
+            text_color_disabled="#9CA3AF",
+            font=ctk.CTkFont(family="Arial", size=12, weight="bold")
         )
-        export_btn.pack(side="left", padx=5)
+        self.history_export_btn.pack(side="left", padx=5)
 
-        print_btn = ctk.CTkButton(
+        self.history_print_btn = ctk.CTkButton(
             actions_frame,
-            text="🖨️ Print Bill",
+            text="Print Bill",
             command=self.print_invoice,
-            width=120,
-            height=35,
-            fg_color="#F59E0B",
-            hover_color="#D97706",
-            font=ctk.CTkFont(size=12, weight="bold")
+            width=120, height=35,
+            state="disabled",
+            fg_color="#f59e0b", hover_color="#d97706",
+            text_color="#FFFFFF",
+            text_color_disabled="#9CA3AF",
+            font=ctk.CTkFont(family="Arial", size=12, weight="bold")
         )
-        print_btn.pack(side="left", padx=5)
+        self.history_print_btn.pack(side="left", padx=5)
 
+        # Track selection changes to enable/disable buttons
+        self.sales_history_tree.bind("<<TreeviewSelect>>", self._on_history_select)
         # Double-click to view details
         self.sales_history_tree.bind("<Double-1>", lambda e: self.view_sale_details())
     
+    def _on_history_select(self, event=None):
+        """Enable/disable action buttons based on treeview selection."""
+        sel = self.sales_history_tree.selection()
+        enabled = len(sel) > 0
+        state = "normal" if enabled else "disabled"
+        self.history_view_btn.configure(state=state)
+        self.history_pay_btn.configure(state=state)
+        self.history_export_btn.configure(state=state)
+        self.history_print_btn.configure(state=state)
+
     def load_sales_history(self):
         """Load sales history data"""
         try:
@@ -798,10 +825,19 @@ class SalesView:
 
         # Items container
         cart_table_frame = ctk.CTkFrame(self.cart_scroll_body, fg_color="transparent")
-        cart_table_frame.pack(fill="both", expand=True, padx=10, pady=(5, 8))
+        cart_table_frame.pack(fill="x", padx=10, pady=(5, 8))
 
-        self.cart_items_container = ctk.CTkFrame(cart_table_frame, fg_color=("#FFFFFF", "#1E1E2E"))
-        self.cart_items_container.pack(fill="both", expand=True, padx=2, pady=2)
+        self.cart_items_container = ctk.CTkFrame(cart_table_frame, fg_color=("#FFFFFF", "#1E1E2E"), height=200)
+        self.cart_items_container.pack(fill="x", expand=False, padx=2, pady=2)
+
+        # Centered empty-state label
+        self.cart_empty_label = ctk.CTkLabel(
+            self.cart_items_container,
+            text="No items in cart. Search or browse products to add.",
+            font=ctk.CTkFont(size=11),
+            text_color=("#94A3B8", "#64748B"),
+        )
+        self.cart_empty_label.place(relx=0.5, rely=0.5, anchor="center")
 
         # Column headers
         self.cart_header_frame = ctk.CTkFrame(cart_table_frame, fg_color=("#F1F5F9", "#0F172A"), height=28)
@@ -1021,8 +1057,9 @@ class SalesView:
                 pass
             self._tooltip = None
 
-        self._search_dropdown.lift()
-        self._bind_dropdown_close()
+        if self._search_dropdown:
+            self._search_dropdown.lift()
+            self._bind_dropdown_close()
 
     def _search_dropdown_add(self, product):
         """Add the selected product from the dropdown and clean up."""
@@ -1033,6 +1070,7 @@ class SalesView:
 
     def _hide_search_dropdown(self):
         """Hide the search dropdown."""
+        self._hide_tooltip()
         if self._search_dropdown:
             try:
                 self._search_dropdown.place_forget()
@@ -1531,12 +1569,18 @@ class SalesView:
 
     def update_cart_display(self):
         """Update cart display with inline controls and totals"""
-        # Clear inline items
+        # Destroy item rows but keep cart_empty_label
         for w in self.cart_items_container.winfo_children():
-            w.destroy()
-        
+            if w != self.cart_empty_label:
+                w.destroy()
+
         subtotal = 0
         customer_type = self.current_customer['type'] if self.current_customer else 'Normal'
+
+        if not self.cart_items:
+            self.cart_empty_label.place(relx=0.5, rely=0.5, anchor="center")
+        else:
+            self.cart_empty_label.place_forget()
 
         # Build each cart item as a row with inline controls
         for idx, item in enumerate(self.cart_items):
@@ -1557,10 +1601,24 @@ class SalesView:
             row_frame.pack(fill="x", padx=1, pady=(0, 1))
             row_frame.pack_propagate(False)
 
-            # Product name
-            name = item['name'][:18] + ".." if len(item['name']) > 18 else item['name']
-            ctk.CTkLabel(row_frame, text=name, font=ctk.CTkFont(size=10),
-                         anchor="w").pack(side="left", padx=(8, 0), expand=True, fill="x")
+            # Product name — also retrieve stock for tooltip
+            product_name = item['name']
+            stock_info = 0
+            for p in self.all_products:
+                if p['product_id'] == item['product_id']:
+                    stock_info = self.get_available_stock(p)
+                    break
+            tooltip_text = f"{product_name} — Stock: {stock_info}"
+
+            name_label = ctk.CTkLabel(row_frame, text=product_name[:18] + ".." if len(product_name) > 18 else product_name,
+                                      font=ctk.CTkFont(size=10), anchor="w")
+            name_label.pack(side="left", padx=(8, 0), expand=True, fill="x")
+
+            # Tooltip on row frame
+            row_frame.bind("<Enter>", lambda e, t=tooltip_text: self._show_tooltip(e, t))
+            row_frame.bind("<Leave>", lambda e: self._hide_tooltip())
+            name_label.bind("<Enter>", lambda e, t=tooltip_text: self._show_tooltip(e, t))
+            name_label.bind("<Leave>", lambda e: self._hide_tooltip())
 
             # [-] button
             dec_btn = ctk.CTkButton(
@@ -1699,16 +1757,19 @@ class SalesView:
         )
         self.credit_summary_label.pack(padx=10, pady=(0, 5))
 
-        # Outstanding credit sales table (fixed height so it doesn't push history off screen)
-        table_frame = ctk.CTkFrame(scroll)
+        # Outstanding credit sales table (fixed 250px height)
+        table_frame = ctk.CTkFrame(scroll, height=250)
         table_frame.pack(fill="x", padx=10, pady=0)
+        table_frame.pack_propagate(False)
 
         table_container = ctk.CTkFrame(table_frame)
-        table_container.pack(fill="x", padx=5, pady=5)
+        table_container.pack(fill="both", expand=True, padx=5, pady=5)
         table_container.grid_columnconfigure(0, weight=1)
+        table_container.grid_rowconfigure(0, weight=1)
 
         columns = ("Invoice", "Date", "Customer", "Total", "Paid", "Outstanding")
-        self.credit_tree = ttk.Treeview(table_container, columns=columns, show="headings", height=8)
+        self.credit_tree = ttk.Treeview(table_container, columns=columns, show="headings", height=5)
+        table_styles.apply_credit_sales_style(self.credit_tree)
 
         col_widths = {"Invoice": 160, "Date": 110, "Customer": 220,
                       "Total": 120, "Paid": 120, "Outstanding": 130}
@@ -1720,24 +1781,33 @@ class SalesView:
         h_sb = ttk.Scrollbar(table_container, orient="horizontal", command=self.credit_tree.xview)
         self.credit_tree.configure(yscrollcommand=v_sb.set, xscrollcommand=h_sb.set)
 
-        self.credit_tree.grid(row=0, column=0, sticky="ew")
+        self.credit_tree.grid(row=0, column=0, sticky="nsew")
         v_sb.grid(row=0, column=1, sticky="ns")
         h_sb.grid(row=1, column=0, sticky="ew")
+
+        # Compact empty-state for credit tree
+        self.credit_empty_label = ctk.CTkLabel(
+            table_container,
+            text="No outstanding credit sales",
+            font=ctk.CTkFont(size=12),
+            text_color=("#94A3B8", "#64748B")
+        )
 
         # Action buttons
         actions_frame = ctk.CTkFrame(scroll)
         actions_frame.pack(fill="x", padx=10, pady=10)
 
-        ctk.CTkButton(
+        self.credit_pay_btn = ctk.CTkButton(
             actions_frame,
             text="💰 Record Payment",
             command=self.pay_credit_from_tab,
-            width=150,
-            height=38,
-            fg_color="#4CAF50",
-            hover_color="#45A049",
+            width=150, height=38,
+            state="disabled",
+            fg_color="#059669", hover_color="#047857",
             font=ctk.CTkFont(size=13, weight="bold")
-        ).pack(side="left", padx=5)
+        )
+        self.credit_pay_btn.pack(side="left", padx=5)
+        self.credit_tree.bind("<<TreeviewSelect>>", self._on_credit_select)
 
         # Double-click to pay
         self.credit_tree.bind("<Double-1>", lambda e: self.pay_credit_from_tab())
@@ -1752,15 +1822,18 @@ class SalesView:
             font=ctk.CTkFont(size=14, weight="bold")
         ).pack(side="left", padx=10, pady=8)
 
-        history_table_frame = ctk.CTkFrame(scroll)
+        history_table_frame = ctk.CTkFrame(scroll, height=200)
         history_table_frame.pack(fill="x", padx=10, pady=(0, 10))
+        history_table_frame.pack_propagate(False)
 
         history_container = ctk.CTkFrame(history_table_frame)
-        history_container.pack(fill="x", padx=5, pady=5)
+        history_container.pack(fill="both", expand=True, padx=5, pady=5)
         history_container.grid_columnconfigure(0, weight=1)
+        history_container.grid_rowconfigure(0, weight=1)
 
         hist_cols = ("Date", "Invoice", "Customer", "Amount Paid", "Remaining After", "Recorded At")
-        self.payment_history_tree = ttk.Treeview(history_container, columns=hist_cols, show="headings", height=8)
+        self.payment_history_tree = ttk.Treeview(history_container, columns=hist_cols, show="headings", height=5)
+        table_styles.apply_credit_payment_style(self.payment_history_tree)
 
         hist_widths = {"Date": 100, "Invoice": 160, "Customer": 180,
                        "Amount Paid": 120, "Remaining After": 130, "Recorded At": 150}
@@ -1772,9 +1845,22 @@ class SalesView:
         ph_hsb = ttk.Scrollbar(history_container, orient="horizontal", command=self.payment_history_tree.xview)
         self.payment_history_tree.configure(yscrollcommand=ph_vsb.set, xscrollcommand=ph_hsb.set)
 
-        self.payment_history_tree.grid(row=0, column=0, sticky="ew")
+        self.payment_history_tree.grid(row=0, column=0, sticky="nsew")
         ph_vsb.grid(row=0, column=1, sticky="ns")
         ph_hsb.grid(row=1, column=0, sticky="ew")
+
+        # Compact empty-state for payment history
+        self.payment_empty_label = ctk.CTkLabel(
+            history_container,
+            text="No credit payment history",
+            font=ctk.CTkFont(size=12),
+            text_color=("#94A3B8", "#64748B")
+        )
+
+    def _on_credit_select(self, event=None):
+        """Enable/disable Record Payment button based on credit tree selection."""
+        sel = self.credit_tree.selection()
+        self.credit_pay_btn.configure(state="normal" if sel else "disabled")
 
     def load_credit_sales(self):
         """Load all outstanding credit sales into the Credit Payments tab."""
@@ -1813,6 +1899,12 @@ class SalesView:
             self.credit_summary_label.configure(
                 text=f"{count} outstanding credit sale(s)  |  Total due: Rs{total_outstanding:.2f}"
             )
+
+            # Toggle empty state — overlay label when no data, treeview stays
+            if count == 0:
+                self.credit_empty_label.place(relx=0.5, rely=0.5, anchor="center")
+            else:
+                self.credit_empty_label.place_forget()
 
         except Exception as e:
             print(f"Error loading credit sales: {e}")
@@ -1862,6 +1954,12 @@ class SalesView:
                     remaining,
                     rec['created_at']
                 ))
+
+            # Toggle empty state
+            if not records:
+                self.payment_empty_label.place(relx=0.5, rely=0.5, anchor="center")
+            else:
+                self.payment_empty_label.place_forget()
 
         except Exception as e:
             print(f"Error loading payment history: {e}")

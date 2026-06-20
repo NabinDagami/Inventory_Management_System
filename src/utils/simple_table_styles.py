@@ -177,7 +177,7 @@ def apply_supplier_style(treeview):
 # ===== Sales View Styles =====
 
 def apply_sales_history_style(treeview):
-    """Apply styling for sales history table"""
+    """Apply dark theme styling for sales history table"""
     style = ttk.Style()
     style_name = f"SalesHistory{id(treeview)}.Treeview"
     heading_style = f"SalesHistory{id(treeview)}.Treeview.Heading"
@@ -188,19 +188,80 @@ def apply_sales_history_style(treeview):
         pass
     
     style.configure(style_name,
-                   background="white",
-                   foreground="black",
+                   background="#1E293B",
+                   foreground="#F8FAFC",
                    rowheight=32,
-                   fieldbackground="white")
+                   fieldbackground="#1E293B")
     
     style.configure(heading_style,
-                   background="#e91e63",
+                   background="#334155",
                    foreground="white",
                    font=("Arial", 10, "bold"),
                    relief="flat")
     
     style.map(heading_style,
-             background=[("active", "#c2185b")])
+             background=[("active", "#475569")],
+             foreground=[("active", "white")])
+    
+    treeview.configure(style=style_name)
+
+
+def apply_credit_sales_style(treeview):
+    """Apply dark theme styling for credit sales table"""
+    style = ttk.Style()
+    style_name = f"CreditSales{id(treeview)}.Treeview"
+    heading_style = f"CreditSales{id(treeview)}.Treeview.Heading"
+    
+    try:
+        style.theme_use('clam')
+    except:
+        pass
+    
+    style.configure(style_name,
+                   background="#1E293B",
+                   foreground="#F8FAFC",
+                   rowheight=32,
+                   fieldbackground="#1E293B")
+    
+    style.configure(heading_style,
+                   background="#334155",
+                   foreground="white",
+                   font=("Arial", 10, "bold"),
+                   relief="flat")
+    
+    style.map(heading_style,
+             background=[("active", "#475569")],
+             foreground=[("active", "white")])
+    
+    treeview.configure(style=style_name)
+
+
+def apply_credit_payment_style(treeview):
+    """Apply dark theme styling for credit payment history table"""
+    style = ttk.Style()
+    style_name = f"CreditPayment{id(treeview)}.Treeview"
+    heading_style = f"CreditPayment{id(treeview)}.Treeview.Heading"
+    
+    try:
+        style.theme_use('clam')
+    except:
+        pass
+    
+    style.configure(style_name,
+                   background="#1E293B",
+                   foreground="#F8FAFC",
+                   rowheight=32,
+                   fieldbackground="#1E293B")
+    
+    style.configure(heading_style,
+                   background="#334155",
+                   foreground="white",
+                   font=("Arial", 10, "bold"),
+                   relief="flat")
+    
+    style.map(heading_style,
+             background=[("active", "#475569")],
+             foreground=[("active", "white")])
     
     treeview.configure(style=style_name)
 
