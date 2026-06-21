@@ -497,6 +497,44 @@ class SalesView:
             placeholder_text_color=("#94A3B8", "#64748B")
         )
         search_entry.pack(side="left", padx=5, pady=10)
+
+        # Status filter dropdown
+        status_label = ctk.CTkLabel(header_frame, text="Status:", font=ctk.CTkFont(size=12, weight="bold"),
+                                     text_color=("#334155", "#F8FAFC"))
+        status_label.pack(side="left", padx=(10, 5), pady=10)
+
+        self.sales_status_filter = ctk.StringVar(value="All")
+        status_dropdown = ctk.CTkOptionMenu(
+            header_frame,
+            variable=self.sales_status_filter,
+            values=["All", "Completed", "Credit"],
+            width=140,
+            command=lambda _: self.filter_sales_history(),
+            fg_color=("#FFFFFF", "#334155"),
+            text_color=("#1E293B", "#F8FAFC"),
+            button_color=("#E2E8F0", "#475569"),
+            button_hover_color=("#CBD5E1", "#64748B")
+        )
+        status_dropdown.pack(side="left", padx=5, pady=10)
+
+        # Customer filter dropdown
+        customer_label = ctk.CTkLabel(header_frame, text="Customer:", font=ctk.CTkFont(size=12, weight="bold"),
+                                       text_color=("#334155", "#F8FAFC"))
+        customer_label.pack(side="left", padx=(10, 5), pady=10)
+
+        self.sales_customer_filter = ctk.StringVar(value="All")
+        self.sales_customer_dropdown = ctk.CTkOptionMenu(
+            header_frame,
+            variable=self.sales_customer_filter,
+            values=["All"],
+            width=160,
+            command=lambda _: self.filter_sales_history(),
+            fg_color=("#FFFFFF", "#334155"),
+            text_color=("#1E293B", "#F8FAFC"),
+            button_color=("#E2E8F0", "#475569"),
+            button_hover_color=("#CBD5E1", "#64748B")
+        )
+        self.sales_customer_dropdown.pack(side="left", padx=5, pady=10)
         
         # Refresh button
         refresh_btn = ctk.CTkButton(
@@ -624,7 +662,7 @@ class SalesView:
             query = """
                 SELECT s.id as sale_id, s.invoice_number, s.sale_date, s.payment_method,
                        s.total_amount, s.paid_amount, (s.total_amount - s.paid_amount) as credit,
-                       s.discount, s.status, c.name as customer_name,
+                       s.discount, s.status, s.notes, c.name as customer_name,
                        COUNT(si.id) as item_count
                 FROM sales s
                 LEFT JOIN customers c ON s.customer_id = c.customer_id
@@ -644,6 +682,25 @@ class SalesView:
                 payment_method = sale['payment_method'].title()
                 status = sale['status'].title()
                 discount_amount = sale['discount'] or 0
+
+                # Check if there are returns from notes
+                notes = sale.get('notes') or ""
+                has_returns = any(line.strip().startswith('[Return]') for line in notes.split('\n'))
+                status_display = status
+                if has_returns:
+                    # Count total returned items
+                    ret_count = 0
+                    for line in notes.split('\n'):
+                        if line.strip().startswith('[Return]') and 'items=' in line:
+                            try:
+                                import json
+                                items_part = line.split('items=')[1].split(' refund=')[0]
+                                items_data = json.loads(items_part.replace("'", '"'))
+                                ret_count += sum(items_data.values())
+                            except Exception:
+                                pass
+                    if ret_count > 0:
+                        status_display = f"↩{ret_count} {status}"
                 
                 self.sales_history_tree.insert("", "end", values=(
                     sale['invoice_number'],
@@ -655,49 +712,71 @@ class SalesView:
                     _fmt(sale['paid_amount']),
                     _fmt(sale['total_amount'] - sale['paid_amount']),
                     _fmt(sale['total_amount']),
-                    status
+                    status_display
                 ))
             
             self.all_sales_data = sales
-            
+
+            # Populate customer filter dropdown
+            customers = sorted(set(
+                (sale['customer_name'] or "Walk-in Customer") for sale in sales
+            ))
+            self.sales_customer_dropdown.configure(values=["All"] + customers)
+
         except Exception as e:
             print(f"Error loading sales history: {e}")
             messagebox.showerror("Error", f"Failed to load sales history: {e}")
     
     def filter_sales_history(self, *args):
-        """Filter sales history based on search"""
+        """Filter sales history based on search, status and customer"""
         search_term = self.sales_search_var.get().lower()
-        
+        status_filter = self.sales_status_filter.get()
+        customer_filter = self.sales_customer_filter.get()
+
         # Clear tree
         for item in self.sales_history_tree.get_children():
             self.sales_history_tree.delete(item)
-        
+
         if not hasattr(self, 'all_sales_data'):
             return
-        
+
         # Filter and display matching sales
         for idx, sale in enumerate(self.all_sales_data):
             customer_name = sale['customer_name'] or "Walk-in Customer"
-            
-            if (search_term in sale['invoice_number'].lower() or
-                search_term in customer_name.lower()):
-                
-                payment_method = sale['payment_method'].title()
-                status = sale['status'].title()
-                discount_amount = sale['discount'] or 0
-                
-                self.sales_history_tree.insert("", "end", values=(
-                    sale['invoice_number'],
-                    sale['sale_date'],
-                    customer_name,
-                    payment_method,
-                    sale['item_count'],
-                    _fmt(discount_amount) if discount_amount > 0 else "-",
-                    _fmt(sale['paid_amount']),
-                    _fmt(sale['total_amount'] - sale['paid_amount']),
-                    _fmt(sale['total_amount']),
-                    status
-                ))
+
+            # Apply search filter
+            if search_term:
+                if (search_term not in sale['invoice_number'].lower() and
+                    search_term not in customer_name.lower()):
+                    continue
+
+            # Apply status filter
+            if status_filter != "All":
+                sale_status = (sale.get('status') or "").lower()
+                filter_status = status_filter.lower().replace(" ", "_")
+                if sale_status != filter_status:
+                    continue
+
+            # Apply customer filter
+            if customer_filter != "All" and customer_name != customer_filter:
+                continue
+
+            payment_method = sale['payment_method'].title()
+            status = sale['status'].title()
+            discount_amount = sale['discount'] or 0
+
+            self.sales_history_tree.insert("", "end", values=(
+                sale['invoice_number'],
+                sale['sale_date'],
+                customer_name,
+                payment_method,
+                sale['item_count'],
+                _fmt(discount_amount) if discount_amount > 0 else "-",
+                _fmt(sale['paid_amount']),
+                _fmt(sale['total_amount'] - sale['paid_amount']),
+                _fmt(sale['total_amount']),
+                status
+            ))
     
     def view_sale_details(self):
         """View detailed information about a selected sale"""
@@ -722,7 +801,7 @@ class SalesView:
             return
         
         # Create details dialog
-        SaleDetailsDialog(self.parent, selected_sale)
+        dialog = SaleDetailsDialog(self.parent, selected_sale, self.load_sales_history)
     
     def create_product_selection(self, parent):
         """Create product selection area with search, barcode, Browse button + modal"""
@@ -961,21 +1040,35 @@ class SalesView:
         pf.update_idletasks()
         rel_x = self.search_entry.winfo_rootx() - pf.winfo_rootx()
         rel_y = self.search_entry.winfo_rooty() - pf.winfo_rooty() + self.search_entry.winfo_height() + 4
-        w = max(self.search_entry.winfo_width(), 100)
+
+        w = int(self.search_entry.winfo_width() * 0.75)
+        w = max(w, 400)
+        w = min(w, 800)
+
+        if rel_x + w > pf.winfo_width():
+            rel_x = pf.winfo_width() - w - 10
+
+        pf_h = pf.winfo_height()
+        max_h = max(pf_h - rel_y - 10, 80)
+        desired = len(matches) * 34 + 10
+        h = max(min(desired, max_h, 400), min(250, desired))
 
         self._search_dropdown = ctk.CTkFrame(
             pf, fg_color="#1f2937", corner_radius=6,
-            border_width=1, border_color="#4B5563"
+            border_width=1, border_color="#4B5563",
+            width=w, height=h
         )
         self._search_dropdown.place(x=rel_x, y=rel_y, anchor="nw")
+        self._search_dropdown.update_idletasks()
 
         inner = ctk.CTkScrollableFrame(self._search_dropdown, fg_color="#1f2937",
                                         scrollbar_button_hover_color="#4B5563",
-                                        corner_radius=0)
+                                        corner_radius=0,
+                                        width=w)
         inner.pack(fill="both", expand=True)
 
         # Available width for text
-        btn_w = w - 16
+        btn_w = w - 50
 
         for p in matches:
             avail = self.get_available_stock(p)
@@ -990,8 +1083,8 @@ class SalesView:
                 max_name_chars = max((btn_w - len(stock_part) * 7) // 7 - 3, 10)
                 display = f"{name[:max_name_chars]}...{stock_part}"
 
-            row = ctk.CTkFrame(inner, fg_color="transparent", height=32)
-            row.pack(fill="x", padx=4, pady=(0, 1))
+            row = ctk.CTkFrame(inner, fg_color="transparent", height=34)
+            row.pack(fill="x", padx=6, pady=1)
             row.pack_propagate(False)
 
             lbl = ctk.CTkLabel(
@@ -999,36 +1092,28 @@ class SalesView:
                 anchor="w", justify="left",
                 font=ctk.CTkFont(size=12),
                 text_color="#F8FAFC",
-                padx=10
+                padx=12
             )
             lbl.pack(side="left", fill="x", expand=True)
 
-            def _make_enter(prod, r, t):
-                def _on_enter(_):
-                    r.configure(fg_color="#374151")
-                    self._show_tooltip(_, t)
-                return _on_enter
-            def _make_leave(r):
-                def _on_leave(_):
-                    r.configure(fg_color="transparent")
-                    self._hide_tooltip()
-                return _on_leave
-            on_enter = _make_enter(p, row, full_label)
-            on_leave = _make_leave(row)
-            row.bind("<Enter>", on_enter)
-            row.bind("<Leave>", on_leave)
-            lbl.bind("<Enter>", on_enter)
-            lbl.bind("<Leave>", on_leave)
-            row.bind("<Button-1>", lambda e, prod=p: self._search_dropdown_add(prod))
-            lbl.bind("<Button-1>", lambda e, prod=p: self._search_dropdown_add(prod))
+            prod = p
+            def _on_row_enter(event, r=row):
+                r.configure(fg_color="#374151")
+            def _on_row_leave(event, r=row):
+                r.configure(fg_color="transparent")
+            def _on_row_click(event, prod=prod):
+                self._search_dropdown_add(prod)
+                return "break"
 
-        # Constrain height — minimum 200px when showing results
-        pf_h = pf.winfo_height()
-        max_h = max(pf_h - rel_y - 10, 80)
-        desired = len(matches) * 34 + 10
-        h = max(min(desired, max_h, 350), min(200, desired))
-        self._search_dropdown.configure(width=max(w, 50), height=max(h, 30))
+            row.bind("<Enter>", _on_row_enter)
+            row.bind("<Leave>", _on_row_leave)
+            lbl.bind("<Enter>", _on_row_enter)
+            lbl.bind("<Leave>", _on_row_leave)
+            row.bind("<Button-1>", _on_row_click)
+            lbl.bind("<Button-1>", _on_row_click)
 
+        inner.configure(width=w)
+        self._search_dropdown.configure(width=w, height=h)
         self._search_dropdown.lift()
         self._bind_dropdown_close()
 
@@ -1058,8 +1143,8 @@ class SalesView:
             self._tooltip = None
 
         if self._search_dropdown:
-            self._search_dropdown.lift()
-            self._bind_dropdown_close()
+            self._search_dropdown.destroy()
+            self._search_dropdown = None
 
     def _search_dropdown_add(self, product):
         """Add the selected product from the dropdown and clean up."""
@@ -1102,10 +1187,21 @@ class SalesView:
             dy = self._search_dropdown.winfo_rooty()
             dw = self._search_dropdown.winfo_width()
             dh = self._search_dropdown.winfo_height()
-            if (dx <= event.x_root <= dx + dw and dy <= event.y_root <= dy + dh):
-                return
         except Exception:
-            pass
+            return
+        if dw <= 0 or dh <= 0:
+            return
+        if (dx <= event.x_root <= dx + dw and dy <= event.y_root <= dy + dh):
+            return
+        try:
+            sx = self.search_entry.winfo_rootx()
+            sy = self.search_entry.winfo_rooty()
+            sw = self.search_entry.winfo_width()
+            sh = self.search_entry.winfo_height()
+        except Exception:
+            sw = sh = 0
+        if sw > 0 and sh > 0 and (sx <= event.x_root <= sx + sw and sy <= event.y_root <= sy + sh):
+            return
         self._hide_search_dropdown()
 
     def _on_search_keyrelease(self, event=None):
@@ -1306,23 +1402,35 @@ class SalesView:
             if not code:
                 return
             barcode_var.set("")
+            product = None
             for p in self.all_products:
                 if p.get('barcode') and p['barcode'] == code:
-                    self.add_to_cart(quantity=1, product=p)
-                    add_btn.configure(text="✅  Added!", fg_color="#10B981")
-                    modal.after(800, lambda: add_btn.configure(
-                        text="🛒  Add to Cart", fg_color="#4CAF50"
-                    ))
-                    # Highlight in tree
-                    for item_id in tree.get_children():
-                        vals = tree.item(item_id, 'values')
-                        if vals and vals[0] == p['sku']:
-                            tree.selection_set(item_id)
-                            tree.focus(item_id)
-                            tree.see(item_id)
-                            _on_select()
-                            break
-                    return
+                    product = p
+                    break
+            if not product:
+                results = db.execute_query(
+                    "SELECT product_id, sku, name, stock, price_normal, price_workshop, reorder_level, barcode "
+                    "FROM products WHERE barcode = ? AND is_active = 1",
+                    (code,)
+                )
+                if results:
+                    product = results[0]
+            if product:
+                self.add_to_cart(quantity=1, product=product)
+                add_btn.configure(text="✅  Added!", fg_color="#10B981")
+                modal.after(800, lambda: add_btn.configure(
+                    text="🛒  Add to Cart", fg_color="#4CAF50"
+                ))
+                # Highlight in tree
+                for item_id in tree.get_children():
+                    vals = tree.item(item_id, 'values')
+                    if vals and vals[0] == product['sku']:
+                        tree.selection_set(item_id)
+                        tree.focus(item_id)
+                        tree.see(item_id)
+                        _on_select()
+                        break
+                return
             # Not found — flash red on entry
             barcode_entry.configure(border_color="#ef4444")
             modal.after(1500, lambda: barcode_entry.configure(
@@ -1378,7 +1486,7 @@ class SalesView:
                 SELECT p.product_id, p.sku, p.name, p.stock, p.price_normal, 
                        p.price_workshop, p.reorder_level, p.barcode
                 FROM products p
-                WHERE p.is_active = 1 AND p.stock > 0
+                WHERE p.is_active = 1
                 ORDER BY p.name
             """
             self.all_products = db.execute_query(query)
@@ -1452,6 +1560,14 @@ class SalesView:
                 product = p
                 break
         if not product:
+            results = db.execute_query(
+                "SELECT product_id, sku, name, stock, price_normal, price_workshop, reorder_level, barcode "
+                "FROM products WHERE barcode = ? AND is_active = 1",
+                (code,)
+            )
+            if results:
+                product = results[0]
+        if not product:
             self.barcode_entry.configure(border_color="#ef4444")
             self.barcode_status.configure(text="❌ Not found", text_color="#ef4444")
             self.parent.after(2000, lambda: (
@@ -1463,7 +1579,7 @@ class SalesView:
         available = self.get_available_stock(product)
         if available <= 0:
             self.barcode_entry.configure(border_color="#ef4444")
-            self.barcode_status.configure(text="❌ Out of stock", text_color="#ef4444")
+            self.barcode_status.configure(text=f"❌ Out of stock: {product['name'][:15]}", text_color="#ef4444")
             self.parent.after(2000, lambda: (
                 self.barcode_entry.configure(border_color=("#565b5e", "#949A9F")),
                 self.barcode_status.configure(text="")
@@ -1998,31 +2114,39 @@ class SalesView:
         item_values = self.sales_history_tree.item(selection[0], 'values')
         invoice_number = item_values[0]
 
-        # Find the sale in loaded data
-        selected_sale = None
-        for sale in self.all_sales_data:
-            if sale['invoice_number'] == invoice_number:
-                selected_sale = sale
-                break
+        # Query DB directly for fresh data with status/balance verification
+        sale = db.execute_query("""
+            SELECT s.id, s.invoice_number, s.sale_date, s.total_amount, s.paid_amount,
+                   (s.total_amount - s.paid_amount) as balance, s.status, s.customer_id,
+                   COALESCE(c.name, 'Walk-in Customer') as customer_name
+            FROM sales s
+            LEFT JOIN customers c ON s.customer_id = c.customer_id
+            WHERE s.invoice_number = ?
+        """, (invoice_number,))
 
-        if not selected_sale:
+        if not sale:
             messagebox.showerror("Error", "Sale not found.")
             return
 
-        # Check it is actually a credit sale with outstanding balance
-        balance = selected_sale['total_amount'] - selected_sale['paid_amount']
-        if balance <= 0:
-            messagebox.showinfo("No Balance", f"Invoice {invoice_number} is already fully paid.")
+        sale = sale[0]
+
+        if sale['status'] != 'credit':
+            messagebox.showinfo(
+                "Not a Credit Sale",
+                f"Invoice {invoice_number} is not a credit sale."
+            )
             return
 
-        if selected_sale['status'] != 'credit':
-            messagebox.showinfo("Not a Credit Sale", f"Invoice {invoice_number} is not a credit sale.")
+        if sale['balance'] <= 0.01:
+            messagebox.showinfo(
+                "No Balance",
+                f"Invoice {invoice_number} is already fully paid."
+            )
             return
 
-        # Open the pay-credit dialog
-        dialog = PaySaleCreditDialog(self.parent, selected_sale)
+        dialog = PaySaleCreditDialog(self.parent, sale)
         if dialog.result:
-            self.load_sales_history()  # Refresh the table
+            self.load_sales_history()
 
     def export_invoice(self):
         """Export a text invoice for the selected sale."""
@@ -3108,8 +3232,10 @@ class PaySaleCreditDialog:
 
 
 class SaleDetailsDialog:
-    def __init__(self, parent, sale_data):
+    def __init__(self, parent, sale_data, refresh_callback=None):
         self.parent = parent
+        self.sale_data = sale_data
+        self.refresh_callback = refresh_callback
         # Convert sqlite3.Row to dict if needed
         if hasattr(sale_data, 'keys') and callable(getattr(sale_data, 'keys', None)):
             # It's already a dict-like object, ensure it's a real dict
@@ -3136,11 +3262,15 @@ class SaleDetailsDialog:
         # Main container
         main_frame = ctk.CTkScrollableFrame(self.dialog)
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
+
+        # Parse previous returns from notes
+        self._returned_data = self._parse_returns()
+        self._has_returns = bool(self._returned_data)
+
         # Header information
         header_frame = ctk.CTkFrame(main_frame)
         header_frame.pack(fill="x", pady=(0, 20))
-        
+
         # Invoice details
         invoice_label = ctk.CTkLabel(
             header_frame,
@@ -3148,21 +3278,22 @@ class SaleDetailsDialog:
             font=ctk.CTkFont(size=18, weight="bold")
         )
         invoice_label.pack(pady=10)
-        
+
         details_frame = ctk.CTkFrame(header_frame)
         details_frame.pack(fill="x", padx=20, pady=(0, 10))
-        
+
         # Sale information
         discount_amount = self.sale_data['discount'] if 'discount' in self.sale_data.keys() else 0
+        status_text = self.sale_data['status'].title()
         info_text = f"""
         Date: {self.sale_data['sale_date']}
         Customer: {self.sale_data['customer_name'] or 'Walk-in Customer'}
         Payment Method: {self.sale_data['payment_method'].title()}
-        Status: {self.sale_data['status'].title()}
+        Status: {status_text}{'  |  ↩ Returns: Yes' if self._has_returns else ''}
         Discount Applied: Rs{discount_amount:.2f}{' (None)' if discount_amount == 0 else ''}
         Total Amount: Rs{self.sale_data['total_amount']:.2f}
         """
-        
+
         info_label = ctk.CTkLabel(
             details_frame,
             text=info_text,
@@ -3170,7 +3301,7 @@ class SaleDetailsDialog:
             justify="left"
         )
         info_label.pack(pady=10)
-        
+
         # Sale items
         items_label = ctk.CTkLabel(
             main_frame,
@@ -3178,29 +3309,110 @@ class SaleDetailsDialog:
             font=ctk.CTkFont(size=16, weight="bold")
         )
         items_label.pack(anchor="w", pady=(0, 10))
-        
+
         # Items table
         items_frame = ctk.CTkFrame(main_frame)
         items_frame.pack(fill="both", expand=True)
-        
+
         # Load and display sale items
-        self.load_sale_items(items_frame)
-        
+        remaining = self.load_sale_items(items_frame)
+
+        # If there were returns, show return history
+        if self._has_returns:
+            ret_label = ctk.CTkLabel(
+                main_frame,
+                text="📋 Return History:",
+                font=ctk.CTkFont(size=14, weight="bold"), anchor="w"
+            )
+            ret_label.pack(fill="x", pady=(10, 5))
+
+            ret_frame = ctk.CTkFrame(main_frame)
+            ret_frame.pack(fill="x")
+
+            self._load_return_history(ret_frame)
+
+        # Action buttons
+        actions_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        actions_frame.pack(fill="x", pady=(15, 0))
+
+        can_return = remaining > 0
+        return_btn = ctk.CTkButton(
+            actions_frame,
+            text="🔄 Process Return",
+            command=self._open_return,
+            width=150,
+            height=38,
+            fg_color="#f59e0b" if can_return else "#9CA3AF",
+            hover_color="#d97706" if can_return else "#9CA3AF",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            state="normal" if can_return else "disabled"
+        )
+        return_btn.pack(side="left")
+
         # Close button
         close_btn = ctk.CTkButton(
-            main_frame,
+            actions_frame,
             text="Close",
             command=self.dialog.destroy,
             width=100,
-            height=35
+            height=38
         )
-        close_btn.pack(pady=(20, 0))
+        close_btn.pack(side="right")
+
+    def _open_return(self):
+        """Open the sales return dialog."""
+        dialog = SaleReturnDialog(self.dialog, self.sale_data, self.refresh_callback)
+        if dialog.returns_processed:
+            self.dialog.destroy()
     
+    def _parse_returns(self):
+        """Parse return data from sale notes. Returns dict of product_id -> total_returned_qty."""
+        returned = {}
+        notes = self.sale_data.get('notes') or ""
+        for line in notes.split('\n'):
+            line = line.strip()
+            if line.startswith('[Return]') and 'items=' in line:
+                try:
+                    items_part = line.split('items=')[1].split(' refund=')[0]
+                    import json
+                    items_data = json.loads(items_part.replace("'", '"'))
+                    for pid, qty in items_data.items():
+                        returned[pid] = returned.get(pid, 0) + qty
+                except Exception:
+                    pass
+        return returned
+
+    def _get_return_history(self):
+        """Get human-readable return history lines from notes."""
+        entries = []
+        notes = self.sale_data.get('notes') or ""
+        for line in notes.split('\n'):
+            line = line.strip()
+            if line.startswith('[Return]'):
+                entries.append(line)
+        return entries
+
+    def _load_return_history(self, parent):
+        """Show a simple list of return history entries."""
+        entries = self._get_return_history()
+        if not entries:
+            ctk.CTkLabel(
+                parent, text="No returns recorded.",
+                font=ctk.CTkFont(size=11), text_color=("#94A3B8", "#64748B")
+            ).pack(pady=5)
+            return
+        for entry in entries:
+            ctk.CTkLabel(
+                parent, text=entry,
+                font=ctk.CTkFont(size=11), anchor="w", justify="left",
+                text_color=("#b91c1c", "#fca5a5")
+            ).pack(fill="x", padx=5, pady=1)
+
     def load_sale_items(self, parent):
-        """Load and display sale items"""
+        """Load and display sale items, showing returned quantities where applicable."""
         try:
             query = """
-                SELECT si.quantity, si.unit_price, si.total, p.name, p.sku
+                SELECT si.id, si.product_id, si.quantity, si.unit_price, si.total, p.name, p.sku
                 FROM sale_items si
                 JOIN products p ON si.product_id = p.product_id
                 WHERE si.sale_id = ?
@@ -3209,19 +3421,20 @@ class SaleDetailsDialog:
             items = db.execute_query(query, (self.sale_data['sale_id'],))
             
             # Create treeview for items with enhanced styling
-            columns = ("SKU", "Product", "Quantity", "Unit Price", "Total")
+            columns = ("SKU", "Product", "Sold", "Returned", "Remaining", "Unit Price", "Total")
             items_tree = ttk.Treeview(parent, columns=columns, show="headings", height=12)
             
             # Apply centralized styling
             table_styles.apply_sale_details_style(items_tree)
             
-            # Define headings and column widths - bigger columns
-            column_widths = {"SKU": 120, "Product": 220, "Quantity": 100, 
-                           "Unit Price": 120, "Total": 120}
+            # Define headings and column widths
+            column_widths = {"SKU": 100, "Product": 180, "Sold": 55, "Returned": 70,
+                           "Remaining": 70, "Unit Price": 100, "Total": 100}
             
             for col in columns:
                 items_tree.heading(col, text=f"  {col}  ", anchor="center")
-                items_tree.column(col, width=column_widths.get(col, 120), anchor="center" if col != "Product" else "w", minwidth=80)
+                items_tree.column(col, width=column_widths.get(col, 100),
+                                  anchor="center" if col != "Product" else "w", minwidth=50)
             
             # Scrollbars
             v_scrollbar = ttk.Scrollbar(parent, orient="vertical", command=items_tree.yview)
@@ -3231,15 +3444,31 @@ class SaleDetailsDialog:
             items_tree.pack(side="left", fill="both", expand=True)
             v_scrollbar.pack(side="right", fill="y")
             
-            # Add items to tree
+            remaining_total = 0
             for item in items:
+                pid = item['product_id']
+                returned_qty = self._returned_data.get(str(pid), 0)
+                sold = item['quantity']
+                remaining = max(sold - returned_qty, 0)
+                remaining_total += remaining
+                
+                returned_str = str(returned_qty) if returned_qty > 0 else "-"
+                
+                tag = 'returned' if returned_qty > 0 else ''
                 items_tree.insert("", "end", values=(
                     item['sku'],
                     item['name'],
-                    item['quantity'],
-                _fmt(item['unit_price']),
-                _fmt(item['total'])
-                ))
+                    sold,
+                    returned_str,
+                    remaining,
+                    _fmt(item['unit_price']),
+                    _fmt(item['total'])
+                ), tags=(tag,) if tag else ())
+            
+            if items_tree.tag_has('returned'):
+                items_tree.tag_configure('returned', foreground='#dc2626')
+            
+            return remaining_total
                 
         except Exception as e:
             print(f"Error loading sale items: {e}")
@@ -3249,6 +3478,330 @@ class SaleDetailsDialog:
                 font=ctk.CTkFont(size=12)
             )
             error_label.pack(pady=20)
+            return 0
+
+
+class SaleReturnDialog:
+    """Dialog to process return of items from a completed sale."""
+
+    def __init__(self, parent, sale_data, refresh_callback=None):
+        self.parent = parent
+        self.sale_data = sale_data
+        self.refresh_callback = refresh_callback
+        self.returns_processed = False
+        self._items = []
+        self._qty_vars = {}
+        self._price_vars = {}
+        self._price_entries = {}
+
+        self.dialog = ctk.CTkToplevel(parent)
+        self.dialog.title(f"Sales Return - {sale_data['invoice_number']}")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+
+        self._load_items()
+        self._build_ui()
+
+        center_window_on_screen(self.dialog, 700, 540)
+        self.dialog.wait_window()
+
+    def _parse_previous_returns(self):
+        """Parse notes to get already-returned quantities per product_id."""
+        returned = {}
+        notes = self.sale_data.get('notes') or ""
+        for line in notes.split('\n'):
+            line = line.strip()
+            if line.startswith('[Return]') and 'items=' in line:
+                try:
+                    items_part = line.split('items=')[1].split(' refund=')[0]
+                    # Format: {product_id:qty,product_id:qty,...}
+                    import json
+                    returned.update(json.loads(items_part.replace("'", '"')))
+                except Exception:
+                    pass
+        return returned
+
+    def _calc_discount_factor(self):
+        """Calculate proportional discount factor."""
+        subtotal = self.sale_data.get('subtotal') or 0
+        total = self.sale_data.get('total_amount') or 0
+        if subtotal and subtotal > 0 and total < subtotal:
+            return total / subtotal
+        return 1.0
+
+    def _load_items(self):
+        try:
+            items = db.execute_query("""
+                SELECT si.id, si.product_id, si.quantity, si.unit_price, si.total,
+                       p.name, p.sku, p.stock
+                FROM sale_items si
+                JOIN products p ON si.product_id = p.product_id
+                WHERE si.sale_id = ?
+                ORDER BY p.name
+            """, (self.sale_data['sale_id'],))
+        except Exception as e:
+            print(f"Error loading sale items: {e}")
+            items = []
+
+        already_returned = self._parse_previous_returns()
+        discount_factor = self._calc_discount_factor()
+
+        self._items = []
+        for item in items:
+            pid = item['product_id']
+            prev = already_returned.get(str(pid), 0)
+            avail = item['quantity'] - prev
+            default_price = item['unit_price'] * discount_factor
+            self._items.append({
+                **item,
+                'already_returned': prev,
+                'available': max(avail, 0),
+                'default_refund_price': default_price,
+            })
+
+    def _build_ui(self):
+        main = ctk.CTkScrollableFrame(self.dialog)
+        main.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # Header
+        header = ctk.CTkFrame(main, corner_radius=10, fg_color=("#fef3c7", "#92400e"))
+        header.pack(fill="x", pady=(0, 15))
+
+        ctk.CTkLabel(
+            header, text="🔄 Sales Return",
+            font=ctk.CTkFont(size=18, weight="bold")
+        ).pack(pady=(12, 2))
+
+        discount_info = ""
+        if self._calc_discount_factor() < 1.0:
+            discount_info = f" (discount applied: {1 - self._calc_discount_factor():.0%})"
+
+        ctk.CTkLabel(
+            header,
+            text=f"{self.sale_data['invoice_number']} — {self.sale_data.get('customer_name', 'Walk-in Customer')}{discount_info}",
+            font=ctk.CTkFont(size=12),
+            text_color=("#78350f", "#fef3c7")
+        ).pack(pady=(0, 12))
+
+        # Items list
+        ctk.CTkLabel(
+            main, text="Select items to return:",
+            font=ctk.CTkFont(size=14, weight="bold"), anchor="w"
+        ).pack(fill="x", pady=(0, 8))
+
+        items_container = ctk.CTkFrame(main)
+        items_container.pack(fill="both", expand=True)
+
+        # Column headers
+        header_row = ctk.CTkFrame(items_container, fg_color=("#F1F5F9", "#0F172A"), height=30)
+        header_row.pack(fill="x")
+        header_row.pack_propagate(False)
+
+        hd = [("Product", 0, 2, "w"), ("SKU", 2, 1, "center"), ("Sold", 3, 1, "center"),
+              ("Avail", 4, 1, "center"), ("Return Qty", 5, 1, "center"), ("Refund Price", 6, 1, "center")]
+        for text, col, weight, anc in hd:
+            header_row.grid_columnconfigure(col, weight=weight)
+            ctk.CTkLabel(
+                header_row, text=text,
+                font=ctk.CTkFont(size=10, weight="bold"),
+                text_color=("#475569", "#94A3B8")
+            ).grid(row=0, column=col, columnspan=weight, sticky="ew", padx=4)
+
+        # Scrollable items
+        items_scroll = ctk.CTkScrollableFrame(items_container, height=200)
+        items_scroll.pack(fill="both", expand=True, pady=(2, 0))
+
+        for idx, item in enumerate(self._items):
+            bg = ("#FFFFFF", "#1E1E2E") if idx % 2 == 0 else ("#F8FAFC", "#262636")
+            row_f = ctk.CTkFrame(items_scroll, fg_color=bg, height=36)
+            row_f.pack(fill="x")
+            row_f.pack_propagate(False)
+
+            row_f.grid_columnconfigure(0, weight=2)
+            row_f.grid_columnconfigure(1, weight=1)
+            row_f.grid_columnconfigure(2, weight=1)
+            row_f.grid_columnconfigure(3, weight=1)
+            row_f.grid_columnconfigure(4, weight=1)
+            row_f.grid_columnconfigure(5, weight=1)
+
+            ctk.CTkLabel(row_f, text=item['name'], font=ctk.CTkFont(size=11), anchor="w").grid(row=0, column=0, sticky="w", padx=(10, 4))
+            ctk.CTkLabel(row_f, text=item['sku'], font=ctk.CTkFont(size=10), text_color=("#64748B", "#94A3B8")).grid(row=0, column=1, sticky="ew")
+
+            sold_str = str(item['quantity'])
+            if item['already_returned'] > 0:
+                sold_str = f"{item['quantity']} (-{item['already_returned']})"
+            ctk.CTkLabel(row_f, text=sold_str, font=ctk.CTkFont(size=11)).grid(row=0, column=2, sticky="ew")
+            ctk.CTkLabel(row_f, text=str(item['available']), font=ctk.CTkFont(size=11)).grid(row=0, column=3, sticky="ew")
+
+            # Return Qty entry
+            qvar = tk.StringVar(value="0")
+            qvar.trace('w', lambda *a: self._on_change())
+            self._qty_vars[item['id']] = qvar
+            qty_e = ctk.CTkEntry(
+                row_f, textvariable=qvar,
+                font=ctk.CTkFont(size=12), justify="center",
+                height=28, width=60, corner_radius=4
+            )
+            qty_e.grid(row=0, column=4, sticky="ew", padx=(4, 4))
+
+            # Refund Price entry
+            pvar = tk.StringVar(value=f"{item['default_refund_price']:.2f}")
+            pvar.trace('w', lambda *a: self._on_change())
+            self._price_vars[item['id']] = pvar
+            price_e = ctk.CTkEntry(
+                row_f, textvariable=pvar,
+                font=ctk.CTkFont(size=12), justify="center",
+                height=28, width=80, corner_radius=4
+            )
+            price_e.grid(row=0, column=5, sticky="ew", padx=(4, 10))
+            self._price_entries[item['id']] = price_e
+
+        # Total refund
+        total_frame = ctk.CTkFrame(main, fg_color="transparent")
+        total_frame.pack(fill="x", pady=(10, 5))
+
+        self.total_refund_label = ctk.CTkLabel(
+            total_frame, text="Total Refund: Rs0.00",
+            font=ctk.CTkFont(size=15, weight="bold"),
+            text_color="#f59e0b"
+        )
+        self.total_refund_label.pack(side="left", padx=5)
+
+        # Buttons
+        actions = ctk.CTkFrame(main, fg_color="transparent")
+        actions.pack(fill="x", pady=(10, 0))
+
+        ctk.CTkButton(
+            actions, text="❌ Cancel",
+            command=self.dialog.destroy,
+            width=100, height=40, corner_radius=10,
+            fg_color=("#f44336", "#d32f2f"),
+            hover_color=("#e53935", "#c62828"),
+            font=ctk.CTkFont(size=13, weight="bold")
+        ).pack(side="right", padx=(5, 0))
+
+        self.confirm_btn = ctk.CTkButton(
+            actions, text="✅ Confirm Return",
+            command=self._confirm_return,
+            width=160, height=40, corner_radius=10,
+            fg_color="#059669", hover_color="#047857",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            state="disabled"
+        )
+        self.confirm_btn.pack(side="right")
+
+    def _get_qty(self, item):
+        var = self._qty_vars.get(item['id'])
+        if not var:
+            return 0
+        try:
+            qty = int(var.get())
+        except (ValueError, TypeError):
+            return 0
+        return max(0, min(qty, item['available']))
+
+    def _get_price(self, item):
+        var = self._price_vars.get(item['id'])
+        if not var:
+            return 0.0
+        try:
+            return float(var.get())
+        except (ValueError, TypeError):
+            return 0.0
+
+    def _on_change(self):
+        total_refund = 0.0
+        has_returns = False
+        has_invalid_price = False
+        for item in self._items:
+            qty = self._get_qty(item)
+            price = self._get_price(item)
+            entry = self._price_entries.get(item['id'])
+            if qty > 0:
+                has_returns = True
+                if price <= 0:
+                    has_invalid_price = True
+                    if entry:
+                        entry.configure(border_color="#ef4444")
+                else:
+                    if entry:
+                        entry.configure(border_color=("#CBD5E1", "#334155"))
+                total_refund += qty * price
+            else:
+                if entry:
+                    entry.configure(border_color=("#CBD5E1", "#334155"))
+
+        self.total_refund_label.configure(text=f"Total Refund: {_fmt(total_refund)}")
+        self.confirm_btn.configure(
+            state="normal" if has_returns and not has_invalid_price else "disabled"
+        )
+
+    def _confirm_return(self):
+        returns = []
+        for item in self._items:
+            qty = self._get_qty(item)
+            if qty > 0:
+                returns.append((item, qty))
+
+        if not returns:
+            messagebox.showwarning("Warning", "No items selected for return.")
+            return
+
+        # Validate refund prices
+        zero_price_items = [(i, q) for i, q in returns if self._get_price(i) <= 0]
+        if zero_price_items:
+            names = ", ".join(i['name'] for i, _ in zero_price_items)
+            messagebox.showerror(
+                "Invalid Refund Price",
+                f"Refund price must be greater than 0 for:\n{names}"
+            )
+            return
+
+        total_refund = sum(qty * self._get_price(item) for item, qty in returns)
+
+        confirm_msg = f"Process return of {len(returns)} item(s)?\n"
+        for item, qty in returns:
+            price = self._get_price(item)
+            confirm_msg += f"  • {item['name']} × {qty} @ {_fmt(price)} = {_fmt(qty * price)}\n"
+        confirm_msg += f"\nTotal refund amount: {_fmt(total_refund)}\n"
+        confirm_msg += "\nStock will be adjusted accordingly."
+
+        if not messagebox.askyesno("Confirm Return", confirm_msg):
+            return
+
+        try:
+            for item, qty in returns:
+                db.execute_update("""
+                    UPDATE products SET stock = stock + ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE product_id = ?
+                """, (qty, item['product_id']))
+
+            # Track per-item return quantities in notes for future returns
+            items_returned = {str(item['product_id']): qty for item, qty in returns}
+            existing_notes = self.sale_data.get('notes') or ""
+            return_note = (
+                f"[Return] {datetime.now().strftime('%Y-%m-%d %H:%M')}: "
+                f"items={items_returned} refund={_fmt(total_refund)}"
+            )
+            new_notes = (existing_notes + "\n" + return_note) if existing_notes else return_note
+
+            db.execute_update("""
+                UPDATE sales SET notes = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (new_notes, self.sale_data['sale_id']))
+
+            self.returns_processed = True
+            if self.refresh_callback:
+                self.refresh_callback()
+            messagebox.showinfo(
+                "Return Processed",
+                f"Return processed successfully.\n{len(returns)} item(s) returned.\nRefund amount: {_fmt(total_refund)}"
+            )
+            self.dialog.destroy()
+
+        except Exception as e:
+            print(f"Error processing return: {e}")
+            messagebox.showerror("Error", f"Failed to process return: {e}")
 
 
 class DiscountDialog:

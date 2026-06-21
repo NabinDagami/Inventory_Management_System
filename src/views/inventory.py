@@ -8,6 +8,7 @@ import random
 import string
 import tempfile
 import threading
+import time
 from PIL import Image
 from barcode import Code128
 from barcode.writer import ImageWriter
@@ -3069,6 +3070,7 @@ class ProductDialog:
     
     def create_form(self, product_data):
         """Create product form"""
+        self.product_data = product_data
         # Main frame
         main_frame = ctk.CTkScrollableFrame(self.dialog)
         main_frame.pack(fill="both", expand=True, padx=20, pady=20)
@@ -3122,6 +3124,9 @@ class ProductDialog:
         self.barcode_entry.pack(side="left", padx=(0, 5))
         self.barcode_entry.bind("<Return>", self._on_barcode_scanned)
         self.barcode_entry.bind("<KeyRelease>", self._on_barcode_edited)
+        self.barcode_entry.bind("<KeyPress>", self._on_barcode_keypress, add="+")
+        self._last_key_time = time.time()
+
         self.cam_btn = ctk.CTkButton(
             barcode_row, text="Camera", width=65,
             command=self._start_camera_scanner
@@ -3417,6 +3422,18 @@ class ProductDialog:
                 messagebox.showerror("Validation Error", "Reorder level cannot be negative!")
                 return
             
+            # Barcode uniqueness check
+            barcode_val = self.barcode_entry.get().strip()
+            if barcode_val:
+                existing = db.execute_query(
+                    "SELECT product_id FROM products WHERE barcode = ? AND is_active = 1",
+                    (barcode_val,)
+                )
+                if existing:
+                    if self.product_data is None or existing[0]['product_id'] != self.product_data['product_id']:
+                        messagebox.showerror("Error", "This barcode is already assigned to another product!")
+                        return
+            
             self.result = {
                 'name': self.name_entry.get(),
                 'category_id': category_id,
@@ -3440,14 +3457,35 @@ class ProductDialog:
             messagebox.showerror("Error", f"Error saving product: {e}")
 
 
+    def _on_barcode_keypress(self, event):
+        now = time.time()
+        if self.barcode_entry.get() and (now - self._last_key_time) > 0.15:
+            self.barcode_entry.delete(0, "end")
+        self._last_key_time = now
+
     def _on_barcode_scanned(self, event=None):
         barcode = self.barcode_entry.get().strip()
         if barcode:
+            existing = db.execute_query(
+                "SELECT product_id, name FROM products WHERE barcode = ? AND is_active = 1",
+                (barcode,)
+            )
+            if existing:
+                if self.product_data is None or existing[0]['product_id'] != self.product_data['product_id']:
+                    self.barcode_entry.configure(border_color="#ef4444")
+                    self.scan_info.configure(
+                        text=f"⚠ This barcode already belongs to: {existing[0]['name']}",
+                        text_color="#ef4444"
+                    )
+                    return
             self.barcode_entry.configure(border_color="green")
+            self.scan_info.configure(text="Barcode is available", text_color="#4ade80")
             self.parent.after(2000, lambda: self._reset_barcode_border())
-            # Select all so next scan naturally replaces, not appends
-            self.barcode_entry.select_range(0, "end")
-            self.barcode_entry.icursor("end")
+        self.barcode_entry.delete(0, "end")
+        self.barcode_entry.insert(0, barcode)
+        self.barcode_entry.select_range(0, "end")
+        self.barcode_entry.icursor("end")
+        self.barcode_entry.focus_set()
 
     def _reset_barcode_border(self):
         try:
@@ -3481,7 +3519,20 @@ class ProductDialog:
                 return
             self.barcode_entry.delete(0, "end")
             self.barcode_entry.insert(0, code)
+            existing = db.execute_query(
+                "SELECT product_id, name FROM products WHERE barcode = ? AND is_active = 1",
+                (code,)
+            )
+            if existing:
+                if self.product_data is None or existing[0]['product_id'] != self.product_data['product_id']:
+                    self.barcode_entry.configure(border_color="#ef4444")
+                    self.scan_info.configure(
+                        text=f"⚠ This barcode already belongs to: {existing[0]['name']}",
+                        text_color="#ef4444"
+                    )
+                    return
             self.barcode_entry.configure(border_color="green")
+            self.scan_info.configure(text="Barcode scanned successfully", text_color="#4ade80")
             self.parent.after(2000, lambda: self._reset_barcode_border())
         except Exception:
             pass

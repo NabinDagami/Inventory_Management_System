@@ -10,6 +10,17 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.database import db
 import utils.simple_table_styles as table_styles
+from utils.format_utils import format_price_with_decimals as _fmt
+
+
+def center_window_on_screen(window, width, height):
+    """Center a toplevel window on the screen."""
+    window.update_idletasks()
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+    x = (screen_width - width) // 2
+    y = (screen_height - height) // 2
+    window.geometry(f"{width}x{height}+{x}+{y}")
 
 class PurchasesView:
     def __init__(self, parent):
@@ -58,18 +69,32 @@ class PurchasesView:
             command=lambda: self.switch_tab("purchase_history")
         )
         self.purchase_history_btn.pack(side="left")
-        
+
+        self.credit_payments_btn = ctk.CTkButton(
+            tab_frame,
+            text="💳 Credit Payments",
+            width=120,
+            height=35,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color=("gray85", "gray25"),
+            hover_color=("gray75", "gray35"),
+            text_color=("gray10", "gray90"),
+            command=lambda: self.switch_tab("credit_payments")
+        )
+        self.credit_payments_btn.pack(side="left", padx=(15, 0))
+
         # Current tab tracking
         self.current_tab = "new_purchase"
-        
-        # Content container — holds both tabs; each tab manages its own scrolling
+
+        # Content container — holds all tabs
         self.content_container = ctk.CTkFrame(main_frame)
         self.content_container.pack(fill="both", expand=True, padx=10, pady=(0, 10))
-        
-        # Create both interfaces
+
+        # Create all interfaces
         self.create_new_purchase_interface()
         self.create_purchase_history_interface()
-        
+        self.create_credit_payments_interface()
+
         # Show new purchase interface by default
         self.switch_tab("new_purchase")
     
@@ -93,22 +118,35 @@ class PurchasesView:
         active_color = ("#1f538d", "#14375e")
         inactive_color = ("gray85", "gray25")
         inactive_text_color = ("gray40", "gray80")
-        
+
         if tab_name == "new_purchase":
             self.new_purchase_btn.configure(fg_color=active_color, text_color="white")
             self.purchase_history_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
-        else:
+            self.credit_payments_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
+        elif tab_name == "purchase_history":
             self.new_purchase_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
             self.purchase_history_btn.configure(fg_color=active_color, text_color="white")
-        
+            self.credit_payments_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
+        else:
+            self.new_purchase_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
+            self.purchase_history_btn.configure(fg_color=inactive_color, text_color=inactive_text_color)
+            self.credit_payments_btn.configure(fg_color=active_color, text_color="white")
+
         # Show/hide appropriate interface
         if tab_name == "new_purchase":
             self.new_purchase_frame.pack(fill="both", expand=True)
             self.purchase_history_frame.pack_forget()
-        else:
+            self.credit_payments_frame.pack_forget()
+        elif tab_name == "purchase_history":
             self.new_purchase_frame.pack_forget()
             self.purchase_history_frame.pack(fill="both", expand=True)
+            self.credit_payments_frame.pack_forget()
             self.load_purchase_history()
+        else:
+            self.new_purchase_frame.pack_forget()
+            self.purchase_history_frame.pack_forget()
+            self.credit_payments_frame.pack(fill="both", expand=True)
+            self.load_credit_purchases()
     
     def create_new_purchase_interface(self):
         """Create the new purchase interface — scrollable body + fixed footer with totals."""
@@ -236,19 +274,19 @@ class PurchasesView:
         table_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
         
         # Create treeview for purchase history with enhanced styling
-        columns = ("PO Number", "Date", "Supplier", "Items", "Total", "Status", "Expected Delivery")
+        columns = ("PO Number", "Date", "Supplier", "Items", "Total", "Paid", "Balance", "Status", "Expected Delivery")
         self.purchase_history_tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=25)
         
         # Apply centralized styling
         table_styles.apply_purchase_history_style(self.purchase_history_tree)
         
         # Define headings and column widths - bigger columns
-        column_widths = {"PO Number": 150, "Date": 120, "Supplier": 180, "Items": 80, 
-                        "Total": 120, "Status": 100, "Expected Delivery": 150}
+        column_widths = {"PO Number": 130, "Date": 110, "Supplier": 170, "Items": 70, 
+                        "Total": 110, "Paid": 100, "Balance": 100, "Status": 90, "Expected Delivery": 140}
         
         for col in columns:
             self.purchase_history_tree.heading(col, text=f"  {col}  ", anchor="center")
-            self.purchase_history_tree.column(col, width=column_widths.get(col, 120), anchor="center", minwidth=80)
+            self.purchase_history_tree.column(col, width=column_widths.get(col, 120), anchor="center", minwidth=70)
         
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.purchase_history_tree.yview)
@@ -283,9 +321,70 @@ class PurchasesView:
             hover_color="darkgreen"
         )
         receive_btn.pack(side="left", padx=5)
+
+        self.deliver_btn = ctk.CTkButton(
+            actions_frame,
+            text="🚚 Mark as Delivered",
+            command=self.mark_as_delivered,
+            width=150,
+            height=35,
+            fg_color="#2563eb",
+            hover_color="#1d4ed8",
+            state="disabled"
+        )
+        self.deliver_btn.pack(side="left", padx=5)
+
+        self.pay_credit_btn = ctk.CTkButton(
+            actions_frame,
+            text="💰 Pay Credit",
+            command=self.pay_credit_from_history,
+            width=120,
+            height=35,
+            fg_color="#059669",
+            hover_color="#047857",
+            state="disabled"
+        )
+        self.pay_credit_btn.pack(side="left", padx=5)
         
         # Double-click to view details
         self.purchase_history_tree.bind("<Double-1>", lambda e: self.view_purchase_details())
+        self.purchase_history_tree.bind("<<TreeviewSelect>>", self._on_purchase_history_select)
+
+    def _on_purchase_history_select(self, event):
+        """Enable/disable action buttons based on selected row."""
+        selected = self.purchase_history_tree.selection()
+        if selected:
+            item = selected[0]
+            values = self.purchase_history_tree.item(item, "values")
+            if values and len(values) >= 7:
+                status = values[7].lower()
+                balance_str = values[6].replace("Rs", "").replace(",", "").strip()
+                try:
+                    balance = float(balance_str) if balance_str else 0
+                except ValueError:
+                    balance = 0
+
+                # Deliver button: enabled if NOT already received
+                if status != "received":
+                    self.deliver_btn.configure(state="normal")
+                else:
+                    self.deliver_btn.configure(state="disabled")
+
+                # Pay Credit button: enabled only if credit with outstanding balance
+                if status == "credit" and balance > 0.01:
+                    self.pay_credit_btn.configure(state="normal")
+                    self._selected_credit_po = values[0]
+                else:
+                    self.pay_credit_btn.configure(state="disabled")
+                    self._selected_credit_po = None
+            else:
+                self.deliver_btn.configure(state="disabled")
+                self.pay_credit_btn.configure(state="disabled")
+                self._selected_credit_po = None
+        else:
+            self.deliver_btn.configure(state="disabled")
+            self.pay_credit_btn.configure(state="disabled")
+            self._selected_credit_po = None
     
     def create_product_selection(self, parent):
         """Create product selection area with search, barcode, Browse button + modal (sales-style)."""
@@ -814,7 +913,7 @@ class PurchasesView:
         """Load products for selection"""
         try:
             query = """
-                SELECT p.product_id, p.sku, p.name, p.stock, p.cost_price, p.reorder_level
+                SELECT p.product_id, p.sku, p.name, p.stock, p.cost_price, p.reorder_level, p.barcode
                 FROM products p
                 WHERE p.is_active = 1
                 ORDER BY p.name
@@ -1055,19 +1154,44 @@ class PurchasesView:
                     messagebox.showerror("Error", "Invalid date format. Please use YYYY-MM-DD.")
                     return
             
+            # Determine cash vs credit flow
+            payment_method = self.payment_var.get().lower()
+            is_cash = (payment_method == "cash")
+            
+            if is_cash:
+                paid_amount = subtotal
+                balance = 0
+                status = "received"
+            else:
+                # Open CreditPurchasePaymentDialog for initial payment
+                dialog = CreditPurchasePaymentDialog(
+                    self.parent,
+                    po_number,
+                    subtotal,
+                    self.supplier_var.get()
+                )
+                initial_payment = dialog.result
+                if initial_payment is None:
+                    return  # User cancelled
+                paid_amount = initial_payment
+                balance = subtotal - paid_amount
+                status = "received" if balance < 0.01 else "credit"
+            
             # Create purchase record
             purchase_id = db.execute_insert("""
                 INSERT INTO purchases (invoice_number, supplier_id, purchase_date,
-                                     payment_method, subtotal, total_amount, status, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                     payment_method, subtotal, total_amount, paid_amount, balance, status, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 po_number,
                 self.current_supplier['supplier_id'],
                 datetime.now().date(),
-                self.payment_var.get().lower(),
+                payment_method,
                 subtotal,
                 subtotal,
-                'pending',
+                paid_amount,
+                balance,
+                status,
                 f"Expected delivery: {expected_delivery}" if expected_delivery else None
             ))
             
@@ -1086,6 +1210,20 @@ class PurchasesView:
                     total_cost
                 ))
             
+            # Update stock for each item (immediate, regardless of payment status)
+            for item in self.purchase_items:
+                db.execute_update("""
+                    UPDATE products SET stock = stock + ? WHERE product_id = ?
+                """, (item['quantity'], item['product_id']))
+
+            # If credit, update supplier's credit balance
+            if status == "credit":
+                db.execute_update("""
+                    UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) + ? WHERE supplier_id = ?
+                """, (balance, self.current_supplier['supplier_id']))
+            
+            # Clear purchase order and refresh
+            
             # Clear purchase order and refresh
             self.purchase_items = []
             self.update_purchase_order_display()
@@ -1093,7 +1231,10 @@ class PurchasesView:
             self.current_supplier = None
             self.delivery_entry.delete(0, 'end')
             
-            messagebox.showinfo("Success", f"Purchase order created successfully!\nPO Number: {po_number}")
+            if status == "received":
+                messagebox.showinfo("Success", f"Purchase order created and received!\nPO Number: {po_number}\nStock levels updated.")
+            else:
+                messagebox.showinfo("Success", f"Purchase order created!\nPO Number: {po_number}\nStatus: {status.title()}\nBalance: {_fmt(balance)}\nStock levels updated.")
             
         except Exception as e:
             print(f"Error creating purchase order: {e}")
@@ -1104,7 +1245,7 @@ class PurchasesView:
         try:
             query = """
                 SELECT p.id as purchase_id, p.invoice_number as po_number, p.purchase_date, p.notes,
-                       p.total_amount, p.status, s.name as supplier_name,
+                       p.total_amount, p.paid_amount, p.balance, p.status, s.name as supplier_name,
                        COUNT(pi.id) as item_count
                 FROM purchases p
                 LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
@@ -1122,6 +1263,8 @@ class PurchasesView:
             for purchase in purchases:
                 supplier_name = purchase['supplier_name'] or "Unknown Supplier"
                 status = purchase['status'].title()
+                paid = purchase['paid_amount'] or 0
+                balance = purchase['balance'] or 0
                 # Extract expected delivery from notes if available
                 notes = purchase['notes'] or ""
                 expected_delivery = "Not specified"
@@ -1137,6 +1280,8 @@ class PurchasesView:
                     supplier_name,
                     purchase['item_count'],
                     f"Rs{purchase['total_amount']:.2f}",
+                    f"Rs{paid:.2f}",
+                    f"Rs{balance:.2f}",
                     status,
                     expected_delivery
                 ))
@@ -1153,8 +1298,40 @@ class PurchasesView:
     
     def view_purchase_details(self):
         """View detailed information about a selected purchase"""
-        messagebox.showinfo("Info", "Purchase details feature coming soon!")
-    
+        selected = self.purchase_history_tree.selection()
+        if not selected:
+            messagebox.showwarning("Warning", "Please select a purchase order first.")
+            return
+
+        values = self.purchase_history_tree.item(selected[0], "values")
+        po_number = values[0]
+
+        # Find purchase_id from stored data
+        purchase_id = None
+        purchase_row = None
+        for p in self.all_purchase_data:
+            if p['po_number'] == po_number:
+                purchase_id = p['purchase_id']
+                purchase_row = p
+                break
+
+        if not purchase_id:
+            # Fallback: query directly
+            data = db.execute_query("""
+                SELECT id as purchase_id, invoice_number, purchase_date, total_amount,
+                       paid_amount, balance, status, payment_method, notes, supplier_id
+                FROM purchases WHERE invoice_number = ?
+            """, (po_number,))
+            if data:
+                purchase_id = data[0]['purchase_id']
+                purchase_row = data[0]
+
+        if not purchase_id:
+            messagebox.showerror("Error", "Could not find purchase order data.")
+            return
+
+        PurchaseDetailsDialog(self.parent, purchase_id, purchase_row, self.load_purchase_history)
+
     def mark_as_received(self):
         """Mark selected purchase order as received and update stock"""
         selected = self.purchase_history_tree.selection()
@@ -1164,6 +1341,19 @@ class PurchasesView:
 
         values = self.purchase_history_tree.item(selected[0], "values")
         po_number = values[0]
+
+        # Check balance — block if credit PO with outstanding balance
+        balance_str = values[6].replace("Rs", "").replace(",", "").strip()
+        try:
+            balance = float(balance_str) if balance_str else 0
+        except ValueError:
+            balance = 0
+        if balance > 0.01:
+            messagebox.showwarning(
+                "Balance Due",
+                f"Cannot mark as received.\nThis purchase has an outstanding balance of {_fmt(balance)}.\nPlease pay the remaining balance first."
+            )
+            return
 
         # Look up purchase_id from stored data
         purchase_id = None
@@ -1203,11 +1393,785 @@ class PurchasesView:
         except Exception as e:
             print(f"Error marking as received: {e}")
             messagebox.showerror("Error", f"Failed to mark as received: {e}")
-    
+
+    def mark_as_delivered(self):
+        """Mark selected purchase as delivered — updates stock regardless of payment status."""
+        selected = self.purchase_history_tree.selection()
+        if not selected:
+            messagebox.showwarning("Warning", "Please select a purchase order first.")
+            return
+
+        values = self.purchase_history_tree.item(selected[0], "values")
+        po_number = values[0]
+        status = values[7].lower() if len(values) > 7 else ""
+
+        if status == "received":
+            messagebox.showinfo("Info", f"{po_number} is already marked as delivered.")
+            return
+
+        # Look up purchase_id
+        purchase_id = None
+        for p in self.all_purchase_data:
+            if p['po_number'] == po_number:
+                purchase_id = p['purchase_id']
+                break
+
+        if not purchase_id:
+            messagebox.showerror("Error", "Could not find purchase order data.")
+            return
+
+        confirm = messagebox.askyesno(
+            "Confirm Delivery",
+            f"Mark {po_number} as delivered?\n\nThis will add the items to stock."
+        )
+        if not confirm:
+            return
+
+        try:
+            items = db.execute_query("""
+                SELECT product_id, quantity FROM purchase_items WHERE purchase_id = ?
+            """, (purchase_id,))
+
+            for item in items:
+                db.execute_update("""
+                    UPDATE products SET stock = stock + ? WHERE product_id = ?
+                """, (item['quantity'], item['product_id']))
+
+            db.execute_update("""
+                UPDATE purchases SET status = 'received' WHERE id = ?
+            """, (purchase_id,))
+
+            messagebox.showinfo("Success", f"{po_number} marked as delivered.\nStock levels updated.")
+            self.load_purchase_history()
+
+        except Exception as e:
+            print(f"Error marking as delivered: {e}")
+            messagebox.showerror("Error", f"Failed to mark as delivered: {e}")
+
     def show_add_product_dialog(self, product):
         """Show custom dialog for adding product to purchase order"""
         dialog = AddProductDialog(self.parent, product)
         return dialog.result
+
+    # ── Credit Payments Tab ──────────────────────────────────────────
+
+    def create_credit_payments_interface(self):
+        """Create the credit payments management interface"""
+        self.credit_payments_frame = ctk.CTkFrame(self.content_container)
+
+        # Header
+        header = ctk.CTkFrame(self.credit_payments_frame)
+        header.pack(fill="x", padx=10, pady=10)
+
+        ctk.CTkLabel(
+            header, text="💳 Credit Purchase Payments",
+            font=ctk.CTkFont(size=18, weight="bold")
+        ).pack(side="left", padx=15, pady=10)
+
+        refresh_btn = ctk.CTkButton(
+            header, text="🔄 Refresh",
+            command=self.load_credit_purchases,
+            width=100, height=35
+        )
+        refresh_btn.pack(side="right", padx=(0, 10), pady=10)
+
+        # Credit purchases table
+        table_frame = ctk.CTkFrame(self.credit_payments_frame)
+        table_frame.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+
+        columns = ("PO Number", "Date", "Supplier", "Total", "Paid", "Balance")
+        self.credit_purchases_tree = ttk.Treeview(table_frame, columns=columns, show="headings", height=12)
+        table_styles.apply_purchase_history_style(self.credit_purchases_tree)
+        unique_style = f"CreditPurchases.Treeview"
+        self.credit_purchases_tree.configure(style=unique_style)
+
+        col_widths = {"PO Number": 150, "Date": 120, "Supplier": 200, "Total": 120, "Paid": 120, "Balance": 120}
+        for col in columns:
+            self.credit_purchases_tree.heading(col, text=f"  {col}  ", anchor="center")
+            self.credit_purchases_tree.column(col, width=col_widths.get(col, 120), anchor="center", minwidth=80)
+
+        v_scroll = ttk.Scrollbar(table_frame, orient="vertical", command=self.credit_purchases_tree.yview)
+        h_scroll = ttk.Scrollbar(table_frame, orient="horizontal", command=self.credit_purchases_tree.xview)
+        self.credit_purchases_tree.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
+        self.credit_purchases_tree.pack(side="left", fill="both", expand=True)
+        v_scroll.pack(side="right", fill="y")
+        h_scroll.pack(side="bottom", fill="x")
+
+        # Payment history table
+        history_label = ctk.CTkLabel(
+            self.credit_payments_frame,
+            text="📋 Payment History for Selected Purchase",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            anchor="w"
+        )
+        history_label.pack(fill="x", padx=15, pady=(5, 0))
+
+        hist_frame = ctk.CTkFrame(self.credit_payments_frame)
+        hist_frame.pack(fill="both", expand=True, padx=10, pady=(5, 10))
+
+        hist_columns = ("Date", "Amount", "Method", "Reference")
+        self.payment_history_tree = ttk.Treeview(hist_frame, columns=hist_columns, show="headings", height=6)
+        hist_widths = {"Date": 150, "Amount": 120, "Method": 100, "Reference": 200}
+        for col in hist_columns:
+            self.payment_history_tree.heading(col, text=f"  {col}  ", anchor="center")
+            self.payment_history_tree.column(col, width=hist_widths.get(col, 120), anchor="center", minwidth=80)
+
+        v_scroll2 = ttk.Scrollbar(hist_frame, orient="vertical", command=self.payment_history_tree.yview)
+        self.payment_history_tree.configure(yscrollcommand=v_scroll2.set)
+        self.payment_history_tree.pack(side="left", fill="both", expand=True)
+        v_scroll2.pack(side="right", fill="y")
+
+        # Action buttons
+        actions = ctk.CTkFrame(self.credit_payments_frame)
+        actions.pack(fill="x", padx=10, pady=10)
+
+        self.pay_credit_tab_btn = ctk.CTkButton(
+            actions,
+            text="💰 Pay Credit",
+            command=self.pay_credit_from_tab,
+            width=140,
+            height=35,
+            fg_color="#059669",
+            hover_color="#047857",
+            state="disabled"
+        )
+        self.pay_credit_tab_btn.pack(side="left", padx=5)
+
+        self.credit_purchases_tree.bind("<<TreeviewSelect>>", self._on_credit_select)
+
+    def _on_credit_select(self, event):
+        """Handle selection in the credit purchases tree."""
+        selected = self.credit_purchases_tree.selection()
+        if selected:
+            item = selected[0]
+            values = self.credit_purchases_tree.item(item, "values")
+            if values and len(values) >= 6:
+                balance_str = values[5].replace("Rs", "").replace(",", "").strip()
+                try:
+                    balance = float(balance_str) if balance_str else 0
+                except ValueError:
+                    balance = 0
+                if balance > 0.01:
+                    self.pay_credit_tab_btn.configure(state="normal")
+                else:
+                    self.pay_credit_tab_btn.configure(state="disabled")
+                self._selected_credit_po_tab = values[0]
+                self.load_purchase_payment_history(values[0])
+            else:
+                self.pay_credit_tab_btn.configure(state="disabled")
+                self._selected_credit_po_tab = None
+                self._clear_payment_history()
+        else:
+            self.pay_credit_tab_btn.configure(state="disabled")
+            self._selected_credit_po_tab = None
+            self._clear_payment_history()
+
+    def _clear_payment_history(self):
+        for item in self.payment_history_tree.get_children():
+            self.payment_history_tree.delete(item)
+
+    def load_credit_purchases(self):
+        """Load purchases with credit status."""
+        try:
+            data = db.execute_query("""
+                SELECT p.invoice_number, p.purchase_date, p.total_amount,
+                       p.paid_amount, p.balance, s.name as supplier_name
+                FROM purchases p
+                LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
+                WHERE p.status = 'credit' AND p.balance > 0.01
+                ORDER BY p.purchase_date DESC
+            """)
+            for item in self.credit_purchases_tree.get_children():
+                self.credit_purchases_tree.delete(item)
+            for row in data:
+                paid = row['paid_amount'] or 0
+                balance = row['balance'] or 0
+                self.credit_purchases_tree.insert("", "end", values=(
+                    row['invoice_number'],
+                    row['purchase_date'],
+                    row['supplier_name'],
+                    f"Rs{row['total_amount']:.2f}",
+                    f"Rs{paid:.2f}",
+                    f"Rs{balance:.2f}"
+                ))
+        except Exception as e:
+            print(f"Error loading credit purchases: {e}")
+
+    def load_purchase_payment_history(self, invoice_number):
+        """Load payment history for a specific purchase."""
+        try:
+            data = db.execute_query("""
+                SELECT payment_date, amount, payment_method, reference_number
+                FROM payments
+                WHERE reference_number = ? AND payment_type = 'purchase'
+                ORDER BY payment_date DESC
+            """, (invoice_number,))
+            for item in self.payment_history_tree.get_children():
+                self.payment_history_tree.delete(item)
+            if not data:
+                self.payment_history_tree.insert("", "end", values=(
+                    "—", "No payments recorded", "—", "—"
+                ))
+                return
+            for row in data:
+                self.payment_history_tree.insert("", "end", values=(
+                    row['payment_date'],
+                    f"Rs{row['amount']:.2f}",
+                    row['payment_method'].title(),
+                    row['reference_number'] or "—"
+                ))
+        except Exception as e:
+            print(f"Error loading payment history: {e}")
+
+    def pay_credit_from_tab(self):
+        """Pay credit from the credit payments tab."""
+        if not self._selected_credit_po_tab:
+            messagebox.showwarning("Warning", "Please select a purchase order first.")
+            return
+        self._pay_credit_impl(self._selected_credit_po_tab)
+
+    def pay_credit_from_history(self):
+        """Pay credit from the purchase history tab."""
+        if not self._selected_credit_po:
+            messagebox.showwarning("Warning", "Please select a credit purchase order first.")
+            return
+        self._pay_credit_impl(self._selected_credit_po)
+
+    def _pay_credit_impl(self, invoice_number):
+        """Shared implementation for paying credit on a purchase."""
+        try:
+            purchase = db.execute_query("""
+                SELECT p.id, p.total_amount, p.paid_amount, p.balance, s.name as supplier_name, s.supplier_id
+                FROM purchases p
+                LEFT JOIN suppliers s ON p.supplier_id = s.supplier_id
+                WHERE p.invoice_number = ? AND p.status = 'credit' AND p.balance > 0.01
+            """, (invoice_number,))
+            if not purchase:
+                messagebox.showerror("Error", "Purchase order not found or balance is already settled.")
+                return
+            purchase = purchase[0]
+            dialog = PayPurchaseCreditDialog(
+                self.parent,
+                invoice_number,
+                purchase['total_amount'],
+                purchase['paid_amount'] or 0,
+                purchase['balance'],
+                purchase['supplier_name']
+            )
+            payment_amount = dialog.result
+            if payment_amount is None:
+                return  # User cancelled
+
+            # Update purchase record
+            new_paid = (purchase['paid_amount'] or 0) + payment_amount
+            new_balance = purchase['balance'] - payment_amount
+            if new_balance < 0.01:
+                new_status = "received"
+                new_balance = 0
+            else:
+                new_status = "credit"
+
+            db.execute_update("""
+                UPDATE purchases SET paid_amount = ?, balance = ?, status = ? WHERE id = ?
+            """, (new_paid, new_balance, new_status, purchase['id']))
+
+            # Insert payment record
+            db.execute_insert("""
+                INSERT INTO payments (payment_type, supplier_id, amount, payment_method, payment_date, reference_number)
+                VALUES ('purchase', ?, ?, 'cash', date('now'), ?)
+            """, (purchase['supplier_id'], payment_amount, invoice_number))
+
+            # Update supplier credit balance
+            db.execute_update("""
+                UPDATE suppliers SET credit_balance = COALESCE(credit_balance, 0) - ? WHERE supplier_id = ?
+            """, (payment_amount, purchase['supplier_id']))
+
+            messagebox.showinfo(
+                "Success",
+                f"Payment of {_fmt(payment_amount)} recorded for {invoice_number}.\n"
+                f"Remaining balance: {_fmt(new_balance)}"
+            )
+            self.load_credit_purchases()
+            self.load_purchase_history()
+
+        except Exception as e:
+            print(f"Error processing payment: {e}")
+            messagebox.showerror("Error", f"Failed to process payment: {e}")
+
+
+class PurchaseDetailsDialog:
+    """Dialog to display purchase order details."""
+
+    def __init__(self, parent, purchase_id, purchase_row, refresh_callback=None):
+        self.parent = parent
+        self.purchase_id = purchase_id
+        self.purchase_row = purchase_row
+        self.refresh_callback = refresh_callback
+
+        self.dialog = ctk.CTkToplevel(parent)
+        self.dialog.title(f"Purchase Details - {self._get_po_number()}")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+
+        self._create_content()
+
+        center_window_on_screen(self.dialog, 700, 550)
+        self.dialog.wait_window()
+
+    def _get_po_number(self):
+        return self.purchase_row.get('invoice_number') or self.purchase_row.get('po_number') or "—"
+
+    def _get_supplier_name(self):
+        """Fetch supplier name from supplier_id."""
+        sid = self.purchase_row.get('supplier_id')
+        if sid:
+            data = db.execute_query("SELECT name FROM suppliers WHERE supplier_id = ?", (sid,))
+            if data:
+                return data[0]['name']
+        return self.purchase_row.get('supplier_name') or "Unknown"
+
+    def _create_content(self):
+        main = ctk.CTkScrollableFrame(self.dialog)
+        main.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # ── Header ────────────────────────────────────────────────────
+        header = ctk.CTkFrame(main, corner_radius=10, fg_color=("#e3f2fd", "#1565c0"))
+        header.pack(fill="x", pady=(0, 15))
+
+        po_number = self._get_po_number()
+        ctk.CTkLabel(
+            header, text=f"📦 {po_number}",
+            font=ctk.CTkFont(size=20, weight="bold")
+        ).pack(pady=(15, 5))
+
+        sup_name = self._get_supplier_name()
+        row = self.purchase_row
+        status = (row.get('status') or "pending").title()
+        method = (row.get('payment_method') or "cash").title()
+        date_str = row.get('purchase_date') or "—"
+
+        ctk.CTkLabel(
+            header,
+            text=f"{sup_name}  |  {date_str}  |  {method}  |  {status}",
+            font=ctk.CTkFont(size=12),
+            text_color=("#0d47a1", "#e3f2fd")
+        ).pack(pady=(0, 15))
+
+        # ── Info grid ─────────────────────────────────────────────────
+        info = ctk.CTkFrame(main)
+        info.pack(fill="x", pady=(0, 15))
+
+        total = row.get('total_amount') or 0
+        paid = row.get('paid_amount') or 0
+        balance = row.get('balance') or 0
+        notes = row.get('notes') or ""
+
+        def _info_row(parent, label, value, value_color=None):
+            r = ctk.CTkFrame(parent, fg_color="transparent")
+            r.pack(fill="x", padx=10, pady=2)
+            ctk.CTkLabel(r, text=label, font=ctk.CTkFont(size=12, weight="bold"),
+                          width=160, anchor="w").pack(side="left")
+            ctk.CTkLabel(r, text=value, font=ctk.CTkFont(size=12),
+                          text_color=value_color or ("gray10", "gray90"),
+                          anchor="e").pack(side="right", fill="x", expand=True)
+
+        _info_row(info, "Total Amount:", f"Rs{total:.2f}")
+        _info_row(info, "Paid Amount:", f"Rs{paid:.2f}", "#059669")
+        _info_row(info, "Balance:", f"Rs{balance:.2f}",
+                  "#f44336" if balance > 0.01 else ("gray10", "gray90"))
+
+        # Expected delivery
+        expected = "Not specified"
+        if "Expected delivery:" in notes:
+            try:
+                expected = notes.split("Expected delivery: ")[1].strip()
+            except Exception:
+                pass
+        _info_row(info, "Expected Delivery:", expected)
+
+        # ── Items ─────────────────────────────────────────────────────
+        ctk.CTkLabel(
+            main, text="📋 Purchase Items",
+            font=ctk.CTkFont(size=15, weight="bold"), anchor="w"
+        ).pack(fill="x", pady=(0, 8))
+
+        items_frame = ctk.CTkFrame(main)
+        items_frame.pack(fill="both", expand=True)
+
+        self._load_items(items_frame)
+
+        # ── Payment History ───────────────────────────────────────────
+        ctk.CTkLabel(
+            main, text="💳 Payment History",
+            font=ctk.CTkFont(size=15, weight="bold"), anchor="w"
+        ).pack(fill="x", pady=(10, 5))
+
+        pay_frame = ctk.CTkFrame(main)
+        pay_frame.pack(fill="x")
+
+        self._load_payments(pay_frame)
+
+        # ── Action buttons ────────────────────────────────────────────
+        actions = ctk.CTkFrame(main, fg_color="transparent")
+        actions.pack(fill="x", pady=(15, 0))
+
+        can_complete = (status.lower() in ("pending", "credit") and balance < 0.01)
+
+        if can_complete:
+            ctk.CTkButton(
+                actions, text="📦 Mark as Complete",
+                command=self._mark_complete,
+                width=160, height=40, corner_radius=10,
+                fg_color="green", hover_color="darkgreen",
+                font=ctk.CTkFont(size=13, weight="bold")
+            ).pack(side="left", padx=(0, 10))
+
+        ctk.CTkButton(
+            actions, text="❌ Close",
+            command=self.dialog.destroy,
+            width=100, height=40, corner_radius=10,
+            font=ctk.CTkFont(size=13)
+        ).pack(side="right")
+
+    def _load_items(self, parent):
+        try:
+            items = db.execute_query("""
+                SELECT pi.quantity, pi.unit_price, pi.total, p.name, p.sku
+                FROM purchase_items pi
+                JOIN products p ON pi.product_id = p.product_id
+                WHERE pi.purchase_id = ?
+                ORDER BY p.name
+            """, (self.purchase_id,))
+        except Exception:
+            items = []
+
+        columns = ("SKU", "Product", "Quantity", "Unit Price", "Total")
+        tree = ttk.Treeview(parent, columns=columns, show="headings", height=8)
+
+        col_widths = {"SKU": 120, "Product": 250, "Quantity": 90, "Unit Price": 110, "Total": 110}
+        for col in columns:
+            tree.heading(col, text=f"  {col}  ", anchor="center")
+            tree.column(col, width=col_widths.get(col, 120),
+                        anchor="center" if col != "Product" else "w", minwidth=70)
+
+        v_scroll = ttk.Scrollbar(parent, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=v_scroll.set)
+        tree.pack(side="left", fill="both", expand=True)
+        v_scroll.pack(side="right", fill="y")
+
+        for item in items:
+            tree.insert("", "end", values=(
+                item['sku'],
+                item['name'],
+                item['quantity'],
+                _fmt(item['unit_price']),
+                _fmt(item['total'])
+            ))
+
+    def _load_payments(self, parent):
+        try:
+            po_number = self._get_po_number()
+            data = db.execute_query("""
+                SELECT payment_date, amount, payment_method, reference_number
+                FROM payments
+                WHERE reference_number = ? AND payment_type = 'purchase'
+                ORDER BY payment_date DESC
+            """, (po_number,))
+        except Exception:
+            data = []
+
+        if not data:
+            ctk.CTkLabel(
+                parent, text="No payments recorded yet.",
+                font=ctk.CTkFont(size=11), text_color=("#94A3B8", "#64748B")
+            ).pack(pady=10)
+            return
+
+        columns = ("Date", "Amount", "Method", "Reference")
+        tree = ttk.Treeview(parent, columns=columns, show="headings", height=4)
+        col_widths = {"Date": 140, "Amount": 110, "Method": 100, "Reference": 200}
+        for col in columns:
+            tree.heading(col, text=f"  {col}  ", anchor="center")
+            tree.column(col, width=col_widths.get(col, 120), anchor="center", minwidth=70)
+
+        tree.pack(fill="x")
+
+        for row in data:
+            tree.insert("", "end", values=(
+                row['payment_date'],
+                f"Rs{row['amount']:.2f}",
+                row['payment_method'].title(),
+                row['reference_number'] or "—"
+            ))
+
+    def _mark_complete(self):
+        """Mark this purchase as received/complete."""
+        po_number = self._get_po_number()
+        confirm = messagebox.askyesno(
+            "Confirm", f"Mark {po_number} as received?\n\nThis will update product stock levels."
+        )
+        if not confirm:
+            return
+
+        try:
+            # Update stock for each item
+            items = db.execute_query("""
+                SELECT product_id, quantity FROM purchase_items WHERE purchase_id = ?
+            """, (self.purchase_id,))
+            for item in items:
+                db.execute_update("""
+                    UPDATE products SET stock = stock + ? WHERE product_id = ?
+                """, (item['quantity'], item['product_id']))
+
+            # Update purchase status
+            db.execute_update("""
+                UPDATE purchases SET status = 'received' WHERE id = ?
+            """, (self.purchase_id,))
+
+            messagebox.showinfo("Success", f"{po_number} marked as received.\nStock levels updated.")
+            self.dialog.destroy()
+
+            if self.refresh_callback:
+                self.refresh_callback()
+
+        except Exception as e:
+            print(f"Error marking as received: {e}")
+            messagebox.showerror("Error", f"Failed to mark as received: {e}")
+
+
+class CreditPurchasePaymentDialog:
+    """Dialog for initial payment when creating a credit purchase order."""
+
+    def __init__(self, parent, po_number, total, supplier_name):
+        self.parent = parent
+        self.po_number = po_number
+        self.total = total
+        self.supplier_name = supplier_name
+        self.result = None
+
+        self.dialog = ctk.CTkToplevel(parent)
+        self.dialog.title("Credit Purchase - Initial Payment")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+        self.dialog.resizable(False, False)
+
+        self._create_content()
+
+        center_window_on_screen(self.dialog, 420, 450)
+        self.dialog.wait_window()
+
+    def _create_content(self):
+        main = ctk.CTkFrame(self.dialog, corner_radius=15)
+        main.pack(fill="both", expand=True, padx=20, pady=20)
+
+        header = ctk.CTkFrame(main, corner_radius=10, fg_color=("#e3f2fd", "#1565c0"))
+        header.pack(fill="x", padx=10, pady=(10, 15))
+
+        ctk.CTkLabel(
+            header, text="💳 Initial Payment",
+            font=ctk.CTkFont(size=18, weight="bold")
+        ).pack(pady=(15, 2))
+        ctk.CTkLabel(
+            header, text=f"{self.po_number} — {self.supplier_name}",
+            font=ctk.CTkFont(size=12),
+            text_color=("#0d47a1", "#e3f2fd")
+        ).pack(pady=(0, 15))
+
+        # Info
+        ctk.CTkLabel(
+            main, text=f"Total Amount: {_fmt(self.total)}",
+            font=ctk.CTkFont(size=14, weight="bold")
+        ).pack(pady=(5, 2))
+
+        remaining = ctk.CTkLabel(
+            main, text=f"Balance after payment: {_fmt(self.total)}",
+            font=ctk.CTkFont(size=12),
+            text_color=("#f44336", "#ef9a9a")
+        )
+        remaining.pack(pady=(0, 10))
+        self.remaining_label = remaining
+
+        # Entry
+        ctk.CTkLabel(main, text="Payment Amount (Rs):", font=ctk.CTkFont(size=13)).pack(anchor="w", padx=10)
+        self.amount_entry = ctk.CTkEntry(
+            main, placeholder_text="Enter payment amount...",
+            font=ctk.CTkFont(size=14), height=38, corner_radius=8
+        )
+        self.amount_entry.pack(fill="x", padx=10, pady=(5, 5))
+        self.amount_entry.insert(0, "0.00")
+        self.amount_entry.bind("<KeyRelease>", self._update_preview)
+
+        # Buttons
+        btn_frame = ctk.CTkFrame(main, fg_color="transparent")
+        btn_frame.pack(fill="x", padx=10, pady=(15, 5))
+
+        ctk.CTkButton(
+            btn_frame, text="❌ Cancel",
+            command=self._cancel,
+            width=100, height=40, corner_radius=10,
+            fg_color=("#f44336", "#d32f2f"),
+            hover_color=("#e53935", "#c62828"),
+            font=ctk.CTkFont(size=13, weight="bold")
+        ).pack(side="right", padx=(5, 0))
+
+        ctk.CTkButton(
+            btn_frame, text="✅ Confirm Payment",
+            command=self._confirm,
+            width=150, height=40, corner_radius=10,
+            fg_color=("#4caf50", "#2e7d32"),
+            hover_color=("#45a049", "#1b5e20"),
+            font=ctk.CTkFont(size=13, weight="bold")
+        ).pack(side="right")
+
+        self.amount_entry.focus()
+
+    def _update_preview(self, event=None):
+        try:
+            amt = float(self.amount_entry.get() or 0)
+        except ValueError:
+            amt = 0
+        remaining = self.total - amt
+        if remaining < 0:
+            remaining = 0
+        color = ("#4caf50", "#a5d6a7") if remaining < 0.01 else ("#f44336", "#ef9a9a")
+        self.remaining_label.configure(text=f"Balance after payment: {_fmt(remaining)}", text_color=color)
+
+    def _confirm(self):
+        try:
+            amt = float(self.amount_entry.get() or 0)
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid amount.")
+            return
+        if amt < 0:
+            messagebox.showerror("Error", "Payment amount cannot be negative.")
+            return
+        if amt > self.total:
+            messagebox.showerror("Error", f"Payment amount cannot exceed total of {_fmt(self.total)}.")
+            return
+        self.result = amt
+        self.dialog.destroy()
+
+    def _cancel(self):
+        self.result = None
+        self.dialog.destroy()
+
+
+class PayPurchaseCreditDialog:
+    """Dialog for making a payment against an existing credit purchase."""
+
+    def __init__(self, parent, invoice_number, total, paid, balance, supplier_name):
+        self.parent = parent
+        self.invoice_number = invoice_number
+        self.total = total
+        self.paid = paid
+        self.balance = balance
+        self.supplier_name = supplier_name
+        self.result = None
+
+        self.dialog = ctk.CTkToplevel(parent)
+        self.dialog.title(f"Pay Credit — {invoice_number}")
+        self.dialog.transient(parent)
+        self.dialog.grab_set()
+        self.dialog.resizable(False, False)
+
+        self._create_content()
+
+        center_window_on_screen(self.dialog, 420, 460)
+        self.dialog.wait_window()
+
+    def _create_content(self):
+        main = ctk.CTkFrame(self.dialog, corner_radius=15)
+        main.pack(fill="both", expand=True, padx=20, pady=20)
+
+        header = ctk.CTkFrame(main, corner_radius=10, fg_color=("#e3f2fd", "#1565c0"))
+        header.pack(fill="x", padx=10, pady=(10, 15))
+
+        ctk.CTkLabel(
+            header, text="💰 Pay Credit Purchase",
+            font=ctk.CTkFont(size=18, weight="bold")
+        ).pack(pady=(15, 2))
+        ctk.CTkLabel(
+            header, text=f"{self.invoice_number} — {self.supplier_name}",
+            font=ctk.CTkFont(size=12),
+            text_color=("#0d47a1", "#e3f2fd")
+        ).pack(pady=(0, 15))
+
+        # Summary
+        info = ctk.CTkFrame(main, fg_color="transparent")
+        info.pack(fill="x", padx=10, pady=(0, 10))
+
+        ctk.CTkLabel(info, text=f"Total: {_fmt(self.total)}", font=ctk.CTkFont(size=13)).pack(anchor="w")
+        ctk.CTkLabel(info, text=f"Paid: {_fmt(self.paid)}", font=ctk.CTkFont(size=13)).pack(anchor="w")
+        ctk.CTkLabel(
+            info, text=f"Balance: {_fmt(self.balance)}",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=("#f44336", "#ef9a9a")
+        ).pack(anchor="w")
+
+        # Entry
+        ctk.CTkLabel(main, text="Payment Amount (Rs):", font=ctk.CTkFont(size=13)).pack(anchor="w", padx=10)
+        self.amount_entry = ctk.CTkEntry(
+            main, placeholder_text="Enter payment amount...",
+            font=ctk.CTkFont(size=14), height=38, corner_radius=8
+        )
+        self.amount_entry.pack(fill="x", padx=10, pady=(5, 5))
+        self.amount_entry.insert(0, f"{self.balance:.2f}")
+        self.amount_entry.bind("<KeyRelease>", self._update_preview)
+
+        ctk.CTkLabel(
+            main, text=f"Outstanding: {_fmt(self.balance)}",
+            font=ctk.CTkFont(size=11),
+            text_color=("#f44336", "#ef9a9a")
+        ).pack(anchor="w", padx=12)
+
+        # Buttons
+        btn_frame = ctk.CTkFrame(main, fg_color="transparent")
+        btn_frame.pack(fill="x", padx=10, pady=(15, 5))
+
+        ctk.CTkButton(
+            btn_frame, text="❌ Cancel",
+            command=self._cancel,
+            width=100, height=40, corner_radius=10,
+            fg_color=("#f44336", "#d32f2f"),
+            hover_color=("#e53935", "#c62828"),
+            font=ctk.CTkFont(size=13, weight="bold")
+        ).pack(side="right", padx=(5, 0))
+
+        ctk.CTkButton(
+            btn_frame, text="✅ Confirm Payment",
+            command=self._confirm,
+            width=150, height=40, corner_radius=10,
+            fg_color=("#4caf50", "#2e7d32"),
+            hover_color=("#45a049", "#1b5e20"),
+            font=ctk.CTkFont(size=13, weight="bold")
+        ).pack(side="right")
+
+        self.amount_entry.focus()
+
+    def _update_preview(self, event=None):
+        pass
+
+    def _confirm(self):
+        try:
+            amt = float(self.amount_entry.get() or 0)
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid amount.")
+            return
+        if amt < 0:
+            messagebox.showerror("Error", "Payment amount cannot be negative.")
+            return
+        if amt > self.balance:
+            messagebox.showerror("Error", f"Payment amount cannot exceed outstanding balance of {_fmt(self.balance)}.")
+            return
+        if amt < 0.01:
+            messagebox.showerror("Error", "Payment amount must be greater than zero.")
+            return
+        self.result = amt
+        self.dialog.destroy()
+
+    def _cancel(self):
+        self.result = None
+        self.dialog.destroy()
 
 
 class AddProductDialog:
