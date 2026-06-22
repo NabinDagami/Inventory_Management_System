@@ -3590,58 +3590,65 @@ class ProductDialog:
             messagebox.showwarning("No Barcode", "Please generate or enter a barcode first.")
             return
 
-        from reportlab.lib.pagesizes import inch
-        from reportlab.pdfgen import canvas
+        try:
+            from reportlab.lib.pagesizes import inch
+            from reportlab.pdfgen import canvas
 
-        img_path = os.path.join(tempfile.gettempdir(), f"barcode_{code}.png")
-        with open(img_path, "wb") as f:
-            Code128(code, writer=ImageWriter()).write(f)
+            img_path = os.path.join(tempfile.gettempdir(), f"barcode_{code}.png")
+            with open(img_path, "wb") as f:
+                Code128(code, writer=ImageWriter()).write(f)
 
-        pdf_path = os.path.join(tempfile.gettempdir(), f"barcode_{code}.pdf")
-        c = canvas.Canvas(pdf_path, pagesize=(4 * inch, 2 * inch))
-        c.setFont("Helvetica", 12)
-        c.drawString(0.5 * inch, 1.5 * inch, f"Product: {name}")
-        c.setFont("Helvetica", 10)
-        c.drawString(0.5 * inch, 1.3 * inch, f"Barcode: {code}")
-        c.drawImage(img_path, 0.5 * inch, 0.2 * inch, width=3 * inch, height=0.9 * inch)
-        c.save()
+            pdf_path = os.path.join(tempfile.gettempdir(), f"barcode_{code}.pdf")
+            c = canvas.Canvas(pdf_path, pagesize=(4 * inch, 2 * inch))
+            c.setFont("Helvetica", 12)
+            c.drawString(0.5 * inch, 1.5 * inch, f"Product: {name}")
+            c.setFont("Helvetica", 10)
+            c.drawString(0.5 * inch, 1.3 * inch, f"Barcode: {code}")
+            c.drawImage(img_path, 0.5 * inch, 0.2 * inch, width=3 * inch, height=0.9 * inch)
+            c.save()
 
-        self.scan_info.configure(text=f"Barcode PDF saved: {pdf_path}", text_color="#60a5fa")
-        self._show_pdf_actions(pdf_path)
+            self.scan_info.configure(text=f"Barcode PDF saved: {pdf_path}", text_color="#60a5fa")
+            self._show_pdf_actions(pdf_path)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to generate barcode PDF:\n{e}")
 
     def _show_pdf_actions(self, pdf_path):
         """Show a dialog with View and Print options for a generated PDF."""
-        dialog = ctk.CTkToplevel(self.parent)
-        dialog.title("PDF Ready")
-        dialog.geometry("380x170")
-        dialog.resizable(False, False)
-        dialog.transient(self.parent)
-        dialog.grab_set()
-        dialog.update_idletasks()
-        px = self.parent.winfo_rootx() + (self.parent.winfo_width() - 380) // 2
-        py = self.parent.winfo_rooty() + (self.parent.winfo_height() - 170) // 2
-        dialog.geometry(f"380x170+{px}+{py}")
+        try:
+            dialog = ctk.CTkToplevel(self.parent)
+            dialog.title("PDF Ready")
+            dialog.geometry("380x170")
+            dialog.resizable(False, False)
+            dialog.transient(self.parent)
+            dialog.grab_set()
+            dialog.update_idletasks()
+            px = self.parent.winfo_rootx() + (self.parent.winfo_width() - 380) // 2
+            py = self.parent.winfo_rooty() + (self.parent.winfo_height() - 170) // 2
+            dialog.geometry(f"380x170+{px}+{py}")
 
-        ctk.CTkLabel(dialog, text="✅ PDF Generated Successfully",
-                     font=ctk.CTkFont(size=16, weight="bold"),
-                     text_color="#4CAF50").pack(pady=(25, 5))
-        ctk.CTkLabel(dialog, text=os.path.basename(pdf_path),
-                     font=ctk.CTkFont(size=11)).pack(pady=2)
+            ctk.CTkLabel(dialog, text="✅ PDF Generated Successfully",
+                         font=ctk.CTkFont(size=16, weight="bold"),
+                         text_color="#4CAF50").pack(pady=(25, 5))
+            ctk.CTkLabel(dialog, text=os.path.basename(pdf_path),
+                         font=ctk.CTkFont(size=11)).pack(pady=2)
 
-        btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        btn_frame.pack(pady=(15, 0))
-        ctk.CTkButton(btn_frame, text="📄  View",
-                       command=lambda: [dialog.destroy(), webbrowser.open(pdf_path)],
-                       width=100, height=35,
-                       fg_color="#3B82F6", hover_color="#2563EB").pack(side="left", padx=5)
-        ctk.CTkButton(btn_frame, text="🖨  Print Preview",
-                       command=lambda: self._print_pdf_file(dialog, pdf_path),
-                       width=130, height=35,
-                       fg_color="#10B981", hover_color="#059669").pack(side="left", padx=5)
-        ctk.CTkButton(btn_frame, text="Close",
-                       command=dialog.destroy,
-                       width=80, height=35,
-                       fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
+            btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
+            btn_frame.pack(pady=(15, 0))
+            ctk.CTkButton(btn_frame, text="📄  View",
+                           command=lambda: [dialog.destroy(), webbrowser.open(pdf_path)],
+                           width=100, height=35,
+                           fg_color="#3B82F6", hover_color="#2563EB").pack(side="left", padx=5)
+            ctk.CTkButton(btn_frame, text="🖨  Print Preview",
+                           command=lambda: self._print_pdf_file(dialog, pdf_path),
+                           width=130, height=35,
+                           fg_color="#10B981", hover_color="#059669").pack(side="left", padx=5)
+            ctk.CTkButton(btn_frame, text="Close",
+                           command=dialog.destroy,
+                           width=80, height=35,
+                           fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
+        except Exception:
+            # Fallback: open PDF directly
+            webbrowser.open(pdf_path)
 
     def _print_pdf_file(self, dialog, pdf_path):
         """Open the PDF with the system print dialog."""

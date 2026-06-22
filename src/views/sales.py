@@ -2487,33 +2487,36 @@ class SalesView:
             loading.destroy()
         except Exception:
             pass
-        dialog = ctk.CTkToplevel(self.parent)
-        dialog.title("Invoice Generated")
-        dialog.geometry("380x180")
-        dialog.resizable(False, False)
-        dialog.transient(self.parent)
-        dialog.grab_set()
-        center_window_on_screen(dialog, 380, 180)
-        ctk.CTkLabel(dialog, text="✅ Invoice Generated Successfully",
-                     font=ctk.CTkFont(size=16, weight="bold"),
-                     text_color="#4CAF50").pack(pady=(25, 5))
-        ctk.CTkFrame(dialog, height=1, fg_color=("gray80", "gray40")).pack(fill="x", padx=30, pady=(10, 5))
-        ctk.CTkLabel(dialog, text=os.path.basename(filename),
-                     font=ctk.CTkFont(size=11)).pack(pady=2)
-        btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        btn_frame.pack(pady=(15, 0))
-        ctk.CTkButton(btn_frame, text="📄  View",
-                       command=lambda: [dialog.destroy(), webbrowser.open(filename)],
-                       width=100, height=35,
-                       fg_color="#3B82F6", hover_color="#2563EB").pack(side="left", padx=5)
-        ctk.CTkButton(btn_frame, text="🖨  Print",
-                       command=lambda: self._print_pdf(dialog, filename),
-                       width=100, height=35,
-                       fg_color="#10B981", hover_color="#059669").pack(side="left", padx=5)
-        ctk.CTkButton(btn_frame, text="Close",
-                       command=dialog.destroy,
-                       width=80, height=35,
-                       fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
+        try:
+            dialog = ctk.CTkToplevel(self.parent)
+            dialog.title("Invoice Generated")
+            dialog.geometry("380x180")
+            dialog.resizable(False, False)
+            dialog.transient(self.parent)
+            dialog.grab_set()
+            center_window_on_screen(dialog, 380, 180)
+            ctk.CTkLabel(dialog, text="✅ Invoice Generated Successfully",
+                         font=ctk.CTkFont(size=16, weight="bold"),
+                         text_color="#4CAF50").pack(pady=(25, 5))
+            ctk.CTkFrame(dialog, height=1, fg_color=("gray80", "gray40")).pack(fill="x", padx=30, pady=(10, 5))
+            ctk.CTkLabel(dialog, text=os.path.basename(filename),
+                         font=ctk.CTkFont(size=11)).pack(pady=2)
+            btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
+            btn_frame.pack(pady=(15, 0))
+            ctk.CTkButton(btn_frame, text="📄  View",
+                           command=lambda: [dialog.destroy(), webbrowser.open(filename)],
+                           width=100, height=35,
+                           fg_color="#3B82F6", hover_color="#2563EB").pack(side="left", padx=5)
+            ctk.CTkButton(btn_frame, text="🖨  Print",
+                           command=lambda: self._print_pdf(dialog, filename),
+                           width=100, height=35,
+                           fg_color="#10B981", hover_color="#059669").pack(side="left", padx=5)
+            ctk.CTkButton(btn_frame, text="Close",
+                           command=dialog.destroy,
+                           width=80, height=35,
+                           fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
+        except Exception:
+            webbrowser.open(filename)
 
     def _print_pdf(self, dialog, filename):
         """Open the PDF with the system print dialog."""
