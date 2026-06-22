@@ -1212,6 +1212,7 @@ class InventoryView:
                     self.sub_brand_filter_var.set("All")
                 elif k == "Stock":
                     self.stock_filter_var.set("All")
+                self.filter_data()
             rm_btn.bind("<Button-1>", on_rm)
             chip.pack(side="left", padx=(0, 5))
         # Pack before the summary cards to maintain layout order
@@ -1500,6 +1501,7 @@ class InventoryView:
                     )
                     messagebox.showinfo("Success", "Product updated successfully!")
                     self.load_data()
+                    self.filter_data()
                 except Exception as e:
                     messagebox.showerror("Error", f"Failed to update product: {e}")
     
