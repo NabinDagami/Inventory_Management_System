@@ -48,8 +48,8 @@ class InventoryApp:
         self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
         
         # Set minimum size based on screen (for smaller laptops)
-        min_width = min(1100, int(screen_width * 0.7))
-        min_height = min(700, int(screen_height * 0.7))
+        min_width = max(800, int(screen_width * 0.6))
+        min_height = max(500, int(screen_height * 0.6))
         self.root.minsize(min_width, min_height)
         
         # Make window resizable

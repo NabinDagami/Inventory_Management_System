@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """
 Build script for creating Windows executable using PyInstaller
+and preparing installer assets.
+
+Usage:
+    python build.py              # Full build (clean + pyinstaller + installer prep)
+
+Prerequisites:
+    pip install pyinstaller
+    (Optional) Inno Setup 6+ from https://jrsoftware.org/isdl.php
 """
 
 import os
@@ -25,9 +33,14 @@ def clean_build():
 def create_executable():
     """Create executable using PyInstaller"""
     
-    # PyInstaller command
-    cmd = [
-        'pyinstaller',
+    # PyInstaller command (find it in venv or system)
+    pyinstaller_exe = shutil.which('pyinstaller')
+    if pyinstaller_exe is None:
+        pyinstaller_exe = [sys.executable, '-m', 'PyInstaller']
+    else:
+        pyinstaller_exe = [pyinstaller_exe]
+    
+    cmd = pyinstaller_exe + [
         # '--onefile',                  # Create single executable (disabled for folder mode)
         '--windowed',                   # Remove console window (no console shown)
         '--noconsole',                  # Extra flag to ensure no console
@@ -124,43 +137,17 @@ def copy_required_files():
             shutil.copy2(src_path, dst_path)
             print(f"Copied {src} -> {dst}")
 
-def create_installer_script():
-    """Create a simple installer script"""
-    installer_script = '''@echo off
-echo Installing Inventory Beta...
-echo.
-
-REM Create application directory
-if not exist "%PROGRAMFILES%\\Inventory_Beta" (
-    mkdir "%PROGRAMFILES%\\Inventory_Beta"
-)
-
-REM Copy files
-xcopy "Inventory_Beta" "%PROGRAMFILES%\\Inventory_Beta\\" /E /I /Q
-
-REM Create desktop shortcut
-echo Set oWS = WScript.CreateObject("WScript.Shell") > "%TEMP%\\shortcut.vbs"
-echo sLinkFile = "%USERPROFILE%\\Desktop\\Inventory Beta.lnk" >> "%TEMP%\\shortcut.vbs"
-echo Set oLink = oWS.CreateShortcut(sLinkFile) >> "%TEMP%\\shortcut.vbs"
-echo oLink.TargetPath = "%PROGRAMFILES%\\Inventory_Beta\\Inventory_Beta.exe" >> "%TEMP%\\shortcut.vbs"
-echo oLink.WorkingDirectory = "%PROGRAMFILES%\\Inventory_Beta" >> "%TEMP%\\shortcut.vbs"
-echo oLink.IconLocation = "%PROGRAMFILES%\\Inventory_Beta\\_internal\\assets\\icons\\app_icon.png" >> "%TEMP%\\shortcut.vbs"
-echo oLink.Description = "Inventory Beta - Inventory Management System" >> "%TEMP%\\shortcut.vbs"
-echo oLink.Save >> "%TEMP%\\shortcut.vbs"
-cscript "%TEMP%\\shortcut.vbs" /nologo
-del "%TEMP%\\shortcut.vbs"
-
-echo.
-echo Installation complete!
-echo Desktop shortcut created.
-echo.
-pause
-'''
-    
-    with open('dist/install.bat', 'w') as f:
-        f.write(installer_script)
-    
-    print("Created installer script: dist/install.bat")
+def create_ico():
+    """Generate .ico from the app PNG using PIL"""
+    from PIL import Image
+    png = Path('assets/icons/app_icon.png')
+    if not png.exists():
+        print("WARNING: app_icon.png not found, skipping ICO creation")
+        return
+    img = Image.open(png)
+    ico_path = Path('assets/icons/app_icon.ico')
+    img.save(ico_path, format='ICO', sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])
+    print(f"Created {ico_path}")
 
 def main():
     """Main build process"""
@@ -181,21 +168,27 @@ def main():
     
     # Create executable
     if create_executable():
-        # Create installer script
-        create_installer_script()
+        try:
+            create_ico()
+            print("Created app_icon.ico for installer")
+        except Exception as e:
+            print(f"Skipping ICO creation (non-critical): {e}")
+        
+        copy_required_files()
         
         print("\n" + "=" * 50)
         print("BUILD COMPLETE!")
         print("=" * 50)
         print("Files created:")
         print("- dist/Inventory_Beta/Inventory_Beta.exe (Main executable)")
-        print("- dist/install.bat (Installer script)")
-        print("\nTo install:")
-        print("1. Run 'install.bat' as administrator")
-        print("2. Or copy files manually to desired location")
-        print("\nTo run:")
-        print("- Run: dist/Inventory_Beta/Inventory_Beta.exe")
-        print("- Or use the desktop shortcut after installation")
+        print("\nOption 1 — Quick install (no extra tools):")
+        print("  Right-click install.bat > Run as administrator")
+        print("\nOption 2 — Professional installer:")
+        print("  1. Download Inno Setup 6 from https://jrsoftware.org/isdl.php")
+        print("  2. Right-click installer.iss > Compile")
+        print("\nOption 3 — Portable (just run the exe):")
+        print("  - Double-click dist/Inventory_Beta/Inventory_Beta.exe")
+        print("  - Or copy the whole dist/Inventory_Beta folder to any PC")
     else:
         print("\nBuild failed! Check the error messages above.")
 

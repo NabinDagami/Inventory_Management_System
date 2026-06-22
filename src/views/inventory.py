@@ -9,6 +9,7 @@ import string
 import tempfile
 import threading
 import time
+import webbrowser
 from PIL import Image
 from barcode import Code128
 from barcode.writer import ImageWriter
@@ -277,13 +278,14 @@ class InventoryView:
         main_frame = ctk.CTkFrame(self.parent)
         main_frame.pack(fill="both", expand=True, padx=15, pady=15)
         
-        # Header with tabs and action buttons
+        # Header with tabs and action buttons (two rows for small screen support)
         header_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         header_frame.pack(fill="x", padx=5, pady=(8, 0))
+        header_frame.grid_columnconfigure(0, weight=1)
         
-        # Tab buttons — pill-style segmented control
+        # Row 0: Tab buttons — pill-style segmented control
         tab_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
-        tab_frame.pack(side="left", padx=10, pady=10)
+        tab_frame.grid(row=0, column=0, sticky="w", padx=10, pady=(10, 2))
         
         tab_bg = ctk.CTkFrame(tab_frame, corner_radius=20, fg_color=("gray90", "gray20"))
         tab_bg.pack(side="left")
@@ -318,9 +320,9 @@ class InventoryView:
         self.brands_btn = self._tab_buttons["brands"]
         self.sub_brands_btn = self._tab_buttons["sub_brands"]
         
-        # Action buttons - Visual Hierarchy
+        # Row 1: Action buttons
         action_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
-        action_frame.pack(side="right", padx=10, pady=10)
+        action_frame.grid(row=1, column=0, sticky="w", padx=10, pady=(2, 10))
         
         # Primary Action: Add Product (Blue)
         self.add_btn = ctk.CTkButton(
@@ -3605,7 +3607,50 @@ class ProductDialog:
         c.save()
 
         self.scan_info.configure(text=f"Barcode PDF saved: {pdf_path}", text_color="#60a5fa")
-        os.startfile(pdf_path)
+        self._show_pdf_actions(pdf_path)
+
+    def _show_pdf_actions(self, pdf_path):
+        """Show a dialog with View and Print options for a generated PDF."""
+        dialog = ctk.CTkToplevel(self.parent)
+        dialog.title("PDF Ready")
+        dialog.geometry("380x170")
+        dialog.resizable(False, False)
+        dialog.transient(self.parent)
+        dialog.grab_set()
+        dialog.update_idletasks()
+        px = self.parent.winfo_rootx() + (self.parent.winfo_width() - 380) // 2
+        py = self.parent.winfo_rooty() + (self.parent.winfo_height() - 170) // 2
+        dialog.geometry(f"380x170+{px}+{py}")
+
+        ctk.CTkLabel(dialog, text="✅ PDF Generated Successfully",
+                     font=ctk.CTkFont(size=16, weight="bold"),
+                     text_color="#4CAF50").pack(pady=(25, 5))
+        ctk.CTkLabel(dialog, text=os.path.basename(pdf_path),
+                     font=ctk.CTkFont(size=11)).pack(pady=2)
+
+        btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
+        btn_frame.pack(pady=(15, 0))
+        ctk.CTkButton(btn_frame, text="📄  View",
+                       command=lambda: [dialog.destroy(), webbrowser.open(pdf_path)],
+                       width=100, height=35,
+                       fg_color="#3B82F6", hover_color="#2563EB").pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="🖨  Print Preview",
+                       command=lambda: self._print_pdf_file(dialog, pdf_path),
+                       width=130, height=35,
+                       fg_color="#10B981", hover_color="#059669").pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="Close",
+                       command=dialog.destroy,
+                       width=80, height=35,
+                       fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
+
+    def _print_pdf_file(self, dialog, pdf_path):
+        """Open the PDF with the system print dialog."""
+        dialog.destroy()
+        try:
+            os.startfile(pdf_path, "print")
+        except Exception:
+            webbrowser.open(pdf_path)
+            messagebox.showinfo("Print", "PDF opened in browser. Press Ctrl+P to print.")
 
     def _show_qty_dialog(self):
         """Show a custom CTk dialog for print quantity - matches app styling"""
@@ -3908,7 +3953,7 @@ class ProductDialog:
         c.save()
 
         self.scan_info.configure(text=f"Template Labels PDF saved: {pdf_path}", text_color="#60a5fa")
-        os.startfile(pdf_path)
+        self._show_pdf_actions(pdf_path)
 
     def _show_start_box_dialog(self, qty):
         """Prompt user for which label box index to start printing from.

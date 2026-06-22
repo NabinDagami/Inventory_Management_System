@@ -1,9 +1,6 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import ttk, messagebox
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
 import sys
 import os
 from datetime import datetime, timedelta
@@ -12,7 +9,7 @@ from datetime import datetime, timedelta
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.database import db
-from utils.format_utils import format_price_with_decimals, get_currency_symbol
+from utils.format_utils import format_price_with_decimals
 
 class Dashboard:
     def __init__(self, parent, navigation_callbacks=None):
@@ -391,142 +388,50 @@ class Dashboard:
         # Sales Chart
         sales_frame = ctk.CTkFrame(parent)
         sales_frame.grid(row=0, column=0, padx=(0, 10), pady=(0, 10), sticky="nsew")
-        
-        sales_title = ctk.CTkLabel(
-            sales_frame,
-            text="📈 Sales Overview (Last 7 Days)",
-            font=ctk.CTkFont(size=16, weight="bold")
-        )
-        sales_title.pack(pady=10)
-        
-        # Create sales chart
-        self.create_sales_chart(sales_frame)
-        
+
+        self._create_coming_soon(sales_frame, "📈 Sales Overview (Last 7 Days)")
+
         # Product Categories Chart
         categories_frame = ctk.CTkFrame(parent)
         categories_frame.grid(row=0, column=1, padx=(10, 0), pady=(0, 10), sticky="nsew")
-        
-        categories_title = ctk.CTkLabel(
-            categories_frame,
-            text="🏷️ Product Categories",
-            font=ctk.CTkFont(size=16, weight="bold")
-        )
-        categories_title.pack(pady=10)
-        
-        # Create categories chart
-        self.create_categories_chart(categories_frame)
-        
+
+        self._create_coming_soon(categories_frame, "🏷️ Product Categories")
+
         # Monthly Trends Chart
         trends_frame = ctk.CTkFrame(parent)
         trends_frame.grid(row=1, column=0, columnspan=2, padx=0, pady=(10, 0), sticky="nsew")
-        
-        trends_title = ctk.CTkLabel(
-            trends_frame,
-            text="📊 Monthly Sales vs Purchases Trend",
+
+        self._create_coming_soon(trends_frame, "📊 Monthly Sales vs Purchases Trend")
+
+    def _create_coming_soon(self, parent, title_text):
+        """Placeholder for charts not yet implemented."""
+        title = ctk.CTkLabel(
+            parent,
+            text=title_text,
             font=ctk.CTkFont(size=16, weight="bold")
         )
-        trends_title.pack(pady=10)
-        
-        # Create trends chart
-        self.create_trends_chart(trends_frame)
-    
-    def create_sales_chart(self, parent):
-        """Create sales chart"""
-        # Create matplotlib figure
-        fig = Figure(figsize=(6, 4), dpi=100)
-        fig.patch.set_facecolor('none')
-        
-        ax = fig.add_subplot(111)
-        
-        # Sample data (replace with actual data)
-        days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        sales = [1200, 1500, 1800, 1300, 2100, 2500, 1900]
-        
-        ax.plot(days, sales, marker='o', linewidth=2, markersize=6, color='#10B981')
-        ax.fill_between(days, sales, alpha=0.3, color='#10B981')
-        
-        ax.set_title('Daily Sales', fontsize=12, pad=20)
-        ax.set_ylabel(f'Sales ({get_currency_symbol()})')
-        ax.grid(True, alpha=0.3)
-        
-        # Style the chart
-        ax.set_facecolor('none')
-        ax.tick_params(colors='gray')
-        for spine in ax.spines.values():
-            spine.set_color('gray')
-            spine.set_alpha(0.3)
-        
-        fig.tight_layout()
-        
-        # Embed in tkinter
-        canvas = FigureCanvasTkAgg(fig, parent)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True, padx=20, pady=(0, 20))
-    
-    def create_categories_chart(self, parent):
-        """Create product categories pie chart"""
-        fig = Figure(figsize=(6, 4), dpi=100)
-        fig.patch.set_facecolor('none')
-        
-        ax = fig.add_subplot(111)
-        
-        # Sample data (replace with actual data)
-        categories = ['Electronics', 'Tools', 'Parts', 'Accessories']
-        values = [30, 25, 20, 25]
-        colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6']
-        
-        wedges, texts, autotexts = ax.pie(values, labels=categories, colors=colors, autopct='%1.1f%%', startangle=90)
-        
-        for autotext in autotexts:
-            autotext.set_color('white')
-            autotext.set_weight('bold')
-        
-        ax.set_title('Product Distribution', fontsize=12, pad=20)
-        
-        fig.tight_layout()
-        
-        canvas = FigureCanvasTkAgg(fig, parent)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True, padx=20, pady=(0, 20))
-    
-    def create_trends_chart(self, parent):
-        """Create monthly trends chart"""
-        fig = Figure(figsize=(12, 4), dpi=100)
-        fig.patch.set_facecolor('none')
-        
-        ax = fig.add_subplot(111)
-        
-        # Sample data (replace with actual data)
-        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
-        sales_data = [15000, 18000, 22000, 19000, 25000, 28000]
-        purchases_data = [12000, 14000, 17000, 16000, 20000, 22000]
-        
-        x = range(len(months))
-        width = 0.35
-        
-        bars1 = ax.bar([i - width/2 for i in x], sales_data, width, label='Sales', color='#10B981', alpha=0.8)
-        bars2 = ax.bar([i + width/2 for i in x], purchases_data, width, label='Purchases', color='#3B82F6', alpha=0.8)
-        
-        ax.set_xlabel('Month')
-        ax.set_ylabel(f'Amount ({get_currency_symbol()})')
-        ax.set_title('Sales vs Purchases Trend')
-        ax.set_xticks(x)
-        ax.set_xticklabels(months)
-        ax.legend()
-        ax.grid(True, alpha=0.3, axis='y')
-        
-        # Style the chart
-        ax.set_facecolor('none')
-        ax.tick_params(colors='gray')
-        for spine in ax.spines.values():
-            spine.set_color('gray')
-            spine.set_alpha(0.3)
-        
-        fig.tight_layout()
-        
-        canvas = FigureCanvasTkAgg(fig, parent)
-        canvas.draw()
-        canvas.get_tk_widget().pack(fill="both", expand=True, padx=20, pady=(0, 20))
+        title.pack(pady=10)
+
+        # Dashed-border style placeholder area
+        placeholder = ctk.CTkFrame(parent, fg_color=("gray95", "gray17"),
+                                   corner_radius=12)
+        placeholder.pack(fill="both", expand=True, padx=20, pady=(5, 20))
+
+        inner = ctk.CTkFrame(placeholder, fg_color="transparent")
+        inner.place(relx=0.5, rely=0.5, anchor="center")
+
+        ctk.CTkLabel(
+            inner,
+            text="📊",
+            font=ctk.CTkFont(size=40)
+        ).pack()
+
+        ctk.CTkLabel(
+            inner,
+            text="Coming Soon",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color=("gray50", "gray60")
+        ).pack(pady=(8, 2))
     
     def create_quick_actions(self, parent):
         """Create quick actions panel"""

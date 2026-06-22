@@ -4,6 +4,8 @@ from tkinter import ttk, messagebox, simpledialog
 import sys
 import os
 import tempfile
+import json
+import webbrowser
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
@@ -2495,18 +2497,32 @@ class SalesView:
         ctk.CTkLabel(dialog, text="✅ Invoice Generated Successfully",
                      font=ctk.CTkFont(size=16, weight="bold"),
                      text_color="#4CAF50").pack(pady=(25, 5))
+        ctk.CTkFrame(dialog, height=1, fg_color=("gray80", "gray40")).pack(fill="x", padx=30, pady=(10, 5))
         ctk.CTkLabel(dialog, text=os.path.basename(filename),
                      font=ctk.CTkFont(size=11)).pack(pady=2)
         btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
         btn_frame.pack(pady=(15, 0))
-        ctk.CTkButton(btn_frame, text="Open Invoice",
-                       command=lambda: [dialog.destroy(), os.startfile(filename)],
-                       width=120, height=35,
-                       fg_color="#2563EB", hover_color="#1D4ED8").pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="📄  View",
+                       command=lambda: [dialog.destroy(), webbrowser.open(filename)],
+                       width=100, height=35,
+                       fg_color="#3B82F6", hover_color="#2563EB").pack(side="left", padx=5)
+        ctk.CTkButton(btn_frame, text="🖨  Print",
+                       command=lambda: self._print_pdf(dialog, filename),
+                       width=100, height=35,
+                       fg_color="#10B981", hover_color="#059669").pack(side="left", padx=5)
         ctk.CTkButton(btn_frame, text="Close",
                        command=dialog.destroy,
-                       width=100, height=35,
+                       width=80, height=35,
                        fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
+
+    def _print_pdf(self, dialog, filename):
+        """Open the PDF with the system print dialog."""
+        dialog.destroy()
+        try:
+            os.startfile(filename, "print")
+        except Exception:
+            webbrowser.open(filename)
+            messagebox.showinfo("Print", "PDF opened in browser. Press Ctrl+P to print.")
 
     def _on_invoice_error(self, loading, error_msg):
         """Called when PDF generation fails."""
