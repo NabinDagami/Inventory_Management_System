@@ -40,14 +40,29 @@ def create_executable():
     else:
         pyinstaller_exe = [pyinstaller_exe]
     
+    # Find python-barcode fonts for PyInstaller bundling
+    barcode_fonts_arg = None
+    try:
+        import barcode
+        barcode_dir = os.path.dirname(barcode.__file__)
+        fonts_dir = os.path.join(barcode_dir, 'fonts')
+        if os.path.isdir(fonts_dir):
+            barcode_fonts_arg = f'--add-data={fonts_dir};barcode/fonts'
+    except Exception:
+        pass
+
     cmd = pyinstaller_exe + [
         # '--onefile',                  # Create single executable (disabled for folder mode)
         '--windowed',                   # Remove console window (no console shown)
         '--noconsole',                  # Extra flag to ensure no console
         '--name=Inventory_Beta',        # Executable name
-        '--icon=assets/icons/app_icon.png',  # App icon
+        '--icon=assets/icons/app_icon.ico',  # App icon (multi-res with alpha)
         '--add-data=assets;assets',     # Include assets folder
         '--add-data=data;data',         # Include data folder (if exists)
+    ]
+    if barcode_fonts_arg:
+        cmd.append(barcode_fonts_arg)
+    cmd += [
         '--hidden-import=customtkinter',
         '--hidden-import=matplotlib',
         '--hidden-import=PIL',
@@ -125,6 +140,11 @@ def copy_required_files():
         ('README.md', 'README.md'),
         ('requirements.txt', 'requirements.txt'),
         ('assets/icons/app_icon.png', 'assets/icons/app_icon.png'),
+        ('assets/icons/app_icon.ico', 'assets/icons/app_icon.ico'),
+        ('assets/icons/app_icon_light.png', 'assets/icons/app_icon_light.png'),
+        ('assets/icons/app_icon_light.ico', 'assets/icons/app_icon_light.ico'),
+        ('assets/icons/app_icon_dark.png', 'assets/icons/app_icon_dark.png'),
+        ('assets/icons/app_icon_dark.ico', 'assets/icons/app_icon_dark.ico'),
         ('assets/logo.svg', 'assets/logo.svg'),
     ]
     
@@ -138,16 +158,55 @@ def copy_required_files():
             print(f"Copied {src} -> {dst}")
 
 def create_ico():
-    """Generate .ico from the app PNG using PIL"""
+    """Generate all icon sets from source JPEGs using PIL, with transparent backgrounds."""
     from PIL import Image
-    png = Path('assets/icons/app_icon.png')
-    if not png.exists():
-        print("WARNING: app_icon.png not found, skipping ICO creation")
-        return
-    img = Image.open(png)
-    ico_path = Path('assets/icons/app_icon.ico')
-    img.save(ico_path, format='ICO', sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)])
-    print(f"Created {ico_path}")
+    import numpy as np
+    icons_dir = Path('assets/icons')
+    icons_dir.mkdir(parents=True, exist_ok=True)
+    sizes_ico = [(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)]
+    size_png = (64, 64)
+
+    def make_transparent(img_path, is_dark_bg=False):
+        """Open image and convert background to transparent."""
+        img = Image.open(img_path).convert('RGBA')
+        arr = np.array(img)
+        r, g, b = arr[:,:,0], arr[:,:,1], arr[:,:,2]
+        if is_dark_bg:
+            mask = (r < 40) & (g < 40) & (b < 40)
+        else:
+            mask = (r > 220) & (g > 220) & (b > 220)
+        arr[:,:,3] = np.where(mask, 0, 255)
+        return Image.fromarray(arr)
+
+    sources = {
+        'light': ('logo/app_logo.jpeg', 'app_icon_light', False),
+        'dark':  ('logo/black_logo.jpeg', 'app_icon_dark', True),
+    }
+
+    for theme, (src_rel, stem, is_dark) in sources.items():
+        src = Path(src_rel)
+        if not src.exists():
+            print(f"WARNING: {src} not found, skipping {theme} icons")
+            continue
+        transparent = make_transparent(src, is_dark_bg=is_dark)
+        # PNG
+        png_path = icons_dir / f'{stem}.png'
+        transparent.resize(size_png, Image.LANCZOS).save(png_path)
+        print(f"Created {png_path}")
+        # ICO (with alpha)
+        ico_path = icons_dir / f'{stem}.ico'
+        transparent.save(ico_path, format='ICO', sizes=sizes_ico)
+        print(f"Created {ico_path}")
+
+    # Default app_icon = light variant (app_logo)
+    light_png = icons_dir / 'app_icon_light.png'
+    if light_png.exists():
+        shutil.copy(light_png, icons_dir / 'app_icon.png')
+        print(f"Copied app_icon_light.png -> app_icon.png")
+    light_ico = icons_dir / 'app_icon_light.ico'
+    if light_ico.exists():
+        shutil.copy(light_ico, icons_dir / 'app_icon.ico')
+        print(f"Copied app_icon_light.ico -> app_icon.ico")
 
 def main():
     """Main build process"""

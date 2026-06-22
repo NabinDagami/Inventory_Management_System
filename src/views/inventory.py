@@ -3634,8 +3634,9 @@ class ProductDialog:
 
             btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
             btn_frame.pack(pady=(15, 0))
+            file_url = f"file:///{os.path.abspath(pdf_path).replace(os.sep, '/')}"
             ctk.CTkButton(btn_frame, text="📄  View",
-                           command=lambda: [dialog.destroy(), webbrowser.open(pdf_path)],
+                           command=lambda url=file_url: [dialog.destroy(), webbrowser.open(url)],
                            width=100, height=35,
                            fg_color="#3B82F6", hover_color="#2563EB").pack(side="left", padx=5)
             ctk.CTkButton(btn_frame, text="🖨  Print Preview",
@@ -3647,8 +3648,14 @@ class ProductDialog:
                            width=80, height=35,
                            fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
         except Exception:
-            # Fallback: open PDF directly
-            webbrowser.open(pdf_path)
+            messagebox.showinfo("PDF Ready", f"PDF saved to:\n{pdf_path}\n\nOpening in browser...")
+            try:
+                webbrowser.open(file_url)
+            except Exception:
+                try:
+                    os.startfile(pdf_path)
+                except Exception:
+                    messagebox.showinfo("PDF File", f"PDF saved at:\n{pdf_path}")
 
     def _print_pdf_file(self, dialog, pdf_path):
         """Open the PDF with the system print dialog."""
@@ -3656,8 +3663,12 @@ class ProductDialog:
         try:
             os.startfile(pdf_path, "print")
         except Exception:
-            webbrowser.open(pdf_path)
-            messagebox.showinfo("Print", "PDF opened in browser. Press Ctrl+P to print.")
+            try:
+                file_url = f"file:///{os.path.abspath(pdf_path).replace(os.sep, '/')}"
+                webbrowser.open(file_url)
+                messagebox.showinfo("Print", "PDF opened in browser. Press Ctrl+P to print.")
+            except Exception:
+                messagebox.showinfo("Print PDF", f"Please open and print:\n{pdf_path}")
 
     def _show_qty_dialog(self):
         """Show a custom CTk dialog for print quantity - matches app styling"""
@@ -3795,20 +3806,20 @@ class ProductDialog:
         c = canvas.Canvas(pdf_path, pagesize=A4)
         w, h = A4
 
-        # Template sizing matched to Eddy SI-84 A4 label sheet (46mm x 11mm x 84)
-        # Each label: 46mm wide x 11mm tall
-        box_w = 46 * mm  # 46mm width
-        box_h = 11 * mm  # 11mm height
-        margin_left = 5 * mm
-        margin_bottom = 5 * mm
-        gap_x = 2 * mm  # Small gap between columns
-        gap_y = 2 * mm  # Small gap between rows
+        # Template sizing matched to Cotty ST-84 / OnlineLabels EU30049 A4 label sheet
+        # Dimensions: 46mm x 11mm per label, 4 columns x 21 rows (84 labels per sheet)
+        # Margins: left=5.8mm, right=5.8mm, top=16.3mm, bottom=16.3mm
+        # Gaps: horizontal=4.8mm, vertical=1.67mm
+        box_w = 46 * mm
+        box_h = 11 * mm
+        margin_left = 5.8 * mm
+        margin_bottom = 16.3 * mm
+        gap_x = 4.8 * mm
+        gap_y = 1.67 * mm
 
-        # Layout grid (how many boxes fit) - no header, just margins
-        footer_h = 15  # Minimal space for footer
-        cols = max(1, int((w - 2*margin_left) // (box_w + gap_x)))
-        available_height = h - margin_bottom - footer_h
-        rows = max(1, int(available_height // (box_h + gap_y)))
+        # Fixed grid: 4 columns x 21 rows (known label sheet layout)
+        cols = 4
+        rows = 21
 
         # Generate barcode image once and reuse for all boxes
         # NOTE: python-barcode PNGs include quiet-zone padding. To ensure the bars
@@ -3865,7 +3876,7 @@ class ProductDialog:
 
             # For 46mm x 11mm labels: barcode at top, text at bottom
             pad_horiz = 1.5 * mm  # Padding left and right
-            pad_vert = 0.05 * mm  # ~2px (at 96dpi) bottom padding
+            pad_vert = 0.5 * mm
 
             gap_between = 0.7 * mm  # ~2px gap between barcode and text
             
@@ -3972,22 +3983,25 @@ class ProductDialog:
             messagebox.showwarning("Invalid Quantity", "Quantity must be at least 1.")
             return None
 
+        TOTAL_LABELS = 84
+        COLS = 4
+        ROWS = 21
+
         dialog = ctk.CTkToplevel(self.parent)
-        dialog.title("Start Printing Box")
-        dialog.geometry("420x260")
+        dialog.title("Select Start Position")
+        dialog.geometry("520x620")
         dialog.resizable(False, False)
         dialog.attributes('-topmost', True)
         dialog.transient(self.parent)
 
-        # Center dialog on parent
         dialog.update_idletasks()
         pw = self.parent.winfo_rootx()
         ph = self.parent.winfo_rooty()
         pwidth = self.parent.winfo_width()
         pheight = self.parent.winfo_height()
-        x = pw + (pwidth // 2) - (210)
-        y = ph + (pheight // 2) - (130)
-        dialog.geometry(f"420x260+{x}+{y}")
+        x = pw + (pwidth // 2) - (260)
+        y = ph + (pheight // 2) - (310)
+        dialog.geometry(f"520x620+{x}+{y}")
 
         dialog.grab_set()
 
@@ -3995,19 +4009,91 @@ class ProductDialog:
 
         header = ctk.CTkFrame(dialog, corner_radius=10, fg_color=("#3B82F6", "#2563EB"))
         header.pack(fill="x", padx=15, pady=(15, 10))
-        ctk.CTkLabel(header, text="Choose Start Box", font=ctk.CTkFont(size=16, weight="bold"), text_color="white").pack(pady=12)
+        ctk.CTkLabel(header, text="Choose Start Position", font=ctk.CTkFont(size=16, weight="bold"), text_color="white").pack(pady=12)
 
-        ctk.CTkLabel(dialog, text=f"Labels to print: {qty}", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", padx=20, pady=(10, 4))
-        ctk.CTkLabel(dialog, text="Printing will begin from the selected box (1-based).", font=ctk.CTkFont(size=11), text_color=("gray30", "gray60")).pack(anchor="w", padx=20, pady=(0, 10))
+        info_frame = ctk.CTkFrame(dialog, fg_color="transparent")
+        info_frame.pack(fill="x", padx=20, pady=(0, 6))
+        ctk.CTkLabel(info_frame, text=f"Labels to print: {qty}", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left")
+        ctk.CTkLabel(info_frame, text=f"(boxes 1-{TOTAL_LABELS} per sheet)", font=ctk.CTkFont(size=11), text_color=("gray40", "gray60")).pack(side="right")
 
-        input_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        input_frame.pack(fill="x", padx=20, pady=(0, 12))
+        # Canvas grid preview
+        is_dark = ctk.get_appearance_mode() == "Dark"
 
-        ctk.CTkLabel(input_frame, text="Start at:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left")
+        grid_frame = ctk.CTkFrame(dialog, fg_color="transparent")
+        grid_frame.pack(fill="both", padx=20, pady=(0, 8), expand=True)
+
+        cell_w = 32
+        cell_h = 16
+        gap = 2
+        grid_w = COLS * (cell_w + gap) - gap
+        grid_h = ROWS * (cell_h + gap) - gap
+
+        canvas_bg = "#2b2b2b" if is_dark else "#f0f0f0"
+        canvas = tk.Canvas(
+            grid_frame,
+            width=grid_w + 20,
+            height=min(grid_h + 20, 460),
+            highlightthickness=1,
+            highlightbackground="#555555" if is_dark else "#cccccc",
+            bg=canvas_bg,
+            relief="flat"
+        )
+        canvas.pack(pady=4)
+
+        sheet_x0 = 10
+        sheet_y0 = 10
+
+        def _get_cell_rect(pos):
+            pos0 = pos - 1
+            r = pos0 // COLS
+            c = pos0 % COLS
+            x1 = sheet_x0 + c * (cell_w + gap)
+            y1 = sheet_y0 + (ROWS - 1 - r) * (cell_h + gap)
+            x2 = x1 + cell_w
+            y2 = y1 + cell_h
+            return x1, y1, x2, y2
+
+        cell_fill = "#3a3a3a" if is_dark else "#ffffff"
+        cell_outline = "#555555" if is_dark else "#cccccc"
+        cell_text_color = "#aaaaaa" if is_dark else "#888888"
+        cell_rects = {}
+        for i in range(1, TOTAL_LABELS + 1):
+            x1, y1, x2, y2 = _get_cell_rect(i)
+            rid = canvas.create_rectangle(x1, y1, x2, y2, fill=cell_fill, outline=cell_outline, width=1)
+            tid = canvas.create_text((x1 + x2) // 2, (y1 + y2) // 2, text=str(i), font=("TkDefaultFont", 6), fill=cell_text_color)
+            cell_rects[i] = (rid, tid, cell_fill, cell_outline, cell_text_color)
+
+        def _update_preview(*_):
+            try:
+                sv = int(start_var.get().strip())
+            except ValueError:
+                sv = 1
+            if sv < 1:
+                sv = 1
+            if sv > TOTAL_LABELS:
+                sv = TOTAL_LABELS
+
+            highlight_color = "#3B82F6"
+            highlight_text = "#ffffff"
+
+            for i in range(1, TOTAL_LABELS + 1):
+                rid, tid, d_fill, d_outline, d_text = cell_rects[i]
+                if sv <= i < sv + qty:
+                    canvas.itemconfig(rid, fill=highlight_color, outline=highlight_color)
+                    canvas.itemconfig(tid, fill=highlight_text)
+                else:
+                    canvas.itemconfig(rid, fill=d_fill, outline=d_outline)
+                    canvas.itemconfig(tid, fill=d_text)
 
         start_var = tk.StringVar(value="1")
-        start_entry = ctk.CTkEntry(input_frame, textvariable=start_var, width=120)
-        start_entry.pack(side="left", padx=(10, 0))
+        start_var.trace_add("write", _update_preview)
+
+        input_frame = ctk.CTkFrame(dialog, fg_color="transparent")
+        input_frame.pack(fill="x", padx=20, pady=(0, 10))
+
+        ctk.CTkLabel(input_frame, text="Start at box:", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left")
+        start_entry = ctk.CTkEntry(input_frame, textvariable=start_var, width=100)
+        start_entry.pack(side="left", padx=(8, 0))
         start_entry.focus()
         start_entry.select_range(0, len(start_var.get()))
 
@@ -4018,8 +4104,8 @@ class ProductDialog:
         def on_ok():
             try:
                 v = int(start_var.get().strip())
-                if v < 1 or v > qty:
-                    messagebox.showwarning("Invalid Input", f"Enter a value between 1 and {qty}.")
+                if v < 1 or v > TOTAL_LABELS:
+                    messagebox.showwarning("Invalid Input", f"Enter a value between 1 and {TOTAL_LABELS}.")
                     return
                 result["start"] = v
                 dialog.destroy()
@@ -4036,6 +4122,7 @@ class ProductDialog:
         cancel_btn = ctk.CTkButton(btn_frame, text="Cancel", command=on_cancel, fg_color=("#EF4444", "#B91C1C"), hover_color=("#DC2626", "#991B1B"), height=36)
         cancel_btn.pack(side="left", fill="x", expand=True)
 
+        _update_preview()
         self.parent.wait_window(dialog)
         return result["start"]
 

@@ -4,7 +4,7 @@
  False,
  True,
  ['C:\\Users\\Aftershock\\Desktop\\Inventory '
-  'Management\\assets\\icons\\app_icon.png'],
+  'Management\\assets\\icons\\app_icon.ico'],
  None,
  False,
  False,
@@ -88,7 +88,7 @@
  [],
  False,
  False,
- 1782106630,
+ 1782126009,
  [('runw.exe',
    'C:\\Users\\Aftershock\\Desktop\\Inventory '
    'Management\\venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',

@@ -3,7 +3,7 @@
 ; To compile: right-click this file -> "Compile" (or run: iscc installer.iss)
 
 #define MyAppName "Inventory Beta"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.3.0"
 #define MyAppPublisher "Inventory Pro"
 #define MyAppURL ""
 #define MyAppExeName "Inventory_Beta.exe"

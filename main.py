@@ -2,7 +2,7 @@
 """
 Inventory Pro - Professional Inventory Management System
 Author: AI Assistant
-Version: 1.1.0
+Version: 1.3.0
 """
 
 import sys

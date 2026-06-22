@@ -73,7 +73,7 @@ del "%SHORTCUT_SCRIPT%"
 echo Adding uninstall entry...
 set "UNINSTALL_KEY=HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Inventory Beta"
 reg add "%UNINSTALL_KEY%" /v "DisplayName" /t REG_SZ /d "Inventory Beta" /f >nul
-reg add "%UNINSTALL_KEY%" /v "DisplayVersion" /t REG_SZ /d "1.1.0" /f >nul
+reg add "%UNINSTALL_KEY%" /v "DisplayVersion" /t REG_SZ /d "1.3.0" /f >nul
 reg add "%UNINSTALL_KEY%" /v "Publisher" /t REG_SZ /d "Inventory Pro" /f >nul
 reg add "%UNINSTALL_KEY%" /v "DisplayIcon" /t REG_SZ /d "%INSTALL_DIR%\Inventory_Beta.exe,0" /f >nul
 reg add "%UNINSTALL_KEY%" /v "UninstallString" /t REG_SZ /d "wscript.exe \"%INSTALL_DIR%\uninstall.vbs\"" /f >nul

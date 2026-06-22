@@ -55,15 +55,9 @@ class InventoryApp:
         # Make window resizable
         self.root.resizable(True, True)
         
-        # Set window icon
-        try:
-            icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", "icons", "app_icon.png")
-            if os.path.exists(icon_path):
-                icon_image = Image.open(icon_path)
-                self.root.iconphoto(True, tk.PhotoImage(file=icon_path))
-        except Exception as e:
-            print(f"Could not load icon: {e}")
-        
+        # Set window icon based on theme
+        self._set_theme_icon()
+
         # Initialize variables
         self.current_view = None
         self.theme_mode = "dark"
@@ -413,7 +407,26 @@ class InventoryApp:
             # Re-apply inactive styling to all buttons
             for btn in self.nav_buttons.values():
                 btn.configure(text_color=("gray10", "gray90"))
-    
+        self._set_theme_icon()
+
+    def _set_theme_icon(self):
+        """Set window icon based on current theme (Dark/Light)."""
+        try:
+            is_dark = ctk.get_appearance_mode() == "Dark"
+            suffix = "dark" if is_dark else "light"
+            ico_path = os.path.join(os.path.dirname(__file__), "..", "assets", "icons", f"app_icon_{suffix}.ico")
+            if os.path.exists(ico_path):
+                self.root.iconbitmap(default=ico_path)
+            else:
+                png_path = os.path.join(os.path.dirname(__file__), "..", "assets", "icons", f"app_icon_{suffix}.png")
+                if os.path.exists(png_path):
+                    from PIL import ImageTk
+                    icon_image = Image.open(png_path)
+                    self._icon_img = ImageTk.PhotoImage(icon_image)
+                    self.root.iconphoto(True, self._icon_img)
+        except Exception as e:
+            print(f"Could not load theme icon: {e}")
+
     def backup_database(self):
         """Backup the database to a user-chosen location."""
         db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "inventory.db"))

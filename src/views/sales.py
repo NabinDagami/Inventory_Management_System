@@ -2302,17 +2302,21 @@ class SalesView:
         filename = os.path.join(reports_dir, f"invoice_{invoice_number}.pdf")
 
         # --- Loading overlay ---
-        loading = ctk.CTkToplevel(self.parent)
-        loading.title("")
-        loading.geometry("260x100")
-        loading.resizable(False, False)
-        loading.transient(self.parent)
-        loading.grab_set()
-        center_window_on_screen(loading, 260, 100)
-        ctk.CTkLabel(loading, text="Generating Invoice...",
-                     font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(20, 5))
-        ctk.CTkProgressBar(loading, mode="indeterminate", width=200).pack(pady=5, padx=30)
-        loading.update()
+        try:
+            loading = ctk.CTkToplevel(self.parent)
+            loading.title("")
+            loading.geometry("260x100")
+            loading.resizable(False, False)
+            loading.transient(self.parent)
+            loading.grab_set()
+            center_window_on_screen(loading, 260, 100)
+            ctk.CTkLabel(loading, text="Generating Invoice...",
+                         font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(20, 5))
+            ctk.CTkProgressBar(loading, mode="indeterminate", width=200).pack(pady=5, padx=30)
+            loading.update()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to create loading dialog:\n{e}")
+            return
 
         def _generate():
             try:
@@ -2503,8 +2507,9 @@ class SalesView:
                          font=ctk.CTkFont(size=11)).pack(pady=2)
             btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
             btn_frame.pack(pady=(15, 0))
+            file_url = f"file:///{os.path.abspath(filename).replace(os.sep, '/')}"
             ctk.CTkButton(btn_frame, text="📄  View",
-                           command=lambda: [dialog.destroy(), webbrowser.open(filename)],
+                           command=lambda url=file_url: [dialog.destroy(), webbrowser.open(url)],
                            width=100, height=35,
                            fg_color="#3B82F6", hover_color="#2563EB").pack(side="left", padx=5)
             ctk.CTkButton(btn_frame, text="🖨  Print",
@@ -2512,11 +2517,18 @@ class SalesView:
                            width=100, height=35,
                            fg_color="#10B981", hover_color="#059669").pack(side="left", padx=5)
             ctk.CTkButton(btn_frame, text="Close",
-                           command=dialog.destroy,
-                           width=80, height=35,
-                           fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
+            command=dialog.destroy,
+                            width=80, height=35,
+                            fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
         except Exception:
-            webbrowser.open(filename)
+            messagebox.showinfo("Invoice Ready", f"PDF saved to:\n{filename}\n\nOpening in browser...")
+            try:
+                webbrowser.open(f"file:///{os.path.abspath(filename).replace(os.sep, '/')}")
+            except Exception:
+                try:
+                    os.startfile(filename)
+                except Exception:
+                    messagebox.showinfo("Invoice PDF", f"PDF saved at:\n{filename}")
 
     def _print_pdf(self, dialog, filename):
         """Open the PDF with the system print dialog."""
@@ -2524,8 +2536,11 @@ class SalesView:
         try:
             os.startfile(filename, "print")
         except Exception:
-            webbrowser.open(filename)
-            messagebox.showinfo("Print", "PDF opened in browser. Press Ctrl+P to print.")
+            try:
+                webbrowser.open(f"file:///{os.path.abspath(filename).replace(os.sep, '/')}")
+                messagebox.showinfo("Print", "PDF opened in browser. Press Ctrl+P to print.")
+            except Exception:
+                messagebox.showinfo("Print PDF", f"Please open and print:\n{filename}")
 
     def _on_invoice_error(self, loading, error_msg):
         """Called when PDF generation fails."""
