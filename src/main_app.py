@@ -4,6 +4,7 @@ from tkinter import messagebox, filedialog
 import os
 import sys
 import shutil
+import json
 from datetime import datetime
 from PIL import Image
 
@@ -25,8 +26,19 @@ from utils.logger import logger
 
 class InventoryApp:
     def __init__(self):
+        # Load saved theme preference
+        settings_path = os.path.join(os.path.dirname(__file__), "..", "data", "settings.json")
+        saved_theme = "dark"
+        try:
+            with open(settings_path, "r") as f:
+                settings = json.load(f)
+                saved_theme = settings.get("appearance", {}).get("mode", "dark")
+        except (FileNotFoundError, json.JSONDecodeError):
+            pass
+        self.theme_mode = saved_theme if saved_theme in ("light", "dark") else "dark"
+
         # Set appearance mode and color theme
-        ctk.set_appearance_mode("dark")
+        ctk.set_appearance_mode(self.theme_mode)
         ctk.set_default_color_theme("blue")
         
         # Create main window
@@ -60,7 +72,6 @@ class InventoryApp:
 
         # Initialize variables
         self.current_view = None
-        self.theme_mode = "dark"
         
         # Table styles are now handled individually by each view
         
@@ -215,7 +226,7 @@ class InventoryApp:
         
         self.theme_switch = ctk.CTkSwitch(
             theme_frame,
-            text="🌙   Dark Mode",
+            text="☀️ Light Mode" if self.theme_mode == "light" else "🌙   Dark Mode",
             command=self.toggle_theme,
             font=ctk.CTkFont(size=12),
             progress_color=("#3B82F6", "#60A5FA")
@@ -386,7 +397,6 @@ class InventoryApp:
         # Remember which view is currently active
         active_nav = None
         for btn_text, btn in self.nav_buttons.items():
-            # Check if this button is the active one (has blue fg_color)
             if btn.cget("fg_color") not in ("transparent", ["transparent", "transparent"]):
                 active_nav = btn_text
                 break
@@ -400,14 +410,32 @@ class InventoryApp:
             ctk.set_appearance_mode("dark")
             self.theme_switch.configure(text="🌙 Dark Mode")
 
+        # Persist theme preference
+        self._save_theme(self.theme_mode)
+
         # Re-apply active nav styling so text_color is correct after theme change
         if active_nav:
             self.set_active_nav(active_nav)
         else:
-            # Re-apply inactive styling to all buttons
             for btn in self.nav_buttons.values():
                 btn.configure(text_color=("gray10", "gray90"))
         self._set_theme_icon()
+
+    def _save_theme(self, mode):
+        """Save theme preference to settings.json."""
+        settings_path = os.path.join(os.path.dirname(__file__), "..", "data", "settings.json")
+        try:
+            settings = {}
+            if os.path.exists(settings_path):
+                with open(settings_path, "r") as f:
+                    settings = json.load(f)
+            if "appearance" not in settings:
+                settings["appearance"] = {}
+            settings["appearance"]["mode"] = mode
+            with open(settings_path, "w") as f:
+                json.dump(settings, f, indent=4)
+        except Exception:
+            pass
 
     def _set_theme_icon(self):
         """Set window icon based on current theme (Dark/Light)."""

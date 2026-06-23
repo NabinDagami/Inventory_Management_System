@@ -21,6 +21,7 @@ from models.database import db
 from utils.sku_generator import SKUGenerator
 import utils.simple_table_styles as table_styles
 from utils.export_manager import ExportManager
+from utils.dialog_utils import size_and_center_dialog
 # from utils.camera_scanner import CameraBarcodeReader
 
 
@@ -664,7 +665,7 @@ class InventoryView:
         table_container.grid_rowconfigure(0, weight=1)
         
         # Create treeview for products
-        columns = ("#", "SKU", "Name", "Category", "Sub Category", "Brand", "Sub Brand", "Stock", "Qty Sold", "Normal Price", "Workshop Price", "Reorder Level")
+        columns = ("#", "SKU", "Name", "Category", "Sub Category", "Brand", "Sub Brand", "Barcode", "Stock", "Qty Sold", "Normal Price", "Workshop Price", "Reorder Level")
         self.data_tree = ttk.Treeview(table_container, columns=columns, show="headings", height=20)
         self.data_tree.grid(row=0, column=0, sticky="nsew", padx=(2, 0), pady=(2, 0))
         
@@ -681,9 +682,13 @@ class InventoryView:
         self.data_tree.tag_configure("stock_low", foreground=("#D97706" if not is_dark else "#FBBF24"), font=("Segoe UI", 11, "bold"))
         self.data_tree.tag_configure("stock_ok", foreground=("#059669" if not is_dark else "#34D399"), font=("Segoe UI", 11))
         
+        # Barcode status colors (row-level, overrides stock foreground for barcode visibility)
+        self.data_tree.tag_configure("has_barcode", foreground=("#16A34A" if not is_dark else "#4ADE80"))
+        self.data_tree.tag_configure("no_barcode", foreground=("#DC2626" if not is_dark else "#F87171"))
+        
         # Column widths - Name and Brand stretch to fill space
         column_widths = {"#": 50, "SKU": 110, "Name": 200, "Category": 120, "Sub Category": 120,
-                        "Brand": 120, "Sub Brand": 120, "Stock": 80, "Qty Sold": 80,
+                        "Brand": 120, "Sub Brand": 120, "Barcode": 50, "Stock": 80, "Qty Sold": 80,
                         "Normal Price": 100, "Workshop Price": 120, "Reorder Level": 90}
         
         for col in columns:
@@ -1034,6 +1039,8 @@ class InventoryView:
             
             # Insert the item with alternating row and stock status tags
             row_tag = "evenrow" if idx % 2 == 0 else "oddrow"
+            has_bc = (product.get('barcode') or "").strip()
+            barcode_tag = "has_barcode" if has_bc else "no_barcode"
             item_id = self.data_tree.insert("", "end", values=(
                 idx,
                 product['sku'],
@@ -1042,12 +1049,13 @@ class InventoryView:
                 product['sub_category_name'] or "-",
                 product['brand_name'] or "N/A",
                 product['sub_brand_name'] or "-",
+                "✅" if has_bc else "❌",
                 stock_display,
                 product.get('qty_sold', 0),
                 self.format_price(product['price_normal']),
                 self.format_price(product['price_workshop']),
                 reorder
-            ), tags=(stock_tag, row_tag))
+            ), tags=(row_tag, stock_tag, barcode_tag))
         
         displayed_count = len(self.data_tree.get_children())
         if hasattr(self, 'count_label'):
@@ -1293,6 +1301,8 @@ class InventoryView:
                     
                     # Insert the item with alternating row and stock status tags
                     row_tag = "evenrow" if row_num % 2 == 0 else "oddrow"
+                    has_bc = (item.get('barcode') or "").strip()
+                    barcode_tag = "has_barcode" if has_bc else "no_barcode"
                     item_id = self.data_tree.insert("", "end", values=(
                         row_num,
                         item['sku'],
@@ -1301,12 +1311,13 @@ class InventoryView:
                         sub_category_name,
                         brand_name,
                         sub_brand_name,
+                        "✅" if has_bc else "❌",
                         stock_display,
                         item.get('qty_sold', 0),
                         self.format_price(item['price_normal']),
                         self.format_price(item['price_workshop']),
                         reorder_level
-                    ), tags=(stock_tag, row_tag))
+                    ), tags=(row_tag, stock_tag, barcode_tag))
             elif self.current_tab == "categories":
                 if search_term in item['category_name'].lower():
                     row_num += 1
@@ -3035,26 +3046,10 @@ class ProductDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("500x750")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        
-        # Center dialog on parent window
-        self.dialog.update_idletasks()
-        parent.update_idletasks()
-        
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_width = parent.winfo_width()
-        parent_height = parent.winfo_height()
-        
-        dialog_width = 500
-        dialog_height = 750
-        
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-        
-        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, parent, 500, 750, min_w=480, min_h=600)
         
         # Load categories and brands
         self.load_categories_and_brands()
@@ -3619,14 +3614,10 @@ class ProductDialog:
         try:
             dialog = ctk.CTkToplevel(self.parent)
             dialog.title("PDF Ready")
-            dialog.geometry("380x170")
-            dialog.resizable(False, False)
+            dialog.resizable(True, True)
             dialog.transient(self.parent)
             dialog.grab_set()
-            dialog.update_idletasks()
-            px = self.parent.winfo_rootx() + (self.parent.winfo_width() - 380) // 2
-            py = self.parent.winfo_rooty() + (self.parent.winfo_height() - 170) // 2
-            dialog.geometry(f"380x170+{px}+{py}")
+            size_and_center_dialog(dialog, self.parent, 380, 170, min_w=340, min_h=150)
 
             ctk.CTkLabel(dialog, text="✅ PDF Generated Successfully",
                          font=ctk.CTkFont(size=16, weight="bold"),
@@ -3676,26 +3667,11 @@ class ProductDialog:
         """Show a custom CTk dialog for print quantity - matches app styling"""
         dialog = ctk.CTkToplevel(self.parent)
         dialog.title("Print Quantity")
-        dialog.geometry("400x200")
-        dialog.resizable(False, False)
-        dialog.attributes('-topmost', True)  # Keep on top
+        dialog.resizable(True, True)
+        dialog.attributes('-topmost', True)
         dialog.transient(self.parent)
-        
-        # Center dialog on parent
-        dialog.update_idletasks()
-        self.parent.update_idletasks()
-        
-        parent_x = self.parent.winfo_rootx()
-        parent_y = self.parent.winfo_rooty()
-        parent_width = self.parent.winfo_width()
-        parent_height = self.parent.winfo_height()
-        
-        x = parent_x + (parent_width // 2) - (200)
-        y = parent_y + (parent_height // 2) - (100)
-        dialog.geometry(f"400x200+{x}+{y}")
-        
-        # Make it modal
         dialog.grab_set()
+        size_and_center_dialog(dialog, self.parent, 400, 200, min_w=350, min_h=160)
         
         result = {"qty": None}
         
@@ -3991,21 +3967,11 @@ class ProductDialog:
 
         dialog = ctk.CTkToplevel(self.parent)
         dialog.title("Select Start Position")
-        dialog.geometry("520x620")
-        dialog.resizable(False, False)
+        dialog.resizable(True, True)
         dialog.attributes('-topmost', True)
         dialog.transient(self.parent)
-
-        dialog.update_idletasks()
-        pw = self.parent.winfo_rootx()
-        ph = self.parent.winfo_rooty()
-        pwidth = self.parent.winfo_width()
-        pheight = self.parent.winfo_height()
-        x = pw + (pwidth // 2) - (260)
-        y = ph + (pheight // 2) - (310)
-        dialog.geometry(f"520x620+{x}+{y}")
-
         dialog.grab_set()
+        size_and_center_dialog(dialog, self.parent, 520, 620, min_w=460, min_h=500)
 
         result = {"start": None}
 
@@ -4139,27 +4105,10 @@ class CategoryDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("500x400")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        
-        # Center dialog on parent window
-        self.dialog.update_idletasks()
-        parent.update_idletasks()
-        
-        # Calculate position to center on parent
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_width = parent.winfo_width()
-        parent_height = parent.winfo_height()
-        
-        dialog_width = 500
-        dialog_height = 400
-        
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-        
-        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, parent, 500, 400, min_w=400, min_h=350)
         
         # Ensure dialog stays on top
         self.dialog.attributes("-topmost", True)
@@ -4296,32 +4245,13 @@ class SubCategoryDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("500x500")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        
-        # Center dialog on parent window
-        self.dialog.update_idletasks()
-        parent.update_idletasks()
-        
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_width = parent.winfo_width()
-        parent_height = parent.winfo_height()
-        
-        dialog_width = 500
-        dialog_height = 500
-        
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-        
-        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, parent, 500, 500, min_w=400, min_h=400)
         
         self.dialog.attributes("-topmost", True)
         self.dialog.focus_force()
-        
-        # Load categories
-        self.categories = db.execute_query("SELECT category_id, category_name FROM categories ORDER BY category_name")
         
         # Create form
         self.create_form(sub_category_data)
@@ -4495,26 +4425,10 @@ class BrandDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("500x400")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        
-        # Center dialog on parent window
-        self.dialog.update_idletasks()
-        parent.update_idletasks()
-        
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_width = parent.winfo_width()
-        parent_height = parent.winfo_height()
-        
-        dialog_width = 500
-        dialog_height = 400
-        
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-        
-        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, parent, 500, 400, min_w=400, min_h=350)
         
         self.dialog.attributes("-topmost", True)
         self.dialog.focus_force()
@@ -4646,26 +4560,10 @@ class SubBrandDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("500x500")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        
-        # Center dialog
-        self.dialog.update_idletasks()
-        parent.update_idletasks()
-        
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_width = parent.winfo_width()
-        parent_height = parent.winfo_height()
-        
-        dialog_width = 500
-        dialog_height = 500
-        
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-        
-        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, parent, 500, 500, min_w=400, min_h=400)
         
         self.dialog.attributes("-topmost", True)
         self.dialog.focus_force()
@@ -5122,15 +5020,10 @@ class SelectionDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("400x500")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        
-        # Center dialog
-        self.dialog.update_idletasks()
-        x = parent.winfo_x() + (parent.winfo_width() // 2) - (400 // 2)
-        y = parent.winfo_y() + (parent.winfo_height() // 2) - (500 // 2)
-        self.dialog.geometry(f"400x500+{x}+{y}")
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, parent, 400, 500, min_w=350, min_h=400)
         
         self.create_ui()
         self.dialog.wait_window()

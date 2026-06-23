@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models.database import db
 from utils.format_utils import format_price_with_decimals, get_currency_symbol
+from utils.dialog_utils import size_and_center_dialog
 
 
 class PaymentDialog:
@@ -23,18 +24,10 @@ class PaymentDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Record {payment_type.title()} Payment")
-        self.dialog.geometry("500x700")
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        
-        # Center the dialog on screen
-        self.dialog.update_idletasks()
-        screen_width = self.dialog.winfo_screenwidth()
-        screen_height = self.dialog.winfo_screenheight()
-        x = (screen_width - 500) // 2
-        y = (screen_height - 550) // 2
-        self.dialog.geometry(f"500x550+{x}+{y}")
+        size_and_center_dialog(self.dialog, parent, 500, 550, min_w=450, min_h=450)
         
         self.create_form()
         

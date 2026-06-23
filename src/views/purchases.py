@@ -11,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.database import db
 import utils.simple_table_styles as table_styles
 from utils.format_utils import format_price_with_decimals as _fmt
+from utils.dialog_utils import size_and_center_dialog
 
 
 def center_window_on_screen(window, width, height):
@@ -706,11 +707,11 @@ class PurchasesView:
         """Open a modal window to browse and select products."""
         modal = ctk.CTkToplevel(self.parent)
         modal.title("Select Products")
-        modal.geometry("900x600")
-        modal.minsize(600, 400)
         modal.transient(self.parent)
         modal.grab_set()
+        modal.minsize(600, 400)
         modal.resizable(True, True)
+        size_and_center_dialog(modal, self.parent, 900, 600, min_w=600, min_h=400)
 
         header = ctk.CTkFrame(modal, fg_color=("#F1F5F9", "#0F172A"), height=40)
         header.pack(fill="x", padx=0, pady=0)
@@ -1710,12 +1711,13 @@ class PurchaseDetailsDialog:
 
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Purchase Details - {self._get_po_number()}")
-        self.dialog.transient(parent)
+        self.dialog.transient(self.parent)
         self.dialog.grab_set()
 
         self._create_content()
 
-        center_window_on_screen(self.dialog, 700, 550)
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, self.parent, 700, 550, min_w=500, min_h=400)
         self.dialog.wait_window()
 
     def _get_po_number(self):
@@ -1951,13 +1953,13 @@ class CreditPurchasePaymentDialog:
 
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title("Credit Purchase - Initial Payment")
-        self.dialog.transient(parent)
+        self.dialog.transient(self.parent)
         self.dialog.grab_set()
-        self.dialog.resizable(False, False)
 
         self._create_content()
 
-        center_window_on_screen(self.dialog, 420, 450)
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, self.parent, 420, 450, min_w=380, min_h=380)
         self.dialog.wait_window()
 
     def _create_content(self):
@@ -2070,13 +2072,13 @@ class PayPurchaseCreditDialog:
 
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Pay Credit — {invoice_number}")
-        self.dialog.transient(parent)
+        self.dialog.transient(self.parent)
         self.dialog.grab_set()
-        self.dialog.resizable(False, False)
 
         self._create_content()
 
-        center_window_on_screen(self.dialog, 420, 460)
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, self.parent, 420, 460, min_w=380, min_h=380)
         self.dialog.wait_window()
 
     def _create_content(self):
@@ -2183,27 +2185,10 @@ class AddProductDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Add {product['name']} to Purchase Order")
-        self.dialog.geometry("500x500")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        self.dialog.resizable(False, False)
-        
-        # Center dialog on parent window
-        self.dialog.update_idletasks()
-        parent.update_idletasks()
-        
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_width = parent.winfo_width()
-        parent_height = parent.winfo_height()
-        
-        dialog_width = 500
-        dialog_height = 500
-        
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-        
-        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, parent, 500, 500, min_w=400, min_h=400)
         
         self.create_dialog_content()
         

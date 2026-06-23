@@ -7,6 +7,7 @@ Excel Column Mapper - Automatic mapping with preview
 
 
 import pandas as pd
+from utils.dialog_utils import size_and_center_dialog
 
 import sys
 
@@ -240,25 +241,13 @@ class ExcelColumnMapper:
 
         loading.title("Reading Excel File...")
 
-        loading.geometry("400x200")
-
         loading.transient(self.parent)
 
         loading.grab_set()
 
-        loading.resizable(False, False)
+        loading.resizable(True, True)
 
-
-
-        # Center
-
-        loading.update_idletasks()
-
-        x = self.parent.winfo_x() + (self.parent.winfo_width() // 2) - 200
-
-        y = self.parent.winfo_y() + (self.parent.winfo_height() // 2) - 100
-
-        loading.geometry(f"400x200+{x}+{y}")
+        size_and_center_dialog(loading, self.parent, 400, 200, min_w=300, min_h=100)
 
 
 
@@ -332,23 +321,13 @@ class ExcelColumnMapper:
 
         dialog.title("📊 Excel File - Raw Data View")
 
-        dialog.geometry("1000x650")
+        dialog.resizable(True, True)
 
         dialog.transient(self.parent)
 
         dialog.grab_set()
 
-
-
-        # Center
-
-        dialog.update_idletasks()
-
-        x = self.parent.winfo_x() + (self.parent.winfo_width() // 2) - 500
-
-        y = self.parent.winfo_y() + (self.parent.winfo_height() // 2) - 325
-
-        dialog.geometry(f"1000x650+{x}+{y}")
+        size_and_center_dialog(dialog, self.parent, 1000, 650, min_w=900, min_h=550)
 
 
 
@@ -762,23 +741,13 @@ class ExcelColumnMapper:
 
         loading.title("Extracting Data...")
 
-        loading.geometry("400x200")
-
         loading.transient(self.parent)
 
         loading.grab_set()
 
-        loading.resizable(False, False)
+        loading.resizable(True, True)
 
-
-
-        loading.update_idletasks()
-
-        x = self.parent.winfo_x() + (self.parent.winfo_width() // 2) - 200
-
-        y = self.parent.winfo_y() + (self.parent.winfo_height() // 2) - 100
-
-        loading.geometry(f"400x200+{x}+{y}")
+        size_and_center_dialog(loading, self.parent, 400, 200, min_w=300, min_h=100)
 
 
 
@@ -1070,21 +1039,13 @@ class ExcelColumnMapper:
 
         dialog.title("📋 Extracted Data View")
 
-        dialog.geometry("1000x650")
+        dialog.resizable(True, True)
 
         dialog.transient(self.parent)
 
         dialog.grab_set()
 
-
-
-        dialog.update_idletasks()
-
-        x = self.parent.winfo_x() + (self.parent.winfo_width() // 2) - 500
-
-        y = self.parent.winfo_y() + (self.parent.winfo_height() // 2) - 325
-
-        dialog.geometry(f"1000x650+{x}+{y}")
+        size_and_center_dialog(dialog, self.parent, 1000, 650, min_w=900, min_h=550)
 
 
 
@@ -1298,25 +1259,13 @@ class ExcelColumnMapper:
 
         dialog.title("👁️ Preview Extracted Data")
 
-        dialog.geometry("900x650")
+        dialog.resizable(True, True)
 
         dialog.transient(self.parent)
 
         dialog.grab_set()
 
-        dialog.resizable(False, False)
-
-
-
-        # Center the dialog
-
-        dialog.update_idletasks()
-
-        x = self.parent.winfo_x() + (self.parent.winfo_width() // 2) - 450
-
-        y = self.parent.winfo_y() + (self.parent.winfo_height() // 2) - 325
-
-        dialog.geometry(f"900x650+{x}+{y}")
+        size_and_center_dialog(dialog, self.parent, 900, 650, min_w=800, min_h=550)
 
 
 
@@ -1590,23 +1539,13 @@ class ExcelColumnMapper:
 
         loading.title("Importing Data...")
 
-        loading.geometry("450x320")
-
         loading.transient(self.parent)
 
         loading.grab_set()
 
-        loading.resizable(False, False)
+        loading.resizable(True, True)
 
-
-
-        loading.update_idletasks()
-
-        x = self.parent.winfo_x() + (self.parent.winfo_width() // 2) - 225
-
-        y = self.parent.winfo_y() + (self.parent.winfo_height() // 2) - 160
-
-        loading.geometry(f"450x320+{x}+{y}")
+        size_and_center_dialog(loading, self.parent, 450, 320, min_w=350, min_h=220)
 
 
 

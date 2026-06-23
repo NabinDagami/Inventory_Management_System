@@ -11,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.database import db
 import utils.simple_table_styles as table_styles
 from utils.format_utils import format_price_with_decimals
+from utils.dialog_utils import size_and_center_dialog
 
 class StatementsView:
     def __init__(self, parent):
@@ -350,15 +351,10 @@ class StatementsView:
         """Create a detailed view dialog for the selected record"""
         dialog = ctk.CTkToplevel(self.parent)
         dialog.title(f"Record Details - {invoice_number}")
-        dialog.geometry("600x700")
         dialog.transient(self.parent)
         dialog.grab_set()
-        
-        # Center dialog
-        dialog.update_idletasks()
-        x = (dialog.winfo_screenwidth() // 2) - (300)
-        y = (dialog.winfo_screenheight() // 2) - (350)
-        dialog.geometry(f"+{x}+{y}")
+        dialog.resizable(True, True)
+        size_and_center_dialog(dialog, self.parent, 600, 700, min_w=480, min_h=500)
         
         # Main container
         main_frame = ctk.CTkScrollableFrame(dialog)

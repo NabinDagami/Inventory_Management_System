@@ -13,6 +13,7 @@ from reportlab.lib.units import inch
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from utils.dialog_utils import size_and_center_dialog
 from models.database import db
 
 class SalesModule:
@@ -645,12 +646,10 @@ class QuantityDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title("Enter Quantity")
-        self.dialog.geometry("300x150")
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        
-        # Center the dialog
-        self.dialog.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, parent, 300, 150, min_w=280, min_h=130)
         
         # Create widgets
         self.create_widgets()

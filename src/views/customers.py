@@ -13,6 +13,7 @@ import utils.simple_table_styles as table_styles
 from views.payment_dialog import PaymentDialog
 from utils.export_manager import ExportManager
 from utils.format_utils import format_price_with_decimals, get_currency_symbol
+from utils.dialog_utils import size_and_center_dialog
 
 class CustomersView:
     def __init__(self, parent):
@@ -480,27 +481,10 @@ class CustomerDialog:
         
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("580x750")
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        
-        # Center dialog on parent window
-        self.dialog.update_idletasks()
-        parent.update_idletasks()
-        
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_width = parent.winfo_width()
-        parent_height = parent.winfo_height()
-        
-        dialog_width = 580
-        dialog_height = 750
-        
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-        
-        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        size_and_center_dialog(self.dialog, parent, 580, 750, min_w=480, min_h=600)
         
         self.create_form()
         
@@ -738,27 +722,10 @@ class CustomerStatementDialog:
         self.dialog = ctk.CTkToplevel(parent)
         title_text = "Statement - " + customer_data['name']
         self.dialog.title(title_text)
-        self.dialog.geometry("820x620")
-        self.dialog.resizable(True, True)
         self.dialog.transient(parent)
         self.dialog.grab_set()
-        
-        # Center dialog on parent window
-        self.dialog.update_idletasks()
-        parent.update_idletasks()
-        
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_width = parent.winfo_width()
-        parent_height = parent.winfo_height()
-        
-        dialog_width = 820
-        dialog_height = 620
-        
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-        
-        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, parent, 820, 620, min_w=600, min_h=500)
 
         self._build_ui()
         self._load_data()

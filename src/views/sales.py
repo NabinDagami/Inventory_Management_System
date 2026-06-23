@@ -31,6 +31,9 @@ def center_window_on_screen(window, width, height):
     window.geometry(f"{width}x{height}+{x}+{y}")
 
 
+from utils.dialog_utils import size_and_center_dialog
+
+
 class SearchableDropdown(ctk.CTkFrame):
     """A custom searchable dropdown component for customer selection"""
     def __init__(self, parent, placeholder_text="Search...", width=250, command=None, **kwargs):
@@ -806,7 +809,7 @@ class SalesView:
         dialog = SaleDetailsDialog(self.parent, selected_sale, self.load_sales_history)
     
     def create_product_selection(self, parent):
-        """Create product selection area with search, barcode, Browse button + modal"""
+        """Create product selection area with search, barcode, Browse button + dialog"""
         product_frame = ctk.CTkFrame(parent, fg_color=("#F5F5F5", "#252535"), corner_radius=6)
         product_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=0)
         product_frame.grid_rowconfigure(2, weight=1)
@@ -1221,7 +1224,7 @@ class SalesView:
         self._show_search_dropdown(matches)
 
     def _on_search_enter(self, event=None):
-        """Enter key — add first search result or open browse modal."""
+        """Enter key — add first search result or open browse dialog."""
         term = self.search_var.get().strip()
         if not term:
             self._hide_search_dropdown()
@@ -1233,7 +1236,7 @@ class SalesView:
                 self._hide_search_dropdown()
                 self._search_dropdown_add(p)
                 return
-        # No match — open modal
+        # No match — open dialog
         self._hide_search_dropdown()
         self._open_product_browser(term)
 
@@ -1241,17 +1244,17 @@ class SalesView:
         pass
 
     def _open_product_browser(self, initial_search=""):
-        """Open a modal window to browse and select products."""
-        modal = ctk.CTkToplevel(self.parent)
-        modal.title("Select Products")
-        modal.geometry("900x600")
-        modal.minsize(600, 400)
-        modal.transient(self.parent)
-        modal.grab_set()
-        modal.resizable(True, True)
+        """Open a dialog window to browse and select products."""
+        dialog = ctk.CTkToplevel(self.parent)
+        dialog.title("Select Product")
+        dialog.transient(self.parent)
+        dialog.grab_set()
+        dialog.minsize(600, 400)
+        dialog.resizable(True, True)
+        size_and_center_dialog(dialog, self.parent, 900, 600, min_w=600, min_h=400)
 
         # ── Header ──
-        header = ctk.CTkFrame(modal, fg_color=("#F1F5F9", "#0F172A"), height=40)
+        header = ctk.CTkFrame(dialog, fg_color=("#F1F5F9", "#0F172A"), height=40)
         header.pack(fill="x", padx=0, pady=0)
         header.pack_propagate(False)
 
@@ -1265,11 +1268,11 @@ class SalesView:
             font=ctk.CTkFont(size=16, weight="bold"),
             fg_color="transparent", hover_color=("#E2E8F0", "#334155"),
             text_color=("#475569", "#CBD5E1"),
-            command=modal.destroy
+            command=dialog.destroy
         ).pack(side="right", padx=(0, 8))
 
         # ── Search + Barcode row ──
-        search_row = ctk.CTkFrame(modal, fg_color="transparent")
+        search_row = ctk.CTkFrame(dialog, fg_color="transparent")
         search_row.pack(fill="x", padx=12, pady=(10, 6))
 
         search_var = ctk.StringVar()
@@ -1289,7 +1292,7 @@ class SalesView:
         barcode_entry.pack(side="left", padx=(0, 0))
 
         # ── Product tree ──
-        tree_frame = ctk.CTkFrame(modal)
+        tree_frame = ctk.CTkFrame(dialog)
         tree_frame.pack(fill="both", expand=True, padx=12, pady=6)
         tree_frame.grid_rowconfigure(0, weight=1)
         tree_frame.grid_columnconfigure(0, weight=1)
@@ -1318,7 +1321,7 @@ class SalesView:
         h_sb.grid(row=1, column=0, sticky="ew")
 
         # ── Footer ──
-        footer = ctk.CTkFrame(modal, fg_color=("#F8FAFC", "#1E293B"), height=42)
+        footer = ctk.CTkFrame(dialog, fg_color=("#F8FAFC", "#1E293B"), height=42)
         footer.pack(fill="x", padx=0, pady=0)
         footer.pack_propagate(False)
 
@@ -1387,7 +1390,7 @@ class SalesView:
                 self.add_to_cart(quantity=1, product=product)
                 # flash‑feedback on the add button
                 add_btn.configure(text="✅  Added!", fg_color="#10B981")
-                modal.after(800, lambda: add_btn.configure(
+                dialog.after(800, lambda: add_btn.configure(
                     text="🛒  Add to Cart", fg_color="#4CAF50"
                 ))
 
@@ -1399,7 +1402,7 @@ class SalesView:
             _add_selected()
 
         # ── Barcode handler ──
-        def _on_modal_barcode(_=None):
+        def _on_dialog_barcode(_=None):
             code = barcode_var.get().strip()
             if not code:
                 return
@@ -1420,7 +1423,7 @@ class SalesView:
             if product:
                 self.add_to_cart(quantity=1, product=product)
                 add_btn.configure(text="✅  Added!", fg_color="#10B981")
-                modal.after(800, lambda: add_btn.configure(
+                dialog.after(800, lambda: add_btn.configure(
                     text="🛒  Add to Cart", fg_color="#4CAF50"
                 ))
                 # Highlight in tree
@@ -1435,18 +1438,18 @@ class SalesView:
                 return
             # Not found — flash red on entry
             barcode_entry.configure(border_color="#ef4444")
-            modal.after(1500, lambda: barcode_entry.configure(
+            dialog.after(1500, lambda: barcode_entry.configure(
                 border_color=("#565b5e", "#949A9F")
             ))
 
         # ── Bindings ──
         search_var.trace('w', _do_filter)
-        barcode_entry.bind("<Return>", _on_modal_barcode)
+        barcode_entry.bind("<Return>", _on_dialog_barcode)
         tree.bind("<<TreeviewSelect>>", _on_select)
         tree.bind("<Double-1>", _on_double_click)
         add_btn.configure(command=_add_selected)
-        modal.bind("<Escape>", lambda e: modal.destroy())
-        modal.protocol("WM_DELETE_WINDOW", modal.destroy)
+        dialog.bind("<Escape>", lambda e: dialog.destroy())
+        dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
 
         # ── Initial population ──
         if initial_search:
@@ -1482,7 +1485,7 @@ class SalesView:
             print(f"Error loading customers: {e}")
     
     def load_products(self):
-        """Load products into memory for the modal browser."""
+        """Load products into memory for the dialog browser."""
         try:
             query = """
                 SELECT p.product_id, p.sku, p.name, p.stock, p.price_normal, 
@@ -2305,11 +2308,10 @@ class SalesView:
         try:
             loading = ctk.CTkToplevel(self.parent)
             loading.title("")
-            loading.geometry("260x100")
-            loading.resizable(False, False)
+            loading.resizable(True, True)
             loading.transient(self.parent)
             loading.grab_set()
-            center_window_on_screen(loading, 260, 100)
+            size_and_center_dialog(loading, self.parent, 260, 100, min_w=240, min_h=80)
             ctk.CTkLabel(loading, text="Generating Invoice...",
                          font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(20, 5))
             ctk.CTkProgressBar(loading, mode="indeterminate", width=200).pack(pady=5, padx=30)
@@ -2494,11 +2496,10 @@ class SalesView:
         try:
             dialog = ctk.CTkToplevel(self.parent)
             dialog.title("Invoice Generated")
-            dialog.geometry("380x180")
-            dialog.resizable(False, False)
+            dialog.resizable(True, True)
             dialog.transient(self.parent)
             dialog.grab_set()
-            center_window_on_screen(dialog, 380, 180)
+            size_and_center_dialog(dialog, self.parent, 380, 180, min_w=340, min_h=150)
             ctk.CTkLabel(dialog, text="✅ Invoice Generated Successfully",
                          font=ctk.CTkFont(size=16, weight="bold"),
                          text_color="#4CAF50").pack(pady=(25, 5))
@@ -2890,12 +2891,10 @@ class CreditPaymentDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title("💳 Credit Sale - Payment Details")
-        self.dialog.resizable(False, False)
-        self.dialog.transient(parent)
+        self.dialog.transient(self.parent)
         self.dialog.grab_set()
-
-        # Center dialog on screen
-        center_window_on_screen(self.dialog, 420, 320)
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, self.parent, 420, 320, min_w=380, min_h=300)
 
         # Prevent closing with X without handling
         self.dialog.protocol("WM_DELETE_WINDOW", self.on_cancel)
@@ -3044,12 +3043,10 @@ class PaySaleCreditDialog:
 
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Pay Credit - {sale_data['invoice_number']}")
-        self.dialog.resizable(True, True)
-        self.dialog.transient(parent)
+        self.dialog.transient(self.parent)
         self.dialog.grab_set()
-        
-        # Center dialog on screen
-        center_window_on_screen(self.dialog, 460, 480)
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, self.parent, 460, 480, min_w=400, min_h=400)
         
         self.dialog.protocol("WM_DELETE_WINDOW", self.on_cancel)
 
@@ -3280,11 +3277,10 @@ class SaleDetailsDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Sale Details - {sale_data['invoice_number']}")
-        self.dialog.transient(parent)
+        self.dialog.transient(self.parent)
         self.dialog.grab_set()
-        
-        # Center dialog on screen
-        center_window_on_screen(self.dialog, 600, 500)
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, self.parent, 600, 500, min_w=480, min_h=400)
         
         self.create_details_view()
         
@@ -3530,13 +3526,13 @@ class SaleReturnDialog:
 
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(f"Sales Return - {sale_data['invoice_number']}")
-        self.dialog.transient(parent)
+        self.dialog.transient(self.parent)
         self.dialog.grab_set()
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, self.parent, 700, 540, min_w=500, min_h=400)
 
         self._load_items()
         self._build_ui()
-
-        center_window_on_screen(self.dialog, 700, 540)
         self.dialog.wait_window()
 
     def _parse_previous_returns(self):
@@ -3850,14 +3846,11 @@ class DiscountDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title("Apply Discount")
-        self.dialog.transient(parent)
+        self.dialog.transient(self.parent)
         self.dialog.grab_set()
-        
-        # Center dialog on screen
-        center_window_on_screen(self.dialog, 750, 600)
-        
-        # Make dialog resizable
         self.dialog.minsize(450, 400)
+        self.dialog.resizable(True, True)
+        size_and_center_dialog(self.dialog, self.parent, 750, 600, min_w=450, min_h=400)
         
         # Prevent closing with X button without handling
         self.dialog.protocol("WM_DELETE_WINDOW", self.on_cancel)

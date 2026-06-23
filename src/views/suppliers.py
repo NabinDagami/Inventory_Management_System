@@ -10,6 +10,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models.database import db
 import utils.simple_table_styles as table_styles
 from utils.export_manager import ExportManager
+from utils.dialog_utils import size_and_center_dialog
 
 class SuppliersView:
     def __init__(self, parent):
@@ -390,27 +391,10 @@ class SupplierDialog:
         # Create dialog
         self.dialog = ctk.CTkToplevel(parent)
         self.dialog.title(title)
-        self.dialog.geometry("580x700")
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        
-        # Center dialog on parent window
-        self.dialog.update_idletasks()
-        parent.update_idletasks()
-        
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_width = parent.winfo_width()
-        parent_height = parent.winfo_height()
-        
-        dialog_width = 580
-        dialog_height = 700
-        
-        x = parent_x + (parent_width // 2) - (dialog_width // 2)
-        y = parent_y + (parent_height // 2) - (dialog_height // 2)
-        
-        self.dialog.geometry(f"{dialog_width}x{dialog_height}+{x}+{y}")
+        size_and_center_dialog(self.dialog, parent, 580, 700, min_w=480, min_h=550)
         
         # Create form
         self.create_form(supplier_data)
