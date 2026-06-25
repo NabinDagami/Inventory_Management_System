@@ -87,7 +87,7 @@ class StatementsView:
             search_frame,
             textvariable=self.search_var,
             placeholder_text="Search records by invoice, customer, date...",
-            width=400
+            width=250
         )
         search_entry.pack(side="left", padx=5, pady=10)
         
@@ -356,17 +356,17 @@ class StatementsView:
         dialog.resizable(True, True)
         size_and_center_dialog(dialog, self.parent, 600, 700, min_w=480, min_h=500)
         
-        # Main container
-        main_frame = ctk.CTkScrollableFrame(dialog)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        # Title
+        # Title (fixed header)
         title_label = ctk.CTkLabel(
-            main_frame,
+            dialog,
             text=f"📋 {self.current_tab.title()} Record Details",
             font=ctk.CTkFont(size=20, weight="bold")
         )
-        title_label.pack(pady=(0, 20))
+        title_label.pack(pady=(15, 5))
+        
+        # Scrollable content
+        main_frame = ctk.CTkScrollableFrame(dialog)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=(5, 0))
         
         # Invoice Info Section
         invoice_frame = ctk.CTkFrame(main_frame, fg_color=("gray90", "gray20"))
@@ -437,9 +437,9 @@ class StatementsView:
             notes_text.insert("1.0", sale['notes'])
             notes_text.configure(state="disabled")
         
-        # Close button
+        # Close button (fixed footer)
         close_btn = ctk.CTkButton(
-            main_frame,
+            dialog,
             text="❌ Close",
             command=dialog.destroy,
             width=150,
@@ -448,7 +448,7 @@ class StatementsView:
             hover_color="darkgray",
             font=ctk.CTkFont(size=12, weight="bold")
         )
-        close_btn.pack(pady=(20, 10))
+        close_btn.pack(pady=(10, 15))
     
     def create_info_row(self, parent, label, value, color=None):
         """Create a label-value row for the detail dialog"""

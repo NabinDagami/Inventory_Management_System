@@ -88,7 +88,7 @@
  [],
  False,
  False,
- 1782126009,
+ 1782186929,
  [('runw.exe',
    'C:\\Users\\Aftershock\\Desktop\\Inventory '
    'Management\\venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',

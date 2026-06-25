@@ -299,6 +299,7 @@ class SalesView:
         self.discount_amount = 0
         self.discount_type = "amount"  # "amount" or "percentage"
         self.discount_percentage = 0
+        self._search_timer = None
         self.create_sales_interface()
         self.load_customers()
         self.load_products()
@@ -496,7 +497,7 @@ class SalesView:
             header_frame,
             textvariable=self.sales_search_var,
             placeholder_text="Search by invoice number or customer...",
-            width=300,
+            width=250,
             fg_color=("#FFFFFF", "#334155"),
             text_color=("#1E293B", "#F8FAFC"),
             placeholder_text_color=("#94A3B8", "#64748B")
@@ -1209,12 +1210,10 @@ class SalesView:
             return
         self._hide_search_dropdown()
 
-    def _on_search_keyrelease(self, event=None):
-        """Handle typing in the search entry — show dropdown with matches."""
-        if event and event.keysym in ("Down", "Up", "Return", "Escape"):
-            return
+    def _do_search(self):
+        """Perform the actual product search (debounced)."""
         term = self.search_var.get().strip()
-        if not term or len(term) < 1:
+        if not term:
             self._hide_search_dropdown()
             return
         matches = [
@@ -1222,6 +1221,14 @@ class SalesView:
             if term in p['name'].lower() or term in p['sku'].lower()
         ][:8]
         self._show_search_dropdown(matches)
+
+    def _on_search_keyrelease(self, event=None):
+        """Handle typing in the search entry — debounced."""
+        if event and event.keysym in ("Down", "Up", "Return", "Escape"):
+            return
+        if self._search_timer:
+            self.parent.after_cancel(self._search_timer)
+        self._search_timer = self.parent.after(200, self._do_search)
 
     def _on_search_enter(self, event=None):
         """Enter key — add first search result or open browse dialog."""
@@ -1249,9 +1256,9 @@ class SalesView:
         dialog.title("Select Product")
         dialog.transient(self.parent)
         dialog.grab_set()
-        dialog.minsize(600, 400)
+        dialog.minsize(500, 350)
         dialog.resizable(True, True)
-        size_and_center_dialog(dialog, self.parent, 900, 600, min_w=600, min_h=400)
+        size_and_center_dialog(dialog, self.parent, 900, 600, min_w=500, min_h=350)
 
         # ── Header ──
         header = ctk.CTkFrame(dialog, fg_color=("#F1F5F9", "#0F172A"), height=40)
@@ -1307,6 +1314,7 @@ class SalesView:
                            font=("Segoe UI", 11, "bold"))
         tree.tag_configure("stock_ok", background="#1E293B", foreground="#F8FAFC",
                            font=("Segoe UI", 11))
+        tree.tag_configure("no_match", foreground="gray", font=("Segoe UI", 11, "italic"))
 
         col_widths = {"SKU": 90, "Name": 350, "Stock": 100, "Normal Price": 110, "Workshop Price": 110}
         for col in cols:
@@ -1345,6 +1353,10 @@ class SalesView:
             _current_filtered = list(product_list)
             for item in tree.get_children():
                 tree.delete(item)
+            if not product_list:
+                tree.insert("", "end", values=("", "No products found", "", "", ""), tags=("no_match",))
+                count_label.configure(text="No products found")
+                return
             for idx, p in enumerate(product_list):
                 avail = self.get_available_stock(p)
                 reorder = p['reorder_level']
@@ -1377,8 +1389,6 @@ class SalesView:
                     or (p.get('barcode') and term in p['barcode'].lower())
                 ]
                 _populate(filtered)
-                if not filtered:
-                    count_label.configure(text="No products found")
 
         def _add_selected():
             sel = tree.selection()
@@ -1412,6 +1422,7 @@ class SalesView:
                 if p.get('barcode') and p['barcode'] == code:
                     product = p
                     break
+            # Also try DB in case product wasn't in the in-memory list
             if not product:
                 results = db.execute_query(
                     "SELECT product_id, sku, name, stock, price_normal, price_workshop, reorder_level, barcode "
@@ -2254,6 +2265,16 @@ class SalesView:
 
     def print_invoice(self):
         """Print a PDF invoice for the selected sale with company info from settings."""
+        import traceback as _traceback
+
+        try:
+            self._do_print_invoice()
+        except Exception as e:
+            messagebox.showerror("Print Error",
+                                 f"Unexpected error:\n{e}\n\n{_traceback.format_exc()}")
+
+    def _do_print_invoice(self):
+        """Internal — actual print invoice logic."""
         import threading as _threading
 
         selection = self.sales_history_tree.selection()
@@ -2311,10 +2332,10 @@ class SalesView:
             loading.resizable(True, True)
             loading.transient(self.parent)
             loading.grab_set()
-            size_and_center_dialog(loading, self.parent, 260, 100, min_w=240, min_h=80)
             ctk.CTkLabel(loading, text="Generating Invoice...",
                          font=ctk.CTkFont(size=14, weight="bold")).pack(pady=(20, 5))
             ctk.CTkProgressBar(loading, mode="indeterminate", width=200).pack(pady=5, padx=30)
+            size_and_center_dialog(loading, self.parent, 260, 100, min_w=240, min_h=80)
             loading.update()
         except Exception as e:
             messagebox.showerror("Error", f"Failed to create loading dialog:\n{e}")
@@ -2499,7 +2520,6 @@ class SalesView:
             dialog.resizable(True, True)
             dialog.transient(self.parent)
             dialog.grab_set()
-            size_and_center_dialog(dialog, self.parent, 380, 180, min_w=340, min_h=150)
             ctk.CTkLabel(dialog, text="✅ Invoice Generated Successfully",
                          font=ctk.CTkFont(size=16, weight="bold"),
                          text_color="#4CAF50").pack(pady=(25, 5))
@@ -2521,6 +2541,7 @@ class SalesView:
             command=dialog.destroy,
                             width=80, height=35,
                             fg_color="#6B7280", hover_color="#4B5563").pack(side="left", padx=5)
+            size_and_center_dialog(dialog, self.parent, 380, 180, min_w=340, min_h=150)
         except Exception:
             messagebox.showinfo("Invoice Ready", f"PDF saved to:\n{filename}\n\nOpening in browser...")
             try:
@@ -2894,12 +2915,12 @@ class CreditPaymentDialog:
         self.dialog.transient(self.parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, self.parent, 420, 320, min_w=380, min_h=300)
 
         # Prevent closing with X without handling
         self.dialog.protocol("WM_DELETE_WINDOW", self.on_cancel)
 
         self._build_ui()
+        size_and_center_dialog(self.dialog, self.parent, 420, 320, min_w=380, min_h=300)
         self.dialog.wait_window()
 
     def _build_ui(self):
@@ -3046,11 +3067,11 @@ class PaySaleCreditDialog:
         self.dialog.transient(self.parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, self.parent, 460, 480, min_w=400, min_h=400)
         
         self.dialog.protocol("WM_DELETE_WINDOW", self.on_cancel)
 
         self._build_ui()
+        size_and_center_dialog(self.dialog, self.parent, 460, 480, min_w=400, min_h=400)
         self.dialog.wait_window()
 
     def _build_ui(self):
@@ -3280,26 +3301,22 @@ class SaleDetailsDialog:
         self.dialog.transient(self.parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, self.parent, 600, 500, min_w=480, min_h=400)
         
         self.create_details_view()
+        size_and_center_dialog(self.dialog, self.parent, 600, 500, min_w=480, min_h=400)
         
         # Wait for dialog to close
         self.dialog.wait_window()
     
     def create_details_view(self):
         """Create the details view"""
-        # Main container
-        main_frame = ctk.CTkScrollableFrame(self.dialog)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-
         # Parse previous returns from notes
         self._returned_data = self._parse_returns()
         self._has_returns = bool(self._returned_data)
 
-        # Header information
-        header_frame = ctk.CTkFrame(main_frame)
-        header_frame.pack(fill="x", pady=(0, 20))
+        # Header (fixed)
+        header_frame = ctk.CTkFrame(self.dialog)
+        header_frame.pack(fill="x", padx=20, pady=(15, 5))
 
         # Invoice details
         invoice_label = ctk.CTkLabel(
@@ -3332,6 +3349,10 @@ class SaleDetailsDialog:
         )
         info_label.pack(pady=10)
 
+        # Scrollable content
+        main_frame = ctk.CTkScrollableFrame(self.dialog)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=(5, 0))
+
         # Sale items
         items_label = ctk.CTkLabel(
             main_frame,
@@ -3361,9 +3382,9 @@ class SaleDetailsDialog:
 
             self._load_return_history(ret_frame)
 
-        # Action buttons
-        actions_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        actions_frame.pack(fill="x", pady=(15, 0))
+        # Action buttons (fixed footer)
+        actions_frame = ctk.CTkFrame(self.dialog, fg_color="transparent")
+        actions_frame.pack(fill="x", padx=20, pady=(10, 15))
 
         can_return = remaining > 0
         return_btn = ctk.CTkButton(
@@ -3529,10 +3550,10 @@ class SaleReturnDialog:
         self.dialog.transient(self.parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, self.parent, 700, 540, min_w=500, min_h=400)
 
         self._load_items()
         self._build_ui()
+        size_and_center_dialog(self.dialog, self.parent, 700, 540, min_w=500, min_h=400)
         self.dialog.wait_window()
 
     def _parse_previous_returns(self):
@@ -3590,12 +3611,9 @@ class SaleReturnDialog:
             })
 
     def _build_ui(self):
-        main = ctk.CTkScrollableFrame(self.dialog)
-        main.pack(fill="both", expand=True, padx=20, pady=20)
-
-        # Header
-        header = ctk.CTkFrame(main, corner_radius=10, fg_color=("#fef3c7", "#92400e"))
-        header.pack(fill="x", pady=(0, 15))
+        # Header (fixed)
+        header = ctk.CTkFrame(self.dialog, corner_radius=10, fg_color=("#fef3c7", "#92400e"))
+        header.pack(fill="x", padx=20, pady=(15, 5))
 
         ctk.CTkLabel(
             header, text="🔄 Sales Return",
@@ -3613,11 +3631,9 @@ class SaleReturnDialog:
             text_color=("#78350f", "#fef3c7")
         ).pack(pady=(0, 12))
 
-        # Items list
-        ctk.CTkLabel(
-            main, text="Select items to return:",
-            font=ctk.CTkFont(size=14, weight="bold"), anchor="w"
-        ).pack(fill="x", pady=(0, 8))
+        # Scrollable content
+        main = ctk.CTkScrollableFrame(self.dialog)
+        main.pack(fill="both", expand=True, padx=20, pady=(5, 0))
 
         items_container = ctk.CTkFrame(main)
         items_container.pack(fill="both", expand=True)
@@ -3697,9 +3713,9 @@ class SaleReturnDialog:
         )
         self.total_refund_label.pack(side="left", padx=5)
 
-        # Buttons
-        actions = ctk.CTkFrame(main, fg_color="transparent")
-        actions.pack(fill="x", pady=(10, 0))
+        # Buttons (fixed footer)
+        actions = ctk.CTkFrame(self.dialog, fg_color="transparent")
+        actions.pack(fill="x", padx=20, pady=(10, 15))
 
         ctk.CTkButton(
             actions, text="❌ Cancel",
@@ -3848,44 +3864,47 @@ class DiscountDialog:
         self.dialog.title("Apply Discount")
         self.dialog.transient(self.parent)
         self.dialog.grab_set()
-        self.dialog.minsize(450, 400)
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, self.parent, 750, 600, min_w=450, min_h=400)
         
         # Prevent closing with X button without handling
         self.dialog.protocol("WM_DELETE_WINDOW", self.on_cancel)
         
         self.create_discount_interface()
+        size_and_center_dialog(self.dialog, self.parent, 750, 600, min_w=450, min_h=400)
         
         # Wait for dialog to close
         self.dialog.wait_window()
     
     def create_discount_interface(self):
         """Create the discount interface"""
-        # Main container
-        main_frame = ctk.CTkFrame(self.dialog)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        # Header (fixed)
+        header_frame = ctk.CTkFrame(self.dialog)
+        header_frame.pack(fill="x", padx=20, pady=(15, 5))
         
         # Title
         title_label = ctk.CTkLabel(
-            main_frame,
+            header_frame,
             text="💸 Apply Discount",
             font=ctk.CTkFont(size=18, weight="bold")
         )
-        title_label.pack(pady=(0, 15))
+        title_label.pack(pady=(0, 10))
         
         # Current subtotal display
-        subtotal_frame = ctk.CTkFrame(main_frame)
-        subtotal_frame.pack(fill="x", pady=(0, 15))
+        subtotal_frame = ctk.CTkFrame(header_frame)
+        subtotal_frame.pack(fill="x", pady=(0, 5))
         
         ctk.CTkLabel(
             subtotal_frame,
             text=f"Current Subtotal: Rs{self.subtotal:.2f}",
             font=ctk.CTkFont(size=14, weight="bold")
-        ).pack(pady=10)
+        ).pack(pady=8)
+        
+        # Scrollable form fields
+        fields_container = ctk.CTkScrollableFrame(self.dialog)
+        fields_container.pack(fill="both", expand=True, padx=20, pady=(5, 0))
         
         # Discount type selection
-        type_frame = ctk.CTkFrame(main_frame)
+        type_frame = ctk.CTkFrame(fields_container)
         type_frame.pack(fill="x", pady=(0, 15))
         
         ctk.CTkLabel(
@@ -3916,7 +3935,7 @@ class DiscountDialog:
         percentage_radio.pack(anchor="w", padx=30, pady=(5, 10))
         
         # Discount value input
-        input_frame = ctk.CTkFrame(main_frame)
+        input_frame = ctk.CTkFrame(fields_container)
         input_frame.pack(fill="x", pady=(0, 15))
         
         self.discount_label = ctk.CTkLabel(
@@ -3943,7 +3962,7 @@ class DiscountDialog:
         self.discount_entry.bind('<KeyRelease>', self.update_preview)
         
         # Preview section
-        preview_frame = ctk.CTkFrame(main_frame)
+        preview_frame = ctk.CTkFrame(fields_container)
         preview_frame.pack(fill="x", pady=(0, 15))
         
         ctk.CTkLabel(
@@ -3975,9 +3994,9 @@ class DiscountDialog:
         )
         self.preview_total.pack(anchor="w", padx=30, pady=(2, 10))
         
-        # Buttons
-        button_frame = ctk.CTkFrame(main_frame)
-        button_frame.pack(fill="x", pady=(10, 0))
+        # Fixed footer with buttons
+        button_frame = ctk.CTkFrame(self.dialog)
+        button_frame.pack(fill="x", padx=20, pady=(10, 15))
         
         # Create a grid layout for better button spacing
         button_frame.grid_columnconfigure(0, weight=1)

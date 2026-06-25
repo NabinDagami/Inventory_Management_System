@@ -68,7 +68,7 @@ class CustomersView:
             row1_frame,
             textvariable=self.search_var,
             placeholder_text="Search by name, contact, or type...",
-            width=280
+            width=220
         )
         search_entry.pack(side="left", padx=5)
         
@@ -484,22 +484,19 @@ class CustomerDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 580, 750, min_w=480, min_h=600)
         
         self.create_form()
+        
+        size_and_center_dialog(self.dialog, parent, 580, 750, min_w=480, min_h=600)
         
         # Wait for dialog to close
         self.dialog.wait_window()
     
     def create_form(self):
         """Create customer form with modern styling"""
-        # Main container
-        main_frame = ctk.CTkFrame(self.dialog, corner_radius=15)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        # Header with icon
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#e8eaf6", "#3f51b5"))
-        header_frame.pack(fill="x", padx=15, pady=(15, 20))
+        # Header (fixed)
+        header_frame = ctk.CTkFrame(self.dialog, corner_radius=10, fg_color=("#e8eaf6", "#3f51b5"))
+        header_frame.pack(fill="x", padx=20, pady=(15, 10))
         
         customer_icon = ctk.CTkLabel(header_frame, text="👥", font=ctk.CTkFont(size=28))
         customer_icon.pack(pady=(15, 5))
@@ -511,6 +508,10 @@ class CustomerDialog:
             text_color=("#1a237e", "white")
         )
         header_label.pack(pady=(0, 15))
+        
+        # Scrollable content area
+        main_frame = ctk.CTkScrollableFrame(self.dialog, corner_radius=15, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=20, pady=(0, 5))
         
         # Form fields container
         fields_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
@@ -620,9 +621,9 @@ class CustomerDialog:
         )
         active_checkbox.pack(anchor="w", padx=15, pady=12)
         
-        # Buttons
-        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        button_frame.pack(fill="x", padx=15, pady=(10, 15))
+        # Fixed footer with buttons
+        button_frame = ctk.CTkFrame(self.dialog, fg_color="transparent")
+        button_frame.pack(fill="x", padx=20, pady=(5, 15))
         
         cancel_btn = ctk.CTkButton(
             button_frame,
@@ -725,10 +726,10 @@ class CustomerStatementDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 820, 620, min_w=600, min_h=500)
 
         self._build_ui()
         self._load_data()
+        size_and_center_dialog(self.dialog, parent, 820, 620, min_w=600, min_h=500)
         self.dialog.wait_window()
 
     def _build_ui(self):

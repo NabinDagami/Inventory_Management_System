@@ -29,6 +29,7 @@ class PurchasesView:
         self.purchase_items = []
         self.current_supplier = None
         self.all_products = []  # Initialize products list
+        self.barcode_map = {}  # barcode -> product lookup
         self.suppliers_data = {}  # Initialize suppliers data
         self.create_purchases_interface()
         self.load_suppliers()
@@ -256,7 +257,7 @@ class PurchasesView:
             header_frame,
             textvariable=self.purchase_search_var,
             placeholder_text="Search by PO number or supplier...",
-            width=300
+            width=250
         )
         search_entry.pack(side="left", padx=5, pady=10)
         
@@ -682,11 +683,7 @@ class PurchasesView:
         if not code:
             return
         self.barcode_var.set("")
-        product = None
-        for p in self.all_products:
-            if p.get('barcode') and p['barcode'] == code:
-                product = p
-                break
+        product = self.barcode_map.get(code)
         if not product:
             self.barcode_entry.configure(border_color="#ef4444")
             self.barcode_status.configure(text="❌ Not found", text_color="#ef4444")
@@ -709,9 +706,9 @@ class PurchasesView:
         modal.title("Select Products")
         modal.transient(self.parent)
         modal.grab_set()
-        modal.minsize(600, 400)
+        modal.minsize(500, 350)
         modal.resizable(True, True)
-        size_and_center_dialog(modal, self.parent, 900, 600, min_w=600, min_h=400)
+        size_and_center_dialog(modal, self.parent, 900, 600, min_w=500, min_h=350)
 
         header = ctk.CTkFrame(modal, fg_color=("#F1F5F9", "#0F172A"), height=40)
         header.pack(fill="x", padx=0, pady=0)
@@ -764,6 +761,7 @@ class PurchasesView:
                            font=("Segoe UI", 11, "bold"))
         tree.tag_configure("stock_ok", background="#1E293B", foreground="#F8FAFC",
                            font=("Segoe UI", 11))
+        tree.tag_configure("no_match", foreground="gray", font=("Segoe UI", 11, "italic"))
 
         col_widths = {"SKU": 90, "Name": 350, "Stock": 100, "Cost Price": 110}
         for col in cols:
@@ -800,6 +798,10 @@ class PurchasesView:
             _current_filtered = list(product_list)
             for item in tree.get_children():
                 tree.delete(item)
+            if not product_list:
+                tree.insert("", "end", values=("", "No products found", "", ""), tags=("no_match",))
+                count_label.configure(text="No products found")
+                return
             for idx, p in enumerate(product_list):
                 avail = p['stock']
                 reorder = p['reorder_level']
@@ -828,8 +830,6 @@ class PurchasesView:
                     or term in p['sku'].lower()
                 ]
                 _populate(filtered)
-                if not filtered:
-                    count_label.configure(text="No products found")
 
         def _add_selected():
             sel = tree.selection()
@@ -856,22 +856,22 @@ class PurchasesView:
             if not code:
                 return
             barcode_var.set("")
-            for p in self.all_products:
-                if p.get('barcode') and p['barcode'] == code:
-                    self.add_to_purchase_order(quantity=1, product=p)
-                    add_btn.configure(text="✅  Added!", fg_color="#10B981")
-                    modal.after(800, lambda: add_btn.configure(
-                        text="📋  Add to PO", fg_color="#4CAF50"
-                    ))
-                    for item_id in tree.get_children():
-                        vals = tree.item(item_id, 'values')
-                        if vals and vals[0] == p['sku']:
-                            tree.selection_set(item_id)
-                            tree.focus(item_id)
-                            tree.see(item_id)
-                            _on_select()
-                            break
-                    return
+            p = self.barcode_map.get(code)
+            if p:
+                self.add_to_purchase_order(quantity=1, product=p)
+                add_btn.configure(text="✅  Added!", fg_color="#10B981")
+                modal.after(800, lambda: add_btn.configure(
+                    text="📋  Add to PO", fg_color="#4CAF50"
+                ))
+                for item_id in tree.get_children():
+                    vals = tree.item(item_id, 'values')
+                    if vals and vals[0] == p['sku']:
+                        tree.selection_set(item_id)
+                        tree.focus(item_id)
+                        tree.see(item_id)
+                        _on_select()
+                        break
+                return
             barcode_entry.configure(border_color="#ef4444")
             modal.after(1500, lambda: barcode_entry.configure(
                 border_color=("#565b5e", "#949A9F")
@@ -921,6 +921,7 @@ class PurchasesView:
             """
             products = db.execute_query(query)
             self.all_products = products
+            self.barcode_map = {p['barcode']: p for p in products if p.get('barcode')}
         except Exception as e:
             print(f"Error loading products: {e}")
 
@@ -1733,12 +1734,9 @@ class PurchaseDetailsDialog:
         return self.purchase_row.get('supplier_name') or "Unknown"
 
     def _create_content(self):
-        main = ctk.CTkScrollableFrame(self.dialog)
-        main.pack(fill="both", expand=True, padx=20, pady=20)
-
-        # ── Header ────────────────────────────────────────────────────
-        header = ctk.CTkFrame(main, corner_radius=10, fg_color=("#e3f2fd", "#1565c0"))
-        header.pack(fill="x", pady=(0, 15))
+        # ── Header (fixed) ─────────────────────────────────────────────
+        header = ctk.CTkFrame(self.dialog, corner_radius=10, fg_color=("#e3f2fd", "#1565c0"))
+        header.pack(fill="x", padx=20, pady=(15, 5))
 
         po_number = self._get_po_number()
         ctk.CTkLabel(
@@ -1759,8 +1757,10 @@ class PurchaseDetailsDialog:
             text_color=("#0d47a1", "#e3f2fd")
         ).pack(pady=(0, 15))
 
-        # ── Info grid ─────────────────────────────────────────────────
-        info = ctk.CTkFrame(main)
+        # ── Scrollable content ─────────────────────────────────────────
+        main = ctk.CTkScrollableFrame(self.dialog)
+        main.pack(fill="both", expand=True, padx=20, pady=(5, 0))
+        info = ctk.CTkFrame(main, fg_color="transparent")
         info.pack(fill="x", pady=(0, 15))
 
         total = row.get('total_amount') or 0
@@ -1813,9 +1813,9 @@ class PurchaseDetailsDialog:
 
         self._load_payments(pay_frame)
 
-        # ── Action buttons ────────────────────────────────────────────
-        actions = ctk.CTkFrame(main, fg_color="transparent")
-        actions.pack(fill="x", pady=(15, 0))
+        # ── Action buttons (fixed footer) ─────────────────────────────
+        actions = ctk.CTkFrame(self.dialog, fg_color="transparent")
+        actions.pack(fill="x", padx=20, pady=(10, 15))
 
         can_complete = (status.lower() in ("pending", "credit") and balance < 0.01)
 
@@ -2188,25 +2188,21 @@ class AddProductDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 500, 500, min_w=400, min_h=400)
         
         self.create_dialog_content()
+        size_and_center_dialog(self.dialog, parent, 500, 500, min_w=400, min_h=400)
         
         # Wait for dialog to close
         self.dialog.wait_window()
     
     def create_dialog_content(self):
         """Create the dialog content"""
-        # Main container
-        main_frame = ctk.CTkFrame(self.dialog, corner_radius=15)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        # Product info header
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#e3f2fd", "#1565c0"))
-        header_frame.pack(fill="x", padx=15, pady=(15, 20))
+        # Product info header (fixed)
+        header_frame = ctk.CTkFrame(self.dialog, corner_radius=10, fg_color=("#e3f2fd", "#1565c0"))
+        header_frame.pack(fill="x", padx=20, pady=(15, 10))
         
         product_icon = ctk.CTkLabel(header_frame, text="📦", font=ctk.CTkFont(size=24))
-        product_icon.pack(pady=(15, 5))
+        product_icon.pack(pady=(10, 5))
         
         product_name = ctk.CTkLabel(
             header_frame,
@@ -2222,11 +2218,11 @@ class AddProductDialog:
             font=ctk.CTkFont(size=14),
             text_color=("#1976d2", "#e3f2fd")
         )
-        product_sku.pack(pady=(0, 15))
+        product_sku.pack(pady=(0, 10))
         
-        # Input fields - use scrollable frame to ensure all content is visible
-        fields_frame = ctk.CTkScrollableFrame(main_frame, height=250)
-        fields_frame.pack(fill="both", expand=True, padx=15)
+        # Scrollable input fields
+        fields_frame = ctk.CTkScrollableFrame(self.dialog)
+        fields_frame.pack(fill="both", expand=True, padx=20, pady=(5, 0))
         
         # Quantity field
         qty_frame = ctk.CTkFrame(fields_frame, corner_radius=10)
@@ -2283,9 +2279,9 @@ class AddProductDialog:
         )
         current_cost_label.pack(pady=(0, 15))
         
-        # Buttons
-        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        button_frame.pack(fill="x", padx=15, pady=(0, 15))
+        # Fixed footer with buttons
+        button_frame = ctk.CTkFrame(self.dialog, fg_color="transparent")
+        button_frame.pack(fill="x", padx=20, pady=(10, 15))
         
         cancel_btn = ctk.CTkButton(
             button_frame,

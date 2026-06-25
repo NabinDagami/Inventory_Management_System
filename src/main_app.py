@@ -11,6 +11,9 @@ from PIL import Image
 # Add the src directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 
+# Reduce DPI scaling polling from 100ms to 3000ms to save CPU on low-end hardware
+ctk.ScalingTracker.update_loop_interval = 3000
+
 from models.database import db
 from views.dashboard import Dashboard
 from views.inventory import InventoryView

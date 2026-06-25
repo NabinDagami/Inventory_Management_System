@@ -91,7 +91,7 @@ class SuppliersView:
             row1_frame,
             textvariable=self.search_var,
             placeholder_text="Search by name, contact person, email, or phone...",
-            width=400
+            width=250
         )
         search_entry.pack(side="left", padx=5)
         
@@ -394,23 +394,20 @@ class SupplierDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 580, 700, min_w=480, min_h=550)
         
         # Create form
         self.create_form(supplier_data)
+        
+        size_and_center_dialog(self.dialog, parent, 580, 700, min_w=480, min_h=550)
         
         # Wait for dialog to close
         self.dialog.wait_window()
     
     def create_form(self, supplier_data):
         """Create supplier form with modern styling"""
-        # Main container
-        main_frame = ctk.CTkFrame(self.dialog, corner_radius=15)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        # Header with icon
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#efebe9", "#5d4037"))
-        header_frame.pack(fill="x", padx=15, pady=(15, 20))
+        # Header (fixed)
+        header_frame = ctk.CTkFrame(self.dialog, corner_radius=10, fg_color=("#efebe9", "#5d4037"))
+        header_frame.pack(fill="x", padx=20, pady=(15, 10))
         
         supplier_icon = ctk.CTkLabel(header_frame, text="🏦", font=ctk.CTkFont(size=28))
         supplier_icon.pack(pady=(15, 5))
@@ -424,8 +421,8 @@ class SupplierDialog:
         header_label.pack(pady=(0, 15))
         
         # Scrollable form fields container
-        fields_container = ctk.CTkScrollableFrame(main_frame)
-        fields_container.pack(fill="both", expand=True, padx=15)
+        fields_container = ctk.CTkScrollableFrame(self.dialog)
+        fields_container.pack(fill="both", expand=True, padx=20, pady=(0, 5))
         
         # Name field
         name_frame = ctk.CTkFrame(fields_container, corner_radius=10)
@@ -531,9 +528,9 @@ class SupplierDialog:
             if supplier_data['address']:
                 self.address_entry.insert("0.0", supplier_data['address'])
         
-        # Buttons
-        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        button_frame.pack(fill="x", padx=15, pady=(15, 15))
+        # Fixed footer with buttons
+        button_frame = ctk.CTkFrame(self.dialog, fg_color="transparent")
+        button_frame.pack(fill="x", padx=20, pady=(5, 15))
         
         cancel_btn = ctk.CTkButton(
             button_frame,

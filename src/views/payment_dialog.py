@@ -27,26 +27,22 @@ class PaymentDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 500, 550, min_w=450, min_h=450)
         
         self.create_form()
+        size_and_center_dialog(self.dialog, parent, 500, 550, min_w=450, min_h=450)
         
         # Wait for dialog to close
         self.dialog.wait_window()
     
     def create_form(self):
         """Create payment form"""
-        # Main container - scrollable
-        main_frame = ctk.CTkScrollableFrame(self.dialog, corner_radius=15)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-        
-        # Header
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#e8f5e8", "#2d5a2d"))
-        header_frame.pack(fill="x", padx=15, pady=(15, 20))
+        # Header (fixed)
+        header_frame = ctk.CTkFrame(self.dialog, corner_radius=10, fg_color=("#e8f5e8", "#2d5a2d"))
+        header_frame.pack(fill="x", padx=20, pady=(15, 5))
         
         # Payment icon
         payment_icon = ctk.CTkLabel(header_frame, text="💰", font=ctk.CTkFont(size=28))
-        payment_icon.pack(pady=(15, 5))
+        payment_icon.pack(pady=(10, 5))
         
         header_label = ctk.CTkLabel(
             header_frame,
@@ -54,11 +50,15 @@ class PaymentDialog:
             font=ctk.CTkFont(size=20, weight="bold"),
             text_color=("#1a5c1a", "white")
         )
-        header_label.pack(pady=(0, 15))
+        header_label.pack(pady=(0, 10))
+        
+        # Scrollable form fields
+        fields_container = ctk.CTkScrollableFrame(self.dialog)
+        fields_container.pack(fill="both", expand=True, padx=20, pady=(5, 0))
         
         # Form fields container
-        fields_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        fields_frame.pack(fill="x", padx=15)
+        fields_frame = ctk.CTkFrame(fields_container, fg_color="transparent")
+        fields_frame.pack(fill="x", padx=0)
         
         # Customer/Supplier information display
         info_frame = ctk.CTkFrame(fields_frame, corner_radius=10)
@@ -176,9 +176,9 @@ class PaymentDialog:
         )
         self.notes_text.pack(fill="x", padx=15, pady=(0, 12))
         
-        # Buttons
-        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        button_frame.pack(fill="x", padx=15, pady=(10, 15))
+        # Fixed footer with buttons
+        button_frame = ctk.CTkFrame(self.dialog, fg_color="transparent")
+        button_frame.pack(fill="x", padx=20, pady=(10, 15))
         
         cancel_btn = ctk.CTkButton(
             button_frame,

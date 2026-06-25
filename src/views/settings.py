@@ -144,6 +144,7 @@ class SettingsView:
         # Content frame
         content = ctk.CTkFrame(section_frame)
         content.pack(fill="x", padx=10, pady=10)
+        content.grid_columnconfigure(1, weight=1)
         
         return content
     
@@ -154,29 +155,29 @@ class SettingsView:
         # Company Name
         row = 0
         ctk.CTkLabel(content, text="Company Name:", font=ctk.CTkFont(size=12, weight="bold")).grid(row=row, column=0, sticky="w", padx=10, pady=8)
-        self.company_name_entry = ctk.CTkEntry(content, width=350)
-        self.company_name_entry.grid(row=row, column=1, sticky="w", padx=10, pady=8)
+        self.company_name_entry = ctk.CTkEntry(content)
+        self.company_name_entry.grid(row=row, column=1, sticky="ew", padx=10, pady=8)
         self.company_name_entry.insert(0, self.settings["company"]["name"])
         
         # Address
         row += 1
         ctk.CTkLabel(content, text="Address:", font=ctk.CTkFont(size=12, weight="bold")).grid(row=row, column=0, sticky="w", padx=10, pady=8)
-        self.address_text = ctk.CTkTextbox(content, width=350, height=60)
-        self.address_text.grid(row=row, column=1, sticky="w", padx=10, pady=8)
+        self.address_text = ctk.CTkTextbox(content, height=60)
+        self.address_text.grid(row=row, column=1, sticky="ew", padx=10, pady=8)
         self.address_text.insert("1.0", self.settings["company"]["address"])
         
         # Phone
         row += 1
         ctk.CTkLabel(content, text="Phone:", font=ctk.CTkFont(size=12, weight="bold")).grid(row=row, column=0, sticky="w", padx=10, pady=8)
-        self.phone_entry = ctk.CTkEntry(content, width=350)
-        self.phone_entry.grid(row=row, column=1, sticky="w", padx=10, pady=8)
+        self.phone_entry = ctk.CTkEntry(content)
+        self.phone_entry.grid(row=row, column=1, sticky="ew", padx=10, pady=8)
         self.phone_entry.insert(0, self.settings["company"]["phone"])
         
         # Email
         row += 1
         ctk.CTkLabel(content, text="Email:", font=ctk.CTkFont(size=12, weight="bold")).grid(row=row, column=0, sticky="w", padx=10, pady=8)
-        self.email_entry = ctk.CTkEntry(content, width=350)
-        self.email_entry.grid(row=row, column=1, sticky="w", padx=10, pady=8)
+        self.email_entry = ctk.CTkEntry(content)
+        self.email_entry.grid(row=row, column=1, sticky="ew", padx=10, pady=8)
         self.email_entry.insert(0, self.settings["company"]["email"])
         
         # Logo

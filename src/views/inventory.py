@@ -422,7 +422,7 @@ class InventoryView:
             search_row,
             textvariable=self.search_var,
             placeholder_text="Search by name, SKU or barcode...",
-            width=320,
+            width=250,
             height=32,
             corner_radius=8
         )
@@ -1361,8 +1361,22 @@ class InventoryView:
                         item['created_at']
                     ), tags=(row_tag,))
         
-        # Update count label
+        # Show "no records" placeholder if empty
         displayed_count = len(self.data_tree.get_children())
+        if displayed_count == 0:
+            cols = self.data_tree.cget("columns")
+            empty_row = [""] * len(cols)
+            if "Name" in cols:
+                idx = cols.index("Name")
+                empty_row[idx] = "No matching records found"
+            elif "category_name" in cols:
+                idx = cols.index("category_name")
+                empty_row[idx] = "No matching records found"
+            elif len(cols) > 1:
+                empty_row[1] = "No matching records found"
+            self.data_tree.tag_configure("no_match", foreground="gray", font=("Segoe UI", 11, "italic"))
+            self.data_tree.insert("", "end", values=tuple(empty_row), tags=("no_match",))
+        
         if hasattr(self, 'count_label'):
             total = len(self.all_data) if hasattr(self, 'all_data') else 0
             tab_name = self.current_tab.replace("_", " ").title()
@@ -2070,8 +2084,8 @@ class ExcelImportDialog:
         
         self.file_path_var = tk.StringVar()
         self.file_entry = ctk.CTkEntry(file_select_frame, textvariable=self.file_path_var, 
-                                       placeholder_text="Select an Excel file...", width=500)
-        self.file_entry.pack(side="left", padx=(0, 10))
+                                       placeholder_text="Select an Excel file...")
+        self.file_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
         
         ctk.CTkButton(file_select_frame, text="Browse...", command=self.browse_file,
                      fg_color="#3B82F6", hover_color="#2563EB").pack(side="left")
@@ -3049,13 +3063,15 @@ class ProductDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 500, 750, min_w=480, min_h=600)
         
         # Load categories and brands
         self.load_categories_and_brands()
         
-        # Create form
+        # Create form (adds all widgets)
         self.create_form(product_data)
+        
+        # Size and center AFTER all widgets are created
+        size_and_center_dialog(self.dialog, parent, 500, 750, min_w=480, min_h=600)
         
         # Wait for dialog to close
         self.dialog.wait_window()
@@ -3070,15 +3086,15 @@ class ProductDialog:
     def create_form(self, product_data):
         """Create product form"""
         self.product_data = product_data
-        # Main frame
+        # Scrollable content area
         main_frame = ctk.CTkScrollableFrame(self.dialog)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True, padx=20, pady=(15, 5))
         
         # Form fields
         # Name
         ctk.CTkLabel(main_frame, text="Product Name:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
-        self.name_entry = ctk.CTkEntry(main_frame, width=400)
-        self.name_entry.pack(anchor="w", pady=(0, 10))
+        self.name_entry = ctk.CTkEntry(main_frame)
+        self.name_entry.pack(fill="x", pady=(0, 10))
         
         # Category with searchable dropdown
         ctk.CTkLabel(main_frame, text="Category:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
@@ -3112,8 +3128,8 @@ class ProductDialog:
         
         # Description
         ctk.CTkLabel(main_frame, text="Description:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
-        self.description_entry = ctk.CTkEntry(main_frame, width=400)
-        self.description_entry.pack(anchor="w", pady=(0, 10))
+        self.description_entry = ctk.CTkEntry(main_frame)
+        self.description_entry.pack(fill="x", pady=(0, 10))
         
         # Barcode
         ctk.CTkLabel(main_frame, text="Barcode:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
@@ -3161,28 +3177,28 @@ class ProductDialog:
         
         # Stock
         ctk.CTkLabel(main_frame, text="Stock Quantity:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
-        self.stock_entry = ctk.CTkEntry(main_frame, width=400)
-        self.stock_entry.pack(anchor="w", pady=(0, 10))
+        self.stock_entry = ctk.CTkEntry(main_frame)
+        self.stock_entry.pack(fill="x", pady=(0, 10))
         
         # Cost Price
         ctk.CTkLabel(main_frame, text="Cost Price:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
-        self.cost_entry = ctk.CTkEntry(main_frame, width=400)
-        self.cost_entry.pack(anchor="w", pady=(0, 10))
+        self.cost_entry = ctk.CTkEntry(main_frame)
+        self.cost_entry.pack(fill="x", pady=(0, 10))
         
         # Normal Price
         ctk.CTkLabel(main_frame, text="Normal Price:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
-        self.normal_price_entry = ctk.CTkEntry(main_frame, width=400)
-        self.normal_price_entry.pack(anchor="w", pady=(0, 10))
+        self.normal_price_entry = ctk.CTkEntry(main_frame)
+        self.normal_price_entry.pack(fill="x", pady=(0, 10))
         
         # Workshop Price
         ctk.CTkLabel(main_frame, text="Workshop Price:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
-        self.workshop_price_entry = ctk.CTkEntry(main_frame, width=400)
-        self.workshop_price_entry.pack(anchor="w", pady=(0, 10))
+        self.workshop_price_entry = ctk.CTkEntry(main_frame)
+        self.workshop_price_entry.pack(fill="x", pady=(0, 10))
         
         # Reorder Level
         ctk.CTkLabel(main_frame, text="Reorder Level:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
-        self.reorder_entry = ctk.CTkEntry(main_frame, width=400)
-        self.reorder_entry.pack(anchor="w", pady=(0, 10))
+        self.reorder_entry = ctk.CTkEntry(main_frame)
+        self.reorder_entry.pack(fill="x", pady=(0, 10))
         
         # Fill form if editing
         if product_data:
@@ -3225,12 +3241,12 @@ class ProductDialog:
                         self.sub_brand_dropdown.set(sb['sub_brand_name'], sb['sub_brand_id'])
                         break
         
-        # Buttons
-        button_frame = ctk.CTkFrame(main_frame)
-        button_frame.pack(fill="x", pady=(20, 0))
+        # Fixed footer with buttons
+        footer_frame = ctk.CTkFrame(self.dialog, fg_color="transparent")
+        footer_frame.pack(fill="x", padx=20, pady=(5, 15))
         
         save_btn = ctk.CTkButton(
-            button_frame,
+            footer_frame,
             text="Save",
             command=self.save_product,
             fg_color=("#22C55E", "#16A34A"),
@@ -3240,7 +3256,7 @@ class ProductDialog:
         save_btn.pack(side="left", padx=(0, 10))
         
         cancel_btn = ctk.CTkButton(
-            button_frame,
+            footer_frame,
             text="Cancel",
             command=self.dialog.destroy,
             width=100
@@ -3668,7 +3684,6 @@ class ProductDialog:
         dialog = ctk.CTkToplevel(self.parent)
         dialog.title("Print Quantity")
         dialog.resizable(True, True)
-        dialog.attributes('-topmost', True)
         dialog.transient(self.parent)
         dialog.grab_set()
         size_and_center_dialog(dialog, self.parent, 400, 200, min_w=350, min_h=160)
@@ -3968,7 +3983,6 @@ class ProductDialog:
         dialog = ctk.CTkToplevel(self.parent)
         dialog.title("Select Start Position")
         dialog.resizable(True, True)
-        dialog.attributes('-topmost', True)
         dialog.transient(self.parent)
         dialog.grab_set()
         size_and_center_dialog(dialog, self.parent, 520, 620, min_w=460, min_h=500)
@@ -4108,27 +4122,22 @@ class CategoryDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 500, 400, min_w=400, min_h=350)
         
-        # Ensure dialog stays on top
-        self.dialog.attributes("-topmost", True)
         self.dialog.focus_force()
         
         # Create form
         self.create_form(category_data)
+        
+        size_and_center_dialog(self.dialog, parent, 500, 400, min_w=400, min_h=350)
         
         # Wait for dialog to close
         self.dialog.wait_window()
     
     def create_form(self, category_data):
         """Create category form with modern styling"""
-        # Main container - scrollable to ensure all content is visible
-        main_frame = ctk.CTkScrollableFrame(self.dialog)
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Header with icon
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#4CAF50", "#2E7D32"))
-        header_frame.pack(fill="x", padx=10, pady=(10, 15))
+        # Header (fixed)
+        header_frame = ctk.CTkFrame(self.dialog, corner_radius=10, fg_color=("#4CAF50", "#2E7D32"))
+        header_frame.pack(fill="x", padx=10, pady=(10, 5))
         
         ctk.CTkLabel(header_frame, text="📁", font=ctk.CTkFont(size=24)).pack(pady=(10, 5))
         
@@ -4139,8 +4148,12 @@ class CategoryDialog:
             text_color="white"
         ).pack(pady=(0, 10))
         
+        # Scrollable form fields
+        fields_container = ctk.CTkScrollableFrame(self.dialog)
+        fields_container.pack(fill="both", expand=True, padx=10, pady=(5, 0))
+        
         # Form fields container
-        fields_frame = ctk.CTkFrame(main_frame)
+        fields_frame = ctk.CTkFrame(fields_container)
         fields_frame.pack(fill="x", padx=10, pady=(0, 15))
         
         # Name field
@@ -4180,9 +4193,9 @@ class CategoryDialog:
             if category_data.get('description'):
                 self.description_textbox.insert("1.0", category_data['description'])
         
-        # Buttons container
-        button_frame = ctk.CTkFrame(main_frame)
-        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+        # Fixed footer with buttons
+        button_frame = ctk.CTkFrame(self.dialog)
+        button_frame.pack(fill="x", padx=10, pady=(5, 10))
         
         save_btn = ctk.CTkButton(
             button_frame,
@@ -4248,35 +4261,36 @@ class SubCategoryDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 500, 500, min_w=400, min_h=400)
         
-        self.dialog.attributes("-topmost", True)
         self.dialog.focus_force()
         
         # Create form
         self.create_form(sub_category_data)
+        
+        size_and_center_dialog(self.dialog, parent, 500, 500, min_w=400, min_h=400)
         
         # Wait for dialog to close
         self.dialog.wait_window()
     
     def create_form(self, sub_category_data):
         """Create sub category form with modern styling"""
-        main_frame = ctk.CTkScrollableFrame(self.dialog)
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Header
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#8BC34A", "#558B2F"))
-        header_frame.pack(fill="x", padx=10, pady=(10, 15))
+        # Header (fixed)
+        header_frame = ctk.CTkFrame(self.dialog, corner_radius=10, fg_color=("#8BC34A", "#558B2F"))
+        header_frame.pack(fill="x", padx=10, pady=(10, 5))
         
         ctk.CTkLabel(
             header_frame,
             text="Sub Category Information",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color="white"
-        ).pack(pady=15)
+        ).pack(pady=10)
+        
+        # Scrollable form fields
+        fields_container = ctk.CTkScrollableFrame(self.dialog)
+        fields_container.pack(fill="both", expand=True, padx=10, pady=(5, 0))
         
         # Form fields container
-        fields_frame = ctk.CTkFrame(main_frame)
+        fields_frame = ctk.CTkFrame(fields_container)
         fields_frame.pack(fill="x", padx=10, pady=(0, 15))
         
         # Category selection
@@ -4345,9 +4359,9 @@ class SubCategoryDialog:
                         self.category_display.configure(state="readonly")
                         break
         
-        # Buttons
-        button_frame = ctk.CTkFrame(main_frame)
-        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+        # Fixed footer with buttons
+        button_frame = ctk.CTkFrame(self.dialog)
+        button_frame.pack(fill="x", padx=10, pady=(5, 10))
         
         save_btn = ctk.CTkButton(
             button_frame,
@@ -4428,35 +4442,36 @@ class BrandDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 500, 400, min_w=400, min_h=350)
         
-        self.dialog.attributes("-topmost", True)
         self.dialog.focus_force()
         
         # Create form
         self.create_form(brand_data)
+        
+        size_and_center_dialog(self.dialog, parent, 500, 400, min_w=400, min_h=350)
         
         # Wait for dialog to close
         self.dialog.wait_window()
     
     def create_form(self, brand_data):
         """Create brand form with modern styling"""
-        main_frame = ctk.CTkScrollableFrame(self.dialog)
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Header
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#FF9800", "#E65100"))
-        header_frame.pack(fill="x", padx=10, pady=(10, 15))
+        # Header (fixed)
+        header_frame = ctk.CTkFrame(self.dialog, corner_radius=10, fg_color=("#FF9800", "#E65100"))
+        header_frame.pack(fill="x", padx=10, pady=(10, 5))
         
         ctk.CTkLabel(
             header_frame,
             text="Brand Information",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color="white"
-        ).pack(pady=15)
+        ).pack(pady=10)
+        
+        # Scrollable form fields
+        fields_container = ctk.CTkScrollableFrame(self.dialog)
+        fields_container.pack(fill="both", expand=True, padx=10, pady=(5, 0))
         
         # Form fields container
-        fields_frame = ctk.CTkFrame(main_frame)
+        fields_frame = ctk.CTkFrame(fields_container)
         fields_frame.pack(fill="x", padx=10, pady=(0, 15))
         
         # Name field
@@ -4496,9 +4511,9 @@ class BrandDialog:
             if brand_data.get('description'):
                 self.description_textbox.insert("1.0", brand_data['description'])
         
-        # Buttons
-        button_frame = ctk.CTkFrame(main_frame)
-        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+        # Fixed footer with buttons
+        button_frame = ctk.CTkFrame(self.dialog)
+        button_frame.pack(fill="x", padx=10, pady=(5, 10))
         
         save_btn = ctk.CTkButton(
             button_frame,
@@ -4563,9 +4578,7 @@ class SubBrandDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 500, 500, min_w=400, min_h=400)
         
-        self.dialog.attributes("-topmost", True)
         self.dialog.focus_force()
         
         # Load brands
@@ -4574,27 +4587,30 @@ class SubBrandDialog:
         # Create form
         self.create_form(sub_brand_data)
         
+        size_and_center_dialog(self.dialog, parent, 500, 500, min_w=400, min_h=400)
+        
         # Wait for dialog to close
         self.dialog.wait_window()
     
     def create_form(self, sub_brand_data):
         """Create sub brand form"""
-        main_frame = ctk.CTkScrollableFrame(self.dialog)
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
-        
-        # Header
-        header_frame = ctk.CTkFrame(main_frame, corner_radius=10, fg_color=("#FFB74D", "#EF6C00"))
-        header_frame.pack(fill="x", padx=10, pady=(10, 15))
+        # Header (fixed)
+        header_frame = ctk.CTkFrame(self.dialog, corner_radius=10, fg_color=("#FFB74D", "#EF6C00"))
+        header_frame.pack(fill="x", padx=10, pady=(10, 5))
         
         ctk.CTkLabel(
             header_frame,
             text="Sub Brand Information",
             font=ctk.CTkFont(size=18, weight="bold"),
             text_color="white"
-        ).pack(pady=15)
+        ).pack(pady=10)
+        
+        # Scrollable form fields
+        fields_container = ctk.CTkScrollableFrame(self.dialog)
+        fields_container.pack(fill="both", expand=True, padx=10, pady=(5, 0))
         
         # Form fields
-        fields_frame = ctk.CTkFrame(main_frame)
+        fields_frame = ctk.CTkFrame(fields_container)
         fields_frame.pack(fill="x", padx=10, pady=(0, 15))
         
         # Brand selection
@@ -4663,9 +4679,9 @@ class SubBrandDialog:
                         self.brand_display.configure(state="readonly")
                         break
         
-        # Buttons
-        button_frame = ctk.CTkFrame(main_frame)
-        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+        # Fixed footer with buttons
+        button_frame = ctk.CTkFrame(self.dialog)
+        button_frame.pack(fill="x", padx=10, pady=(5, 10))
         
         save_btn = ctk.CTkButton(
             button_frame,
@@ -4950,6 +4966,9 @@ class SearchableDropdown(ctk.CTkFrame):
     def _populate_list(self):
         """Populate the listbox with items"""
         self.listbox.delete(0, tk.END)
+        if not self.filtered_items:
+            self.listbox.insert(tk.END, "No items found")
+            return
         for item in self.filtered_items:
             self.listbox.insert(tk.END, item[self.name_field])
         
@@ -5023,9 +5042,9 @@ class SelectionDialog:
         self.dialog.transient(parent)
         self.dialog.grab_set()
         self.dialog.resizable(True, True)
-        size_and_center_dialog(self.dialog, parent, 400, 500, min_w=350, min_h=400)
         
         self.create_ui()
+        size_and_center_dialog(self.dialog, parent, 400, 500, min_w=350, min_h=400)
         self.dialog.wait_window()
     
     def create_ui(self):
@@ -5088,10 +5107,14 @@ class SelectionDialog:
         search_term = self.search_var.get().lower()
         self.listbox.delete(0, tk.END)
         
+        found = False
         for item in self.items:
             name = item[self.name_field].lower()
             if search_term in name:
                 self.listbox.insert(tk.END, item[self.name_field])
+                found = True
+        if not found:
+            self.listbox.insert(tk.END, "No items found")
     
     def select_item(self):
         """Select the highlighted item"""

@@ -24,5 +24,8 @@
         "auto_backup": false,
         "backup_interval": 7,
         "backup_location": ""
+    },
+    "appearance": {
+        "mode": "dark"
     }
 }

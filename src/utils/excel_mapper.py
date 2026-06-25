@@ -285,11 +285,8 @@ class ExcelColumnMapper:
 
 
 
-            # Small delay to show loading
-
-            import time
-
-            time.sleep(0.5)
+            # Ensure progress bar is rendered
+            loading.update_idletasks()
 
 
 
@@ -431,7 +428,7 @@ class ExcelColumnMapper:
 
             sheet_dropdown = ctk.CTkOptionMenu(selector_frame, values=sheet_display_names,
 
-                                              variable=sheet_var, width=500, height=32,
+                                              variable=sheet_var, height=32,
 
                                               font=ctk.CTkFont(size=11))
 
@@ -577,7 +574,7 @@ class ExcelColumnMapper:
 
             # Use tabs for fewer sheets
 
-            tabview = ctk.CTkTabview(main_frame, width=950, height=480)
+            tabview = ctk.CTkTabview(main_frame, height=480)
 
             tabview.pack(fill="both", expand=True, padx=10, pady=5)
 
@@ -893,11 +890,7 @@ class ExcelColumnMapper:
 
             progress.set(1.0)
 
-            loading.update()
-
-            import time
-
-            time.sleep(0.3)
+            loading.update_idletasks()
 
             loading.destroy()
 
@@ -1077,7 +1070,7 @@ class ExcelColumnMapper:
 
         # Create tabs - COMPACT
 
-        tabview = ctk.CTkTabview(main_frame, width=950, height=480)
+        tabview = ctk.CTkTabview(main_frame, height=480)
 
         tabview.pack(fill="both", expand=True, padx=10, pady=5)
 

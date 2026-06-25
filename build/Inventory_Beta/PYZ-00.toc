@@ -5030,6 +5030,10 @@
    'C:\\Users\\Aftershock\\Desktop\\Inventory '
    'Management\\src\\utils\\__init__.py',
    'PYMODULE'),
+  ('utils.dialog_utils',
+   'C:\\Users\\Aftershock\\Desktop\\Inventory '
+   'Management\\src\\utils\\dialog_utils.py',
+   'PYMODULE'),
   ('utils.excel_importer',
    'C:\\Users\\Aftershock\\Desktop\\Inventory '
    'Management\\src\\utils\\excel_importer.py',

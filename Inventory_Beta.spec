@@ -25,7 +25,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -33,13 +33,15 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=['assets\\icons\\app_icon.ico'],
+    version='version_info.txt',
+    uac_admin=False,
 )
 coll = COLLECT(
     exe,
     a.binaries,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name='Inventory_Beta',
 )
