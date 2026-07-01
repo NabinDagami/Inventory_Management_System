@@ -746,12 +746,28 @@ class PurchasesView:
         )
         barcode_entry.pack(side="left", padx=(0, 0))
 
+        # ── Category / Brand filter row ──
+        filter_row = ctk.CTkFrame(modal, fg_color="transparent")
+        filter_row.pack(fill="x", padx=12, pady=(0, 6))
+
+        ctk.CTkLabel(filter_row, text="Category:", font=ctk.CTkFont(size=11)).pack(side="left", padx=(0, 4))
+        cat_filter_var = ctk.StringVar(value="All")
+        cat_filter = ttk.Combobox(filter_row, textvariable=cat_filter_var, state="readonly",
+                                   width=14, font=("Segoe UI", 11))
+        cat_filter.pack(side="left", padx=(0, 12))
+
+        ctk.CTkLabel(filter_row, text="Brand:", font=ctk.CTkFont(size=11)).pack(side="left", padx=(0, 4))
+        brand_filter_var = ctk.StringVar(value="All")
+        brand_filter = ttk.Combobox(filter_row, textvariable=brand_filter_var, state="readonly",
+                                     width=14, font=("Segoe UI", 11))
+        brand_filter.pack(side="left")
+
         tree_frame = ctk.CTkFrame(modal)
         tree_frame.pack(fill="both", expand=True, padx=12, pady=6)
         tree_frame.grid_rowconfigure(0, weight=1)
         tree_frame.grid_columnconfigure(0, weight=1)
 
-        cols = ("SKU", "Name", "Stock", "Cost Price")
+        cols = ("SKU", "Name", "Category", "Brand", "Stock", "Cost Price")
         tree = ttk.Treeview(tree_frame, columns=cols, show="headings")
         tree.grid(row=0, column=0, sticky="nsew")
 
@@ -763,7 +779,7 @@ class PurchasesView:
                            font=("Segoe UI", 11))
         tree.tag_configure("no_match", foreground="gray", font=("Segoe UI", 11, "italic"))
 
-        col_widths = {"SKU": 90, "Name": 350, "Stock": 100, "Cost Price": 110}
+        col_widths = {"SKU": 90, "Name": 200, "Category": 110, "Brand": 110, "Stock": 100, "Cost Price": 110}
         for col in cols:
             anchor = "w" if col == "Name" else "center"
             tree.heading(col, text=col, anchor=anchor)
@@ -793,13 +809,26 @@ class PurchasesView:
 
         _current_filtered = []
 
+        # Populate filter dropdowns
+        cats = sorted(set(p.get('category_name') for p in self.all_products if p.get('category_name')))
+        brands = sorted(set(p.get('brand_name') for p in self.all_products if p.get('brand_name')))
+        cat_filter.configure(values=["All"] + cats)
+        brand_filter.configure(values=["All"] + brands)
+
+        def _on_cat_filter(*_):
+            _do_filter()
+        def _on_brand_filter(*_):
+            _do_filter()
+        cat_filter.bind("<<ComboboxSelected>>", _on_cat_filter)
+        brand_filter.bind("<<ComboboxSelected>>", _on_brand_filter)
+
         def _populate(product_list):
             nonlocal _current_filtered
             _current_filtered = list(product_list)
             for item in tree.get_children():
                 tree.delete(item)
             if not product_list:
-                tree.insert("", "end", values=("", "No products found", "", ""), tags=("no_match",))
+                tree.insert("", "end", values=("", "No products found", "", "", "", ""), tags=("no_match",))
                 count_label.configure(text="No products found")
                 return
             for idx, p in enumerate(product_list):
@@ -812,7 +841,10 @@ class PurchasesView:
                 else:
                     tag = "stock_ok"
                 tree.insert("", "end", values=(
-                    p['sku'], p['name'], avail,
+                    p['sku'], p['name'],
+                    p.get('category_name') or "-",
+                    p.get('brand_name') or "-",
+                    avail,
                     f"Rs{p['cost_price']:.2f}" if p['cost_price'] else "N/A"
                 ), tags=(tag,))
             count_label.configure(
@@ -821,15 +853,20 @@ class PurchasesView:
 
         def _do_filter(*_):
             term = search_var.get().lower()
-            if not term:
-                _populate(self.all_products)
-            else:
+            sel_cat = cat_filter_var.get()
+            sel_brand = brand_filter_var.get()
+            filtered = list(self.all_products)
+            if term:
                 filtered = [
-                    p for p in self.all_products
+                    p for p in filtered
                     if term in p['name'].lower()
                     or term in p['sku'].lower()
                 ]
-                _populate(filtered)
+            if sel_cat != "All":
+                filtered = [p for p in filtered if (p.get('category_name') or "") == sel_cat]
+            if sel_brand != "All":
+                filtered = [p for p in filtered if (p.get('brand_name') or "") == sel_brand]
+            _populate(filtered)
 
         def _add_selected():
             sel = tree.selection()
@@ -914,8 +951,11 @@ class PurchasesView:
         """Load products for selection"""
         try:
             query = """
-                SELECT p.product_id, p.sku, p.name, p.stock, p.cost_price, p.reorder_level, p.barcode
+                SELECT p.product_id, p.sku, p.name, p.stock, p.cost_price, p.reorder_level, p.barcode,
+                       c.category_name, b.brand_name
                 FROM products p
+                LEFT JOIN categories c ON p.category_id = c.category_id
+                LEFT JOIN brands b ON p.brand_id = b.brand_id
                 WHERE p.is_active = 1
                 ORDER BY p.name
             """

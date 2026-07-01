@@ -5,7 +5,7 @@
  True,
  ['C:\\Users\\Aftershock\\Desktop\\Inventory '
   'Management\\assets\\icons\\app_icon.ico'],
- None,
+ versioninfo.VSVersionInfo(ffi=versioninfo.FixedFileInfo(filevers=(1, 4, 0, 0), prodvers=(1, 4, 0, 0), mask=0x3f, flags=0x0, OS=0x40004, fileType=1, subtype=0x0, date=(0, 0)), kids=[versioninfo.StringFileInfo([versioninfo.StringTable('040904B0', [versioninfo.StringStruct('CompanyName', 'Inventory Pro'), versioninfo.StringStruct('FileDescription', 'Inventory Beta - Inventory Management System'), versioninfo.StringStruct('FileVersion', '1.4.0.0'), versioninfo.StringStruct('InternalName', 'Inventory_Beta'), versioninfo.StringStruct('LegalCopyright', ''), versioninfo.StringStruct('OriginalFilename', 'Inventory_Beta.exe'), versioninfo.StringStruct('ProductName', 'Inventory Beta'), versioninfo.StringStruct('ProductVersion', '1.4.0.0')])]), versioninfo.VarFileInfo([versioninfo.VarStruct('Translation', [1033, 1200])])]),
  False,
  False,
  b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<assembly xmlns='
@@ -88,7 +88,7 @@
  [],
  False,
  False,
- 1782186929,
+ 1782465897,
  [('runw.exe',
    'C:\\Users\\Aftershock\\Desktop\\Inventory '
    'Management\\venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',

@@ -666,7 +666,7 @@ class SalesView:
         """Load sales history data"""
         try:
             query = """
-                SELECT s.id as sale_id, s.invoice_number, s.sale_date, s.payment_method,
+                SELECT s.id as sale_id, s.customer_id, s.invoice_number, s.sale_date, s.payment_method,
                        s.total_amount, s.paid_amount, (s.total_amount - s.paid_amount) as credit,
                        s.discount, s.status, s.notes, c.name as customer_name,
                        COUNT(si.id) as item_count
@@ -1298,13 +1298,29 @@ class SalesView:
         )
         barcode_entry.pack(side="left", padx=(0, 0))
 
+        # ── Category / Brand filter row ──
+        filter_row = ctk.CTkFrame(dialog, fg_color="transparent")
+        filter_row.pack(fill="x", padx=12, pady=(0, 6))
+
+        ctk.CTkLabel(filter_row, text="Category:", font=ctk.CTkFont(size=11)).pack(side="left", padx=(0, 4))
+        cat_filter_var = ctk.StringVar(value="All")
+        cat_filter = ttk.Combobox(filter_row, textvariable=cat_filter_var, state="readonly",
+                                   width=14, font=("Segoe UI", 11))
+        cat_filter.pack(side="left", padx=(0, 12))
+
+        ctk.CTkLabel(filter_row, text="Brand:", font=ctk.CTkFont(size=11)).pack(side="left", padx=(0, 4))
+        brand_filter_var = ctk.StringVar(value="All")
+        brand_filter = ttk.Combobox(filter_row, textvariable=brand_filter_var, state="readonly",
+                                     width=14, font=("Segoe UI", 11))
+        brand_filter.pack(side="left")
+
         # ── Product tree ──
         tree_frame = ctk.CTkFrame(dialog)
         tree_frame.pack(fill="both", expand=True, padx=12, pady=6)
         tree_frame.grid_rowconfigure(0, weight=1)
         tree_frame.grid_columnconfigure(0, weight=1)
 
-        cols = ("SKU", "Name", "Stock", "Normal Price", "Workshop Price")
+        cols = ("SKU", "Name", "Category", "Brand", "Stock", "Normal Price", "Workshop Price")
         tree = ttk.Treeview(tree_frame, columns=cols, show="headings")
         tree.grid(row=0, column=0, sticky="nsew")
 
@@ -1316,7 +1332,7 @@ class SalesView:
                            font=("Segoe UI", 11))
         tree.tag_configure("no_match", foreground="gray", font=("Segoe UI", 11, "italic"))
 
-        col_widths = {"SKU": 90, "Name": 350, "Stock": 100, "Normal Price": 110, "Workshop Price": 110}
+        col_widths = {"SKU": 90, "Name": 200, "Category": 110, "Brand": 110, "Stock": 100, "Normal Price": 110, "Workshop Price": 110}
         for col in cols:
             anchor = "w" if col == "Name" else "center"
             tree.heading(col, text=col, anchor=anchor)
@@ -1348,13 +1364,26 @@ class SalesView:
         # ── Populate helpers ──
         _current_filtered = []
 
+        # Populate filter dropdowns
+        cats = sorted(set(p.get('category_name') for p in self.all_products if p.get('category_name')))
+        brands = sorted(set(p.get('brand_name') for p in self.all_products if p.get('brand_name')))
+        cat_filter.configure(values=["All"] + cats)
+        brand_filter.configure(values=["All"] + brands)
+
+        def _on_cat_filter(*_):
+            _do_filter()
+        def _on_brand_filter(*_):
+            _do_filter()
+        cat_filter.bind("<<ComboboxSelected>>", _on_cat_filter)
+        brand_filter.bind("<<ComboboxSelected>>", _on_brand_filter)
+
         def _populate(product_list):
             nonlocal _current_filtered
             _current_filtered = list(product_list)
             for item in tree.get_children():
                 tree.delete(item)
             if not product_list:
-                tree.insert("", "end", values=("", "No products found", "", "", ""), tags=("no_match",))
+                tree.insert("", "end", values=("", "No products found", "", "", "", "", ""), tags=("no_match",))
                 count_label.configure(text="No products found")
                 return
             for idx, p in enumerate(product_list):
@@ -1370,7 +1399,10 @@ class SalesView:
                     tag = "stock_ok"
                     disp = f"{avail}"
                 tree.insert("", "end", values=(
-                    p['sku'], p['name'], disp,
+                    p['sku'], p['name'],
+                    p.get('category_name') or "-",
+                    p.get('brand_name') or "-",
+                    disp,
                     _fmt(p['price_normal']), _fmt(p['price_workshop'])
                 ), tags=(tag,))
             count_label.configure(
@@ -1379,16 +1411,21 @@ class SalesView:
 
         def _do_filter(*_):
             term = search_var.get().lower()
-            if not term:
-                _populate(self.all_products)
-            else:
+            sel_cat = cat_filter_var.get()
+            sel_brand = brand_filter_var.get()
+            filtered = list(self.all_products)
+            if term:
                 filtered = [
-                    p for p in self.all_products
+                    p for p in filtered
                     if term in p['name'].lower()
                     or term in p['sku'].lower()
                     or (p.get('barcode') and term in p['barcode'].lower())
                 ]
-                _populate(filtered)
+            if sel_cat != "All":
+                filtered = [p for p in filtered if (p.get('category_name') or "") == sel_cat]
+            if sel_brand != "All":
+                filtered = [p for p in filtered if (p.get('brand_name') or "") == sel_brand]
+            _populate(filtered)
 
         def _add_selected():
             sel = tree.selection()
@@ -1500,8 +1537,11 @@ class SalesView:
         try:
             query = """
                 SELECT p.product_id, p.sku, p.name, p.stock, p.price_normal, 
-                       p.price_workshop, p.reorder_level, p.barcode
+                       p.price_workshop, p.reorder_level, p.barcode,
+                       c.category_name, b.brand_name
                 FROM products p
+                LEFT JOIN categories c ON p.category_id = c.category_id
+                LEFT JOIN brands b ON p.brand_id = b.brand_id
                 WHERE p.is_active = 1
                 ORDER BY p.name
             """
@@ -2321,7 +2361,7 @@ class SalesView:
         customer_name = selected_sale['customer_name'] or "Walk-in Customer"
         discount = selected_sale['discount'] or 0
 
-        reports_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "reports")
+        reports_dir = os.path.join(os.path.expanduser("~"), "Documents", "InventoryPro", "reports")
         os.makedirs(reports_dir, exist_ok=True)
         filename = os.path.join(reports_dir, f"invoice_{invoice_number}.pdf")
 
@@ -2348,158 +2388,185 @@ class SalesView:
                                         leftMargin=0.6*inch, rightMargin=0.6*inch)
                 styles = getSampleStyleSheet()
                 story = []
-
-                # --- Centered Company Header ---
                 from reportlab.lib.styles import ParagraphStyle
-                center_style = ParagraphStyle('Center', parent=styles['Normal'],
-                                              alignment=1, spaceAfter=2)
-                bold_center = ParagraphStyle('BoldCenter', parent=center_style,
-                                             fontSize=18, leading=22, spaceAfter=2)
-                addr_style = ParagraphStyle('Addr', parent=center_style,
-                                            fontSize=9, leading=12, textColor=colors.HexColor('#555555'))
-                contact_style = ParagraphStyle('Contact', parent=center_style,
-                                               fontSize=9, leading=12, textColor=colors.HexColor('#777777'))
+                from reportlab.platypus import HRFlowable
 
-                header_elems = []
+                BRAND = colors.HexColor('#1a1a2e')
+                ACCENT = colors.HexColor('#2563eb')
+                LIGHT_BG = colors.HexColor('#f1f5f9')
+                MUTED = colors.HexColor('#64748b')
+                WHITE = colors.white
+                SUCCESS = colors.HexColor('#059669')
 
+                center_style = ParagraphStyle('Center', parent=styles['Normal'], alignment=1, spaceAfter=2)
+                company_style = ParagraphStyle('Company', parent=center_style, fontSize=22, leading=26, fontName='Helvetica-Bold', textColor=BRAND, spaceAfter=4)
+                addr_style = ParagraphStyle('Addr', parent=center_style, fontSize=9, leading=13, textColor=MUTED)
+                contact_style = ParagraphStyle('Contact', parent=center_style, fontSize=9, leading=13, textColor=MUTED)
+
+                # ── Logo + Company name ──
                 if has_logo:
                     try:
-                        img = Image(logo_path, width=1.2*inch, height=0.6*inch)
-                        header_elems.append(img)
-                        header_elems.append(Spacer(1, 4))
+                        img = Image(logo_path, width=0.9*inch, height=0.9*inch)
+                        img.hAlign = 'CENTER'
+                        story.append(img)
+                        story.append(Spacer(1, 4))
                     except Exception:
                         pass
 
-                header_elems.append(Paragraph(company_name, bold_center))
+                story.append(Paragraph(company_name, company_style))
                 if company_address:
-                    header_elems.append(Paragraph(company_address.replace('\n', '<br/>'), addr_style))
+                    story.append(Paragraph(company_address.replace('\n', ' • '), addr_style))
                 contact_parts = []
                 if company_phone:
-                    contact_parts.append(f"Phone: {company_phone}")
+                    contact_parts.append(f"📞 {company_phone}")
                 if company_email:
-                    contact_parts.append(f"Email: {company_email}")
+                    contact_parts.append(f"✉ {company_email}")
                 if contact_parts:
-                    header_elems.append(Paragraph(" | ".join(contact_parts), contact_style))
+                    story.append(Paragraph("   ".join(contact_parts), contact_style))
 
-                for elem in header_elems:
-                    story.append(elem)
                 story.append(Spacer(1, 10))
 
-                # --- Separator ---
-                sep_style = TableStyle([('LINEBELOW', (0, 0), (-1, 0), 2, colors.HexColor('#1a1a2e'))])
-                sep_table = Table([[""]], colWidths=[6.3*inch])
-                sep_table.setStyle(sep_style)
-                story.append(sep_table)
-                story.append(Spacer(1, 8))
+                # ── Accent rule ──
+                story.append(HRFlowable(width="100%", thickness=3, color=ACCENT, spaceAfter=10))
 
-                # --- Invoice Title ---
-                title_style = ParagraphStyle('InvoiceTitle', parent=styles['Heading2'],
-                                             textColor=colors.HexColor('#1a1a2e'),
-                                             alignment=1, spaceBefore=0, spaceAfter=6)
-                story.append(Paragraph("TAX INVOICE", title_style))
-                story.append(Spacer(1, 6))
+                # ── TAX INVOICE badge ──
+                badge_style = ParagraphStyle('Badge', parent=styles['Normal'], alignment=1,
+                                             fontSize=13, fontName='Helvetica-Bold',
+                                             textColor=ACCENT, spaceAfter=8)
+                story.append(Paragraph("TAX INVOICE", badge_style))
 
-                # --- Invoice Details in bordered box ---
+                # ── Invoice detail grid ──
+                status_color = SUCCESS if selected_sale['status'].lower() == 'completed' else colors.HexColor('#d97706')
                 detail_data = [
-                    ["Invoice No.", invoice_number, "Date", selected_sale['sale_date']],
-                    ["Customer", customer_name, "Payment", selected_sale['payment_method'].title()],
-                    ["Status", selected_sale['status'].title(), "Amount", f"{currency} {selected_sale['total_amount']:.2f}"],
+                    [Paragraph('<b><font color="#64748b">Invoice No.</font></b>', styles['Normal']),
+                     Paragraph(f'<b>{invoice_number}</b>', styles['Normal']),
+                     Paragraph('<b><font color="#64748b">Date</font></b>', styles['Normal']),
+                     Paragraph(f'{selected_sale["sale_date"]}', styles['Normal'])],
+                    [Paragraph('<b><font color="#64748b">Customer</font></b>', styles['Normal']),
+                     Paragraph(f'{customer_name}', styles['Normal']),
+                     Paragraph('<b><font color="#64748b">Payment</font></b>', styles['Normal']),
+                     Paragraph(f'{selected_sale["payment_method"].title()}', styles['Normal'])],
+                    [Paragraph('<b><font color="#64748b">Status</font></b>', styles['Normal']),
+                     Paragraph(f'<b>{selected_sale["status"].title()}</b>', styles['Normal']),
+                     '', ''],
                 ]
-                detail_table = Table(detail_data,
-                                    colWidths=[0.9*inch, 2.3*inch, 0.7*inch, 2.3*inch])
+                detail_table = Table(detail_data, colWidths=[1.0*inch, 2.2*inch, 0.9*inch, 2.1*inch])
                 detail_table.setStyle(TableStyle([
-                    ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-                    ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
                     ('FONTSIZE', (0, 0), (-1, -1), 9),
-                    ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#555555')),
-                    ('TEXTCOLOR', (2, 0), (2, -1), colors.HexColor('#555555')),
-                    ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
-                    ('FONTNAME', (3, 0), (3, -1), 'Helvetica'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 6),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-                    ('TOPPADDING', (0, 0), (-1, -1), 5),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f8f8f8')),
-                    ('BACKGROUND', (2, 0), (3, 0), colors.HexColor('#f8f8f8')),
+                    ('TOPPADDING', (0, 0), (-1, -1), 6),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+                    ('BACKGROUND', (0, 0), (-1, -1), LIGHT_BG),
+                    ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#e2e8f0')),
+                    ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#e2e8f0')),
+                    ('ROUNDEDCORNERS', [6, 6, 6, 6]),
+                    ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#cbd5e1')),
+                    ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
+                    ('SPAN', (1, 2), (3, 2)),
+                    ('TEXTCOLOR', (1, 2), (1, 2), status_color),
                 ]))
                 story.append(detail_table)
-                story.append(Spacer(1, 14))
+                story.append(Spacer(1, 16))
 
-                # --- Items Table ---
-                items_header = ["#", "Product", "SKU", "Qty", "Unit Price", "Total"]
+                # ── Items table ──
+                items_header = [
+                    Paragraph('<font color="white"><b>#</b></font>', styles['Normal']),
+                    Paragraph('<font color="white"><b>Product</b></font>', styles['Normal']),
+                    Paragraph('<font color="white"><b>SKU</b></font>', styles['Normal']),
+                    Paragraph('<font color="white"><b>Qty</b></font>', styles['Normal']),
+                    Paragraph('<font color="white"><b>Unit Price</b></font>', styles['Normal']),
+                    Paragraph('<font color="white"><b>Total</b></font>', styles['Normal']),
+                ]
                 items_data = [items_header]
 
                 for i, item in enumerate(items, 1):
+                    row_style = styles['Normal']
                     items_data.append([
-                        str(i),
-                        item['name'],
-                        item['sku'],
-                        str(item['quantity']),
-                        f"{currency} {item['unit_price']:.2f}",
-                        f"{currency} {item['total']:.2f}",
+                        Paragraph(str(i), row_style),
+                        Paragraph(item['name'], row_style),
+                        Paragraph(item['sku'], row_style),
+                        Paragraph(str(item['quantity']), row_style),
+                        Paragraph(f"{currency} {item['unit_price']:.2f}", row_style),
+                        Paragraph(f"{currency} {item['total']:.2f}", row_style),
                     ])
 
-                subtotal = selected_sale['total_amount'] + discount
+                subtotal_val = selected_sale['total_amount'] + discount
+                n = len(items_data)
+
+                # Summary rows
+                def _summary_row(label, value, bold=False, color=None):
+                    lbl = f'<b>{label}</b>' if bold else label
+                    val = f'<b>{value}</b>' if bold else value
+                    lp = Paragraph(f'<font color="#64748b">{lbl}</font>', styles['Normal'])
+                    vp_style = ParagraphStyle('SumVal', parent=styles['Normal'], alignment=2)
+                    if color:
+                        vp = Paragraph(f'<font color="{color}"><b>{val}</b></font>', vp_style)
+                    else:
+                        vp = Paragraph(val, vp_style)
+                    return ['', '', '', '', lp, vp]
+
+                items_data.append(_summary_row('Subtotal', f'{currency} {subtotal_val:.2f}'))
                 if discount > 0:
-                    items_data.append(["", "", "", "", "Subtotal:", f"{currency} {subtotal:.2f}"])
-                    items_data.append(["", "", "", "", "Discount:", f"-{currency} {discount:.2f}"])
-                items_data.append(["", "", "", "", "Total:", f"{currency} {selected_sale['total_amount']:.2f}"])
-                items_data.append(["", "", "", "", "Paid:", f"{currency} {selected_sale['paid_amount']:.2f}"])
+                    items_data.append(_summary_row('Discount', f'-{currency} {discount:.2f}', color='#dc2626'))
+                items_data.append(_summary_row('Total', f'{currency} {selected_sale["total_amount"]:.2f}', bold=True, color='#1a1a2e'))
+                items_data.append(_summary_row('Paid', f'{currency} {selected_sale["paid_amount"]:.2f}'))
                 balance = selected_sale['total_amount'] - selected_sale['paid_amount']
                 if balance > 0:
-                    items_data.append(["", "", "", "", "Balance Due:", f"{currency} {balance:.2f}"])
+                    items_data.append(_summary_row('Balance Due', f'{currency} {balance:.2f}', bold=True, color='#dc2626'))
 
-                col_widths = [0.3*inch, 2.2*inch, 0.8*inch, 0.5*inch, 0.9*inch, 1*inch]
+                col_widths = [0.3*inch, 2.15*inch, 0.85*inch, 0.45*inch, 1.05*inch, 1.0*inch]
                 items_table = Table(items_data, colWidths=col_widths, repeatRows=1)
 
+                row_count = len(items_data)
+                summary_start = n  # first summary row index
+
                 style_cmds = [
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a1a2e')),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    # Header
+                    ('BACKGROUND', (0, 0), (-1, 0), ACCENT),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), WHITE),
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                     ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    # Body
                     ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
                     ('FONTSIZE', (0, 1), (-1, -1), 9),
+                    ('TOPPADDING', (0, 0), (-1, -1), 5),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 6),
                     ('ALIGN', (0, 0), (0, -1), 'CENTER'),
-                    ('ALIGN', (3, 1), (-1, -1), 'RIGHT'),
-                    ('ALIGN', (3, 0), (3, 0), 'CENTER'),
-                    ('LINEBELOW', (0, 0), (-1, 0), 1, colors.white),
-                    ('TOPPADDING', (0, 0), (-1, -1), 4),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 4),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+                    ('ALIGN', (3, 0), (5, -1), 'RIGHT'),
+                    # Grid only on item rows
+                    ('GRID', (0, 0), (-1, summary_start - 1), 0.5, colors.HexColor('#e2e8f0')),
+                    # Zebra stripes
+                    *[('BACKGROUND', (0, r), (-1, r), colors.HexColor('#f8fafc'))
+                      for r in range(2, summary_start, 2)],
+                    # Summary section — no left columns border
+                    ('LINEABOVE', (0, summary_start), (-1, summary_start), 1.5, ACCENT),
+                    ('BACKGROUND', (0, summary_start), (-1, -1), colors.HexColor('#f8fafc')),
+                    ('SPAN', (0, summary_start), (3, summary_start)),
                 ]
-
-                summary_start = len(items_data) - (4 if balance > 0 else 3)
-                if discount > 0:
-                    summary_start -= 2
-                if summary_start > 1:
-                    style_cmds.append(('GRID', (0, 0), (-1, summary_start - 1), 0.5, colors.HexColor('#CBD5E1')))
+                # Span empty left cells for all summary rows
+                for r in range(summary_start, row_count):
+                    style_cmds.append(('SPAN', (0, r), (3, r)))
 
                 items_table.setStyle(TableStyle(style_cmds))
-
-                for row_idx in range(summary_start, len(items_data)):
-                    if row_idx >= 1:
-                        cmds = [
-                            ('FONTNAME', (0, row_idx), (-1, row_idx), 'Helvetica-Bold'),
-                            ('FONTSIZE', (0, row_idx), (-1, row_idx), 10),
-                        ]
-                        if row_idx == summary_start:
-                            cmds.append(('LINEABOVE', (0, row_idx), (-1, row_idx), 1, colors.HexColor('#1a1a2e')))
-                        items_table.setStyle(TableStyle(cmds))
-
                 story.append(items_table)
                 story.append(Spacer(1, 20))
 
-                # --- Footer ---
-                story.append(Paragraph("Thank you for your business!", ParagraphStyle(
-                    'ThankYou', parent=styles['Normal'], alignment=1,
-                    fontSize=11, textColor=colors.HexColor('#888888'))))
+                # ── Footer ──
+                story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#e2e8f0'), spaceAfter=8))
+                story.append(Paragraph(
+                    "Thank you for your business!",
+                    ParagraphStyle('ThankYou', parent=styles['Normal'], alignment=1,
+                                   fontSize=11, fontName='Helvetica-Bold', textColor=ACCENT)
+                ))
                 story.append(Spacer(1, 4))
                 story.append(Paragraph(
                     f"Printed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                     ParagraphStyle('PrintInfo', parent=styles['Normal'], alignment=1,
-                                   fontSize=8, textColor=colors.HexColor('#aaaaaa'))))
+                                   fontSize=8, textColor=MUTED)
+                ))
 
                 doc.build(story)
                 self.parent.after(0, lambda: self._on_invoice_ready(loading, filename))
@@ -3810,7 +3877,7 @@ class SaleReturnDialog:
             price = self._get_price(item)
             confirm_msg += f"  • {item['name']} × {qty} @ {_fmt(price)} = {_fmt(qty * price)}\n"
         confirm_msg += f"\nTotal refund amount: {_fmt(total_refund)}\n"
-        confirm_msg += "\nStock will be adjusted accordingly."
+        confirm_msg += "\nStock will be adjusted and financial records updated."
 
         if not messagebox.askyesno("Confirm Return", confirm_msg):
             return
@@ -3831,17 +3898,55 @@ class SaleReturnDialog:
             )
             new_notes = (existing_notes + "\n" + return_note) if existing_notes else return_note
 
+            # Update sale financials
+            old_paid = self.sale_data['paid_amount']
+            old_total = self.sale_data['total_amount']
+            new_paid = max(0, old_paid - total_refund)
+            new_total = old_total - total_refund
+            new_balance = max(0, new_total - new_paid)
+            new_status = 'completed' if new_balance <= 0.01 else 'credit'
+
             db.execute_update("""
-                UPDATE sales SET notes = ?, updated_at = CURRENT_TIMESTAMP
+                UPDATE sales SET notes = ?, total_amount = ?, paid_amount = ?, balance = ?,
+                                 status = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
-            """, (new_notes, self.sale_data['sale_id']))
+            """, (new_notes, new_total, new_paid, new_balance, new_status, self.sale_data['sale_id']))
+
+            # Insert refund payment record
+            customer_id = self.sale_data.get('customer_id')
+            invoice = self.sale_data['invoice_number']
+            db.execute_insert("""
+                INSERT INTO payments (payment_type, customer_id, amount, payment_method,
+                                      reference_number, notes, payment_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                'sale_return',
+                customer_id,
+                total_refund,
+                'cash',
+                invoice,
+                f"Return on {invoice} — {len(returns)} item(s) refunded",
+                datetime.now().strftime('%Y-%m-%d')
+            ))
+
+            # Update customer credit balance if applicable
+            if customer_id:
+                old_balance = self.sale_data.get('balance', old_total - old_paid)
+                balance_delta = new_balance - old_balance
+                if balance_delta != 0:
+                    db.execute_update("""
+                        UPDATE customers SET credit_balance = COALESCE(credit_balance, 0) + ?
+                        WHERE customer_id = ?
+                    """, (balance_delta, customer_id))
 
             self.returns_processed = True
             if self.refresh_callback:
                 self.refresh_callback()
             messagebox.showinfo(
                 "Return Processed",
-                f"Return processed successfully.\n{len(returns)} item(s) returned.\nRefund amount: {_fmt(total_refund)}"
+                f"Return processed successfully.\n{len(returns)} item(s) returned.\n"
+                f"Refund amount: {_fmt(total_refund)}\n"
+                f"Sale adjusted: {_fmt(old_total)} → {_fmt(new_total)}"
             )
             self.dialog.destroy()
 

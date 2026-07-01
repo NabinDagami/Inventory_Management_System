@@ -19,7 +19,7 @@ class CustomersView:
     def __init__(self, parent):
         self.parent = parent
         self.create_customers_interface()
-        self.load_customers()
+        self.all_customers = []
     
     def create_customers_interface(self):
         """Create the customers management interface"""
@@ -118,8 +118,21 @@ class CustomersView:
         )
         credit_filter.pack(side="left", padx=5)
         
+        # Show All button
+        self.show_all_btn = ctk.CTkButton(
+            row2_frame,
+            text="📋 Show All",
+            command=self._show_all_customers,
+            width=110,
+            height=32,
+            fg_color="#3B82F6",
+            hover_color="#2563EB",
+            font=ctk.CTkFont(size=12, weight="bold")
+        )
+        self.show_all_btn.pack(side="left", padx=(15, 5))
+        
         # Clear filters button
-        clear_btn = ctk.CTkButton(
+        self.clear_btn = ctk.CTkButton(
             row2_frame,
             text="❌ Clear Filters",
             command=self.clear_filters,
@@ -128,7 +141,7 @@ class CustomersView:
             fg_color="gray",
             hover_color="darkgray"
         )
-        clear_btn.pack(side="left", padx=(15, 5))
+        self.clear_btn.pack(side="left", padx=5)
         
         # Export buttons frame
         export_frame = ctk.CTkFrame(row2_frame)
@@ -248,8 +261,8 @@ class CustomersView:
         # Double-click to edit
         self.customers_tree.bind("<Double-1>", lambda e: self.edit_customer())
     
-    def load_customers(self):
-        """Load customers data"""
+    def _fetch_customers(self):
+        """Fetch all customers from DB into memory cache"""
         try:
             query = """
                 SELECT customer_id, name, type, contact, credit_balance, is_active, 
@@ -257,48 +270,53 @@ class CustomersView:
                 FROM customers
                 ORDER BY name
             """
-            customers = db.execute_query(query)
-            
-            # Clear existing items
-            for item in self.customers_tree.get_children():
-                self.customers_tree.delete(item)
-            
-            # Add customers to tree
-            for customer in customers:
-                status = "Active" if customer['is_active'] else "Inactive"
-                credit_balance = format_price_with_decimals(customer['credit_balance'])
-                
-                self.customers_tree.insert("", "end", values=(
-                    customer['customer_id'],
-                    customer['name'],
-                    customer['type'],
-                    customer['contact'] or "N/A",
-                    credit_balance,
-                    status,
-                    customer['created_date']
-                ))
-            
-            self.all_customers = customers
-            
+            self.all_customers = db.execute_query(query)
         except Exception as e:
-            print(f"Error loading customers: {e}")
+            print(f"Error fetching customers: {e}")
             messagebox.showerror("Error", f"Failed to load customers: {e}")
+
+    def load_customers(self):
+        """Load and display all customers (Show All)"""
+        self._fetch_customers()
+        self._populate_tree(self.all_customers)
+
+    def _show_all_customers(self):
+        """Show all customers and hide the Show All button"""
+        self.load_customers()
+        self.show_all_btn.pack_forget()
     
+    def _populate_tree(self, customers):
+        """Clear tree and insert the given list of customer dicts"""
+        for item in self.customers_tree.get_children():
+            self.customers_tree.delete(item)
+        for customer in customers:
+            status = "Active" if customer['is_active'] else "Inactive"
+            credit_balance = format_price_with_decimals(customer['credit_balance'])
+            self.customers_tree.insert("", "end", values=(
+                customer['customer_id'],
+                customer['name'],
+                customer['type'],
+                customer['contact'] or "N/A",
+                credit_balance,
+                status,
+                customer['created_date']
+            ))
+
     def filter_customers(self, *args):
         """Filter customers based on search and type filter"""
-        if not hasattr(self, 'all_customers'):
-            return
+        if not self.all_customers:
+            self._fetch_customers()
             
         search_term = self.search_var.get().lower()
         type_filter = self.type_filter_var.get()
         status_filter = self.status_filter_var.get()
         credit_filter = self.credit_filter_var.get()
         
-        # Clear tree
-        for item in self.customers_tree.get_children():
-            self.customers_tree.delete(item)
-        
-        # Filter and add matching customers
+        # Re-show the Show All button since user is now filtering
+        self.show_all_btn.pack_forget()
+        self.show_all_btn.pack(before=self.clear_btn, side="left", padx=(15, 5))
+        # Filter matching customers
+        filtered = []
         for customer in self.all_customers:
             # Check search term
             matches_search = (
@@ -324,17 +342,9 @@ class CustomersView:
                 matches_credit = not has_credit
             
             if matches_search and matches_type and matches_status and matches_credit:
-                credit_balance = format_price_with_decimals(customer['credit_balance'])
-                
-                self.customers_tree.insert("", "end", values=(
-                    customer['customer_id'],
-                    customer['name'],
-                    customer['type'],
-                    customer['contact'] or "N/A",
-                    credit_balance,
-                    customer_status,
-                    customer['created_date']
-                ))
+                filtered.append(customer)
+        
+        self._populate_tree(filtered)
     
     def clear_filters(self):
         """Clear all filters and reload data"""

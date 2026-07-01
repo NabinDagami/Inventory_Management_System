@@ -270,6 +270,7 @@ class InventoryView:
     def __init__(self, parent):
         self.parent = parent
         self.current_tab = "products"
+        self._search_timer = None
         self.create_inventory_view()
         self.load_data()
     
@@ -417,7 +418,7 @@ class InventoryView:
         search_icon.pack(side="left", padx=(0, 6))
         
         self.search_var = ctk.StringVar()
-        self.search_var.trace('w', self.filter_data)
+        self.search_var.trace('w', self._on_search_debounce)
         search_entry = ctk.CTkEntry(
             search_row,
             textvariable=self.search_var,
@@ -665,7 +666,7 @@ class InventoryView:
         table_container.grid_rowconfigure(0, weight=1)
         
         # Create treeview for products
-        columns = ("#", "SKU", "Name", "Category", "Sub Category", "Brand", "Sub Brand", "Barcode", "Stock", "Qty Sold", "Normal Price", "Workshop Price", "Reorder Level")
+        columns = ("#", "SKU", "Part No.", "Name", "Category", "Sub Category", "Brand", "Sub Brand", "Barcode", "Stock", "Qty Sold", "Normal Price", "Workshop Price", "Reorder Level")
         self.data_tree = ttk.Treeview(table_container, columns=columns, show="headings", height=20)
         self.data_tree.grid(row=0, column=0, sticky="nsew", padx=(2, 0), pady=(2, 0))
         
@@ -687,7 +688,7 @@ class InventoryView:
         self.data_tree.tag_configure("no_barcode", foreground=("#DC2626" if not is_dark else "#F87171"))
         
         # Column widths - Name and Brand stretch to fill space
-        column_widths = {"#": 50, "SKU": 110, "Name": 200, "Category": 120, "Sub Category": 120,
+        column_widths = {"#": 50, "SKU": 110, "Part No.": 110, "Name": 200, "Category": 120, "Sub Category": 120,
                         "Brand": 120, "Sub Brand": 120, "Barcode": 50, "Stock": 80, "Qty Sold": 80,
                         "Normal Price": 100, "Workshop Price": 120, "Reorder Level": 90}
         
@@ -994,7 +995,7 @@ class InventoryView:
             SELECT p.sku, p.name, c.category_name, sc.sub_category_name, 
                    b.brand_name, sb.sub_brand_name, p.stock, p.qty_sold,
                    p.price_normal, p.price_workshop, p.reorder_level, p.cost_price,
-                   p.barcode
+                   p.barcode, p.part_number
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.category_id
             LEFT JOIN sub_categories sc ON p.sub_category_id = sc.sub_category_id
@@ -1044,6 +1045,7 @@ class InventoryView:
             item_id = self.data_tree.insert("", "end", values=(
                 idx,
                 product['sku'],
+                product.get('part_number', '') or "",
                 product['name'],
                 product['category_name'] or "N/A",
                 product['sub_category_name'] or "-",
@@ -1225,7 +1227,12 @@ class InventoryView:
             chip.pack(side="left", padx=(0, 5))
         # Pack before the summary cards to maintain layout order
         self.filter_chips_frame.pack(fill="x", padx=10, pady=(0, 4), before=self.cards_frame)
-    
+
+    def _on_search_debounce(self, *args):
+        if hasattr(self, '_search_timer') and self._search_timer:
+            self.parent.after_cancel(self._search_timer)
+        self._search_timer = self.parent.after(200, self.filter_data)
+
     def filter_data(self, *args):
         """Filter data based on search and filter criteria"""
         search_term = self.search_var.get().lower()
@@ -1306,6 +1313,7 @@ class InventoryView:
                     item_id = self.data_tree.insert("", "end", values=(
                         row_num,
                         item['sku'],
+                        item.get('part_number', '') or "",
                         item['name'],
                         category_name,
                         sub_category_name,
@@ -1410,13 +1418,14 @@ class InventoryView:
                 # Insert product
                 db.execute_insert(
                     """INSERT INTO products (name, sku, category_id, sub_category_id, brand_id, sub_brand_id, description, 
-                                           barcode, stock, price_normal, price_workshop, cost_price, reorder_level)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                           barcode, stock, price_normal, price_workshop, cost_price, reorder_level, part_number)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (dialog.result['name'], sku, dialog.result['category_id'], dialog.result['sub_category_id'],
                      dialog.result['brand_id'], dialog.result['sub_brand_id'],
                      dialog.result['description'], dialog.result['barcode'],
                      dialog.result['stock'], dialog.result['price_normal'],
-                     dialog.result['price_workshop'], dialog.result['cost_price'], dialog.result['reorder_level'])
+                     dialog.result['price_workshop'], dialog.result['cost_price'], dialog.result['reorder_level'],
+                     dialog.result['part_number'])
                 )
                 
                 messagebox.showinfo("Success", f"Product added successfully!\nSKU: {sku}")
@@ -1516,13 +1525,14 @@ class InventoryView:
                 try:
                     db.execute_update(
                         """UPDATE products SET name=?, category_id=?, sub_category_id=?, brand_id=?, sub_brand_id=?, description=?,
-                                             barcode=?, stock=?, price_normal=?, price_workshop=?, cost_price=?, reorder_level=?
+                                             barcode=?, stock=?, price_normal=?, price_workshop=?, cost_price=?, reorder_level=?, part_number=?
                            WHERE sku=?""",
                         (dialog.result['name'], dialog.result['category_id'], dialog.result['sub_category_id'],
                          dialog.result['brand_id'], dialog.result['sub_brand_id'],
                          dialog.result['description'], dialog.result['barcode'],
                          dialog.result['stock'], dialog.result['price_normal'],
-                         dialog.result['price_workshop'], dialog.result['cost_price'], dialog.result['reorder_level'], sku)
+                         dialog.result['price_workshop'], dialog.result['cost_price'], dialog.result['reorder_level'],
+                         dialog.result['part_number'], sku)
                     )
                     messagebox.showinfo("Success", "Product updated successfully!")
                     self.load_data()
@@ -1981,6 +1991,7 @@ class ExcelImportDialog:
         self.db_fields = {
             'name': {'label': 'Product Name*', 'required': True, 'type': 'text'},
             'sku': {'label': 'SKU*', 'required': True, 'type': 'text'},
+            'part_number': {'label': 'Part No.', 'required': False, 'type': 'text'},
             'category': {'label': 'Category', 'required': False, 'type': 'text'},
             'sub_category': {'label': 'Sub Category', 'required': False, 'type': 'text'},
             'brand': {'label': 'Brand', 'required': False, 'type': 'text'},
@@ -2751,23 +2762,25 @@ class ExcelImportDialog:
                     db.execute_update(
                         """UPDATE products SET name=?, category_id=?, sub_category_id=?, 
                            brand_id=?, sub_brand_id=?, description=?, stock=?, 
-                           cost_price=?, price_normal=?, price_workshop=?, reorder_level=?
+                           cost_price=?, price_normal=?, price_workshop=?, reorder_level=?, part_number=?
                            WHERE sku=?""",
                         (values.get('name', ''), category_id, sub_category_id, brand_id, sub_brand_id,
                          values.get('description', ''), values.get('stock', 0),
                          values.get('cost_price', 0), values.get('price_normal', 0),
-                         values.get('price_workshop', 0), values.get('reorder_level', 10), sku)
+                         values.get('price_workshop', 0), values.get('reorder_level', 10),
+                         values.get('part_number', ''), sku)
                     )
                 else:
                     db.execute_insert(
                         """INSERT INTO products (name, sku, category_id, sub_category_id, 
                            brand_id, sub_brand_id, description, stock, cost_price, 
-                           price_normal, price_workshop, reorder_level, is_active)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+                           price_normal, price_workshop, reorder_level, part_number, is_active)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
                         (values.get('name', ''), sku, category_id, sub_category_id, brand_id, sub_brand_id,
                          values.get('description', ''), values.get('stock', 0),
                          values.get('cost_price', 0), values.get('price_normal', 0),
-                         values.get('price_workshop', 0), values.get('reorder_level', 10))
+                         values.get('price_workshop', 0), values.get('reorder_level', 10),
+                         values.get('part_number', ''))
                     )
                 
                 imported_count += 1
@@ -3096,6 +3109,11 @@ class ProductDialog:
         self.name_entry = ctk.CTkEntry(main_frame)
         self.name_entry.pack(fill="x", pady=(0, 10))
         
+        # Part Number
+        ctk.CTkLabel(main_frame, text="Part No.:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
+        self.part_number_entry = ctk.CTkEntry(main_frame, placeholder_text="Optional part number...")
+        self.part_number_entry.pack(fill="x", pady=(0, 10))
+        
         # Category with searchable dropdown
         ctk.CTkLabel(main_frame, text="Category:", font=ctk.CTkFont(size=12, weight="bold")).pack(anchor="w", pady=(0, 5))
         self.category_dropdown = SearchableDropdown(main_frame, self.categories, 'category_name', 'category_id', 
@@ -3204,6 +3222,7 @@ class ProductDialog:
         if product_data:
             # Handle SQLite Row objects by accessing columns directly
             self.name_entry.insert(0, product_data['name'] if product_data['name'] else '')
+            self.part_number_entry.insert(0, product_data.get('part_number', '') or '')
             self.description_entry.insert(0, product_data['description'] if product_data['description'] else '')
             self.barcode_entry.insert(0, product_data.get('barcode', '') or '')
             self.stock_entry.insert(0, str(product_data['stock']) if product_data['stock'] else '')
@@ -3461,7 +3480,8 @@ class ProductDialog:
                 'cost_price': cost_price,
                 'price_normal': price_normal,
                 'price_workshop': price_workshop,
-                'reorder_level': reorder_level
+                'reorder_level': reorder_level,
+                'part_number': self.part_number_entry.get().strip() or None
             }
             
             self.dialog.destroy()
@@ -3474,7 +3494,7 @@ class ProductDialog:
 
     def _on_barcode_keypress(self, event):
         now = time.time()
-        if self.barcode_entry.get() and (now - self._last_key_time) > 0.15:
+        if self.barcode_entry.get() and (now - self._last_key_time) > 0.6:
             self.barcode_entry.delete(0, "end")
         self._last_key_time = now
 
@@ -3500,7 +3520,6 @@ class ProductDialog:
         self.barcode_entry.insert(0, barcode)
         self.barcode_entry.select_range(0, "end")
         self.barcode_entry.icursor("end")
-        self.barcode_entry.focus_set()
 
     def _reset_barcode_border(self):
         try:
@@ -3527,6 +3546,11 @@ class ProductDialog:
                 "Camera scanning is not available in this build.\n"
                 "Use Phone scanning or type the barcode manually."
             )
+            # Re-establish dialog grab (messagebox steals and releases it)
+            try:
+                self.dialog.grab_set()
+            except Exception:
+                pass
 
     def _on_camera_barcode(self, code):
         try:
@@ -3571,7 +3595,13 @@ class ProductDialog:
                 "Barcode Already Generated",
                 f"Barcode '{current}' already exists for this product.\n\nDo you want to generate a new one?"
             ):
+                # Re-establish grab (messagebox steals it)
+                try: self.dialog.grab_set()
+                except Exception: pass
                 return
+            # Re-establish grab after Yes confirmation too
+            try: self.dialog.grab_set()
+            except Exception: pass
         existing = set()
         for row in db.execute_query("SELECT barcode FROM products WHERE barcode IS NOT NULL"):
             existing.add(row["barcode"])
@@ -3583,6 +3613,7 @@ class ProductDialog:
         self.barcode_entry.insert(0, code)
         self._show_barcode_preview(code)
         self.scan_info.configure(text="Barcode generated successfully", text_color="#4ade80")
+        self.stock_entry.focus_set()
 
     def _show_barcode_preview(self, code):
         try:
@@ -3797,6 +3828,7 @@ class ProductDialog:
 
         pdf_path = os.path.join(tempfile.gettempdir(), f"tpl_labels_{payload}.pdf")
         c = canvas.Canvas(pdf_path, pagesize=A4)
+        c.setViewerPreference('PrintScaling', 'None')
         w, h = A4
 
         # Template sizing matched to Cotty ST-84 / OnlineLabels EU30049 A4 label sheet
@@ -3963,7 +3995,10 @@ class ProductDialog:
         c.showPage()
         c.save()
 
-        self.scan_info.configure(text=f"Template Labels PDF saved: {pdf_path}", text_color="#60a5fa")
+        self.scan_info.configure(
+            text=f"PDF saved. Print at Actual Size / 100% — do not use Fit to Page.\nPath: {pdf_path}",
+            text_color="#60a5fa"
+        )
         self._show_pdf_actions(pdf_path)
 
     def _show_start_box_dialog(self, qty):
@@ -4915,7 +4950,7 @@ class SearchableDropdown(ctk.CTkFrame):
         self._populate_list()
         
         # Bind click outside to close
-        self.winfo_toplevel().bind("<Button-1>", self._on_click_outside, add="+")
+        self._click_outside_id = self.winfo_toplevel().bind("<Button-1>", self._on_click_outside, add="+")
         
         # Position and show
         x = self.container.winfo_rootx()
@@ -4933,7 +4968,8 @@ class SearchableDropdown(ctk.CTkFrame):
             self.dropdown_window = None
         self.dropdown_open = False
         self.dropdown_btn.configure(text="▼")
-        self.winfo_toplevel().unbind("<Button-1>")
+        if hasattr(self, '_click_outside_id'):
+            self.winfo_toplevel().unbind("<Button-1>", self._click_outside_id)
     
     def _on_click_outside(self, event):
         """Handle click outside dropdown"""
@@ -4993,12 +5029,13 @@ class SearchableDropdown(ctk.CTkFrame):
         self._populate_list()
     
     def _on_list_click(self, event):
-        """Handle list click"""
-        # Get the item under cursor
+        """Handle list click — select immediately on single click"""
         index = self.listbox.nearest(event.y)
         if 0 <= index < self.listbox.size():
             self.listbox.selection_clear(0, tk.END)
             self.listbox.selection_set(index)
+            self.listbox.activate(index)
+            self._select_item()
     
     def _select_item(self):
         """Select the highlighted item"""

@@ -108,6 +108,12 @@ class Database:
                 cursor.execute("ALTER TABLE products ADD COLUMN available_stock INTEGER DEFAULT 0")
             except sqlite3.OperationalError:
                 pass  # Column already exists
+
+            # Add part_number column if it doesn't exist (for existing databases)
+            try:
+                cursor.execute("ALTER TABLE products ADD COLUMN part_number VARCHAR(100)")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
             
             # Customers table
             cursor.execute('''
