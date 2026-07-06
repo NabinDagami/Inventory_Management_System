@@ -20,12 +20,12 @@ VSVersionInfo(
         StringTable(
           u'040904B0',
           [StringStruct(u'CompanyName', u'Inventory Pro'),
-           StringStruct(u'FileDescription', u'Inventory Beta - Inventory Management System'),
+           StringStruct(u'FileDescription', u'Inventory Management System'),
            StringStruct(u'FileVersion', u'1.4.0.0'),
-           StringStruct(u'InternalName', u'Inventory_Beta'),
-           StringStruct(u'LegalCopyright', u''),
+           StringStruct(u'InternalName', u'InventoryPro'),
+           StringStruct(u'LegalCopyright', u'Copyright \xa9 2025-2026 Inventory Pro. All rights reserved.'),
            StringStruct(u'OriginalFilename', u'Inventory_Beta.exe'),
-           StringStruct(u'ProductName', u'Inventory Beta'),
+           StringStruct(u'ProductName', u'Inventory Pro'),
            StringStruct(u'ProductVersion', u'1.4.0.0')])
       ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])

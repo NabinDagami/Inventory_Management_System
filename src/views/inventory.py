@@ -4029,11 +4029,12 @@ class ProductDialog:
         ctk.CTkLabel(header, text="Choose Start Position", font=ctk.CTkFont(size=16, weight="bold"), text_color="white").pack(pady=12)
 
         info_frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        info_frame.pack(fill="x", padx=20, pady=(0, 6))
+        info_frame.pack(fill="x", padx=20, pady=(0, 4))
         ctk.CTkLabel(info_frame, text=f"Labels to print: {qty}", font=ctk.CTkFont(size=12, weight="bold")).pack(side="left")
-        ctk.CTkLabel(info_frame, text=f"(boxes 1-{TOTAL_LABELS} per sheet)", font=ctk.CTkFont(size=11), text_color=("gray40", "gray60")).pack(side="right")
+        ctk.CTkLabel(info_frame, text=f"Layout: {COLS} Columns x {ROWS} Rows  |  boxes 1-{TOTAL_LABELS} per sheet",
+                     font=ctk.CTkFont(size=11), text_color=("gray40", "gray60")).pack(side="right")
 
-        # Canvas grid preview
+        # Canvas grid preview with row and column headers
         is_dark = ctk.get_appearance_mode() == "Dark"
 
         grid_frame = ctk.CTkFrame(dialog, fg_color="transparent")
@@ -4042,14 +4043,18 @@ class ProductDialog:
         cell_w = 32
         cell_h = 16
         gap = 2
+        label_w = 36
+        label_h = 16
         grid_w = COLS * (cell_w + gap) - gap
         grid_h = ROWS * (cell_h + gap) - gap
+        canvas_w = label_w + grid_w + 16
+        canvas_h = label_h + grid_h + 16
 
         canvas_bg = "#2b2b2b" if is_dark else "#f0f0f0"
         canvas = tk.Canvas(
             grid_frame,
-            width=grid_w + 20,
-            height=min(grid_h + 20, 460),
+            width=canvas_w,
+            height=min(canvas_h, 480),
             highlightthickness=1,
             highlightbackground="#555555" if is_dark else "#cccccc",
             bg=canvas_bg,
@@ -4057,8 +4062,21 @@ class ProductDialog:
         )
         canvas.pack(pady=4)
 
-        sheet_x0 = 10
-        sheet_y0 = 10
+        sheet_x0 = label_w + 8
+        sheet_y0 = label_h + 4
+        header_color = "#888888" if is_dark else "#555555"
+        header_font = ("TkDefaultFont", 7)
+
+        # Column headers: Col 1, Col 2, etc. centered above each column
+        for c in range(COLS):
+            cx = sheet_x0 + c * (cell_w + gap) + cell_w // 2
+            cy = 4
+            canvas.create_text(cx, cy, text=f"Col {c + 1}", font=header_font, fill=header_color)
+
+        # Row headers: Row 1, Row 2, etc. right-aligned beside each row
+        for r in range(ROWS):
+            ry = sheet_y0 + (ROWS - 1 - r) * (cell_h + gap) + cell_h // 2
+            canvas.create_text(label_w + 4, ry, text=f"Row {r + 1}", font=header_font, fill=header_color, anchor="e")
 
         def _get_cell_rect(pos):
             pos0 = pos - 1
