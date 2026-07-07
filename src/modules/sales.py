@@ -13,6 +13,8 @@ from reportlab.lib.units import inch
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from views.settings import SettingsView
+
 from utils.dialog_utils import size_and_center_dialog
 from models.database import db
 
@@ -566,13 +568,32 @@ class SalesModule:
             filename = f"reports/invoice_{invoice_number}.pdf"
             os.makedirs("reports", exist_ok=True)
             
+            settings = SettingsView.get_settings()
+            company = settings.get('company', {})
+            company_name = company.get('name', 'INVENTORY PRO')
+            company_address = company.get('address', '')
+            company_phone = company.get('phone', '')
+            company_email = company.get('email', '')
+            company_pan = company.get('pan', '')
+            
             doc = SimpleDocTemplate(filename, pagesize=letter)
             styles = getSampleStyleSheet()
             story = []
             
             # Header
-            story.append(Paragraph("<b>INVENTORY PRO</b>", styles['Title']))
+            story.append(Paragraph(f"<b>{company_name}</b>", styles['Title']))
             story.append(Paragraph("Sales Invoice", styles['Heading2']))
+            if company_address:
+                story.append(Paragraph(company_address.replace('\n', ', '), styles['Normal']))
+            contact_parts = []
+            if company_phone:
+                contact_parts.append(company_phone)
+            if company_email:
+                contact_parts.append(company_email)
+            if contact_parts:
+                story.append(Paragraph(" | ".join(contact_parts), styles['Normal']))
+            if company_pan:
+                story.append(Paragraph(f"PAN: {company_pan}", styles['Normal']))
             story.append(Spacer(1, 12))
             
             # Invoice details

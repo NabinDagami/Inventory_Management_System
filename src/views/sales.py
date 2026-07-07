@@ -2228,9 +2228,10 @@ class SalesView:
         # Load sale items
         try:
             items = db.execute_query("""
-                SELECT si.quantity, si.unit_price, si.total, p.name, p.sku
+                SELECT si.quantity, si.unit_price, si.total, p.name, p.sku, c.category_name
                 FROM sale_items si
                 JOIN products p ON si.product_id = p.product_id
+                LEFT JOIN categories c ON p.category_id = c.category_id
                 WHERE si.sale_id = ?
                 ORDER BY p.name
             """, (selected_sale['sale_id'],))
@@ -2239,6 +2240,13 @@ class SalesView:
             return
 
         # Build receipt text
+        settings = SettingsView.get_settings()
+        company = settings.get('company', {})
+        company_name = company.get('name', 'INVENTORY PRO')
+        company_address = company.get('address', '')
+        company_phone = company.get('phone', '')
+        company_email = company.get('email', '')
+        company_pan = company.get('pan', '')
         sep = "=" * 48
         thin = "-" * 48
         customer_name = selected_sale['customer_name'] or "Walk-in Customer"
@@ -2246,8 +2254,21 @@ class SalesView:
 
         lines = [
             sep,
-            "           INVENTORY PRO",
+            f"  {company_name:^44}",
             "            Sales Invoice",
+        ]
+        if company_address:
+            lines.append(f"  {company_address:^44}")
+        contact_parts = []
+        if company_phone:
+            contact_parts.append(company_phone)
+        if company_email:
+            contact_parts.append(company_email)
+        if contact_parts:
+            lines.append(f"  {' | '.join(contact_parts):^44}")
+        if company_pan:
+            lines.append(f"  PAN: {company_pan:^40}")
+        lines += [
             sep,
             f"  Invoice : {selected_sale['invoice_number']}",
             f"  Date    : {selected_sale['sale_date']}",
@@ -2337,9 +2358,10 @@ class SalesView:
 
         try:
             items = db.execute_query("""
-                SELECT si.quantity, si.unit_price, si.total, p.name, p.sku
+                SELECT si.quantity, si.unit_price, si.total, p.name, p.sku, c.category_name
                 FROM sale_items si
                 JOIN products p ON si.product_id = p.product_id
+                LEFT JOIN categories c ON p.category_id = c.category_id
                 WHERE si.sale_id = ?
                 ORDER BY p.name
             """, (selected_sale['sale_id'],))
@@ -2355,6 +2377,7 @@ class SalesView:
         company_address = company.get('address', '')
         company_phone = company.get('phone', '')
         company_email = company.get('email', '')
+        company_pan = company.get('pan', '')
         logo_path = company.get('logo_path', '')
         has_logo = bool(logo_path and os.path.exists(logo_path))
 
@@ -2423,6 +2446,8 @@ class SalesView:
                     contact_parts.append(f"✉ {company_email}")
                 if contact_parts:
                     story.append(Paragraph("   ".join(contact_parts), contact_style))
+                if company_pan:
+                    story.append(Paragraph(f"PAN: {company_pan}", contact_style))
 
                 story.append(Spacer(1, 10))
 
@@ -2473,7 +2498,7 @@ class SalesView:
                 items_header = [
                     Paragraph('<font color="white"><b>#</b></font>', styles['Normal']),
                     Paragraph('<font color="white"><b>Product</b></font>', styles['Normal']),
-                    Paragraph('<font color="white"><b>SKU</b></font>', styles['Normal']),
+                    Paragraph('<font color="white"><b>Category</b></font>', styles['Normal']),
                     Paragraph('<font color="white"><b>Qty</b></font>', styles['Normal']),
                     Paragraph('<font color="white"><b>Unit Price</b></font>', styles['Normal']),
                     Paragraph('<font color="white"><b>Total</b></font>', styles['Normal']),
@@ -2485,7 +2510,7 @@ class SalesView:
                     items_data.append([
                         Paragraph(str(i), row_style),
                         Paragraph(item['name'], row_style),
-                        Paragraph(item['sku'], row_style),
+                        Paragraph(item['category_name'] or '', row_style),
                         Paragraph(str(item['quantity']), row_style),
                         Paragraph(f"{currency} {item['unit_price']:.2f}", row_style),
                         Paragraph(f"{currency} {item['total']:.2f}", row_style),

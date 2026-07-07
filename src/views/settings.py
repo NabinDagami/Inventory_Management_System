@@ -25,7 +25,8 @@ class SettingsView:
                 "address": "",
                 "phone": "",
                 "email": "",
-                "logo_path": ""
+                "logo_path": "",
+                "pan": ""
             },
             "defaults": {
                 "currency": "Rs",
@@ -179,6 +180,13 @@ class SettingsView:
         self.email_entry = ctk.CTkEntry(content)
         self.email_entry.grid(row=row, column=1, sticky="ew", padx=10, pady=8)
         self.email_entry.insert(0, self.settings["company"]["email"])
+        
+        # PAN
+        row += 1
+        ctk.CTkLabel(content, text="PAN:", font=ctk.CTkFont(size=12, weight="bold")).grid(row=row, column=0, sticky="w", padx=10, pady=8)
+        self.pan_entry = ctk.CTkEntry(content)
+        self.pan_entry.grid(row=row, column=1, sticky="ew", padx=10, pady=8)
+        self.pan_entry.insert(0, self.settings["company"]["pan"])
         
         # Logo
         row += 1
@@ -337,6 +345,7 @@ class SettingsView:
             self.settings["company"]["address"] = self.address_text.get("1.0", "end-1c").strip()
             self.settings["company"]["phone"] = self.phone_entry.get().strip()
             self.settings["company"]["email"] = self.email_entry.get().strip()
+            self.settings["company"]["pan"] = self.pan_entry.get().strip()
             logo_text = self.logo_path_label.cget("text")
             self.settings["company"]["logo_path"] = logo_text if logo_text != "No logo selected" else ""
             
@@ -390,7 +399,7 @@ class SettingsView:
         """Static method to get current settings from anywhere in the app"""
         settings_file = os.path.join(os.path.dirname(__file__), "..", "..", "data", "settings.json")
         default_settings = {
-            "company": {"name": "Your Company Name", "address": "", "phone": "", "email": "", "logo_path": ""},
+            "company": {"name": "Your Company Name", "address": "", "phone": "", "email": "", "logo_path": "", "pan": ""},
             "defaults": {"currency": "Rs", "tax_rate": 0.0, "payment_terms": 30, "default_reorder_level": 10},
             "inventory": {"low_stock_threshold": 10, "enable_negative_stock": False},
             "notifications": {"enable_low_stock_alerts": True, "alert_check_interval": 5},

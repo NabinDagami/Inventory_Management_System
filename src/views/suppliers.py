@@ -215,6 +215,7 @@ class SuppliersView:
                 SELECT supplier_id, name, contact_person, email, phone, address, 
                        credit_balance, is_active
                 FROM suppliers
+                WHERE is_active = 1
                 ORDER BY name
             """
             suppliers = db.execute_query(query)
