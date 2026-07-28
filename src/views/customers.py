@@ -118,11 +118,11 @@ class CustomersView:
         )
         credit_filter.pack(side="left", padx=5)
         
-        # Show All button
+        # Show All / Hide All button
         self.show_all_btn = ctk.CTkButton(
             row2_frame,
             text="📋 Show All",
-            command=self._show_all_customers,
+            command=self._toggle_show_all,
             width=110,
             height=32,
             fg_color="#3B82F6",
@@ -130,6 +130,7 @@ class CustomersView:
             font=ctk.CTkFont(size=12, weight="bold")
         )
         self.show_all_btn.pack(side="left", padx=(15, 5))
+        self._showing_all = False
         
         # Clear filters button
         self.clear_btn = ctk.CTkButton(
@@ -280,10 +281,23 @@ class CustomersView:
         self._fetch_customers()
         self._populate_tree(self.all_customers)
 
-    def _show_all_customers(self):
-        """Show all customers and hide the Show All button"""
-        self.load_customers()
-        self.show_all_btn.pack_forget()
+    def _toggle_show_all(self):
+        """Toggle between showing all customers and hiding the list"""
+        if self._showing_all:
+            for item in self.customers_tree.get_children():
+                self.customers_tree.delete(item)
+            self.show_all_btn.configure(
+                text="📋 Show All",
+                fg_color="#3B82F6", hover_color="#2563EB"
+            )
+            self._showing_all = False
+        else:
+            self.load_customers()
+            self.show_all_btn.configure(
+                text="📋 Hide All",
+                fg_color="#DC2626", hover_color="#B91C1C"
+            )
+            self._showing_all = True
     
     def _populate_tree(self, customers):
         """Clear tree and insert the given list of customer dicts"""
@@ -312,9 +326,14 @@ class CustomersView:
         status_filter = self.status_filter_var.get()
         credit_filter = self.credit_filter_var.get()
         
-        # Re-show the Show All button since user is now filtering
-        self.show_all_btn.pack_forget()
-        self.show_all_btn.pack(before=self.clear_btn, side="left", padx=(15, 5))
+        # Reset toggle state
+        if self._showing_all:
+            self._showing_all = False
+            self.show_all_btn.configure(
+                text="📋 Show All",
+                fg_color="#3B82F6", hover_color="#2563EB"
+            )
+        
         # Filter matching customers
         filtered = []
         for customer in self.all_customers:
@@ -347,12 +366,18 @@ class CustomersView:
         self._populate_tree(filtered)
     
     def clear_filters(self):
-        """Clear all filters and reload data"""
+        """Clear all filters and hide the customer list"""
         self.search_var.set("")
         self.type_filter_var.set("All")
         self.status_filter_var.set("All")
         self.credit_filter_var.set("All")
-        self.filter_customers()
+        self._showing_all = False
+        self.show_all_btn.configure(
+            text="📋 Show All",
+            fg_color="#3B82F6", hover_color="#2563EB"
+        )
+        for item in self.customers_tree.get_children():
+            self.customers_tree.delete(item)
     
     def export_to_excel(self):
         """Export customers to Excel"""

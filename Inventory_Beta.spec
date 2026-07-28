@@ -12,7 +12,7 @@ a = Analysis(
     runtime_hooks=[],
     excludes=[],
     noarchive=False,
-    optimize=2,
+    optimize=0,
 )
 pyz = PYZ(a.pure)
 
@@ -25,23 +25,21 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,
+    upx=True,
     console=False,
-    disable_windowed_traceback=True,
+    disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
     icon=['assets\\icons\\app_icon.ico'],
-    version='version_info.txt',
-    uac_admin=False,
 )
 coll = COLLECT(
     exe,
     a.binaries,
     a.datas,
-    strip=True,
-    upx=False,
+    strip=False,
+    upx=True,
     upx_exclude=[],
     name='Inventory_Beta',
 )

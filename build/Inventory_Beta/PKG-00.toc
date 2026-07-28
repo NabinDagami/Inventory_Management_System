@@ -9,8 +9,7 @@
   'PYZ': False,
   'SPLASH': True,
   'SYMLINK': False},
- [('pyi-disable-windowed-traceback', '', 'OPTION'),
-  ('pyi-contents-directory _internal', '', 'OPTION'),
+ [('pyi-contents-directory _internal', '', 'OPTION'),
   ('PYZ-00.pyz',
    'C:\\Users\\Aftershock\\Desktop\\Inventory '
    'Management\\build\\Inventory_Beta\\PYZ-00.pyz',
@@ -61,7 +60,7 @@
    'PYSOURCE'),
   ('main',
    'C:\\Users\\Aftershock\\Desktop\\Inventory Management\\main.py',
-   'PYSOURCE-2')],
+   'PYSOURCE')],
  'python313.dll',
  True,
  False,

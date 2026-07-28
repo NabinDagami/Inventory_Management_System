@@ -562,8 +562,6 @@ class InventoryView:
             )
             card.pack(side="left", fill="x", expand=True, padx=(0 if i == 3 else 0, 8 if i < 3 else 0))
             card.pack_propagate(False)
-            if cmd:
-                card.bind("<Button-1>", lambda e, c=cmd: c())
             inner = ctk.CTkFrame(card, fg_color="transparent")
             inner.pack(expand=True, fill="both", padx=14, pady=8)
             inner.grid_columnconfigure(0, weight=0)
@@ -572,15 +570,22 @@ class InventoryView:
                 inner, text=icon,
                 font=ctk.CTkFont(size=20), text_color="white"
             ).grid(row=0, column=0, rowspan=2, padx=(0, 10))
-            ctk.CTkLabel(
+            title_lbl = ctk.CTkLabel(
                 inner, text=text,
                 font=ctk.CTkFont(size=10), text_color=("#FFFFFF", "#D0D0D0")
-            ).grid(row=0, column=1, sticky="w")
+            )
+            title_lbl.grid(row=0, column=1, sticky="w")
             val_lbl = ctk.CTkLabel(
                 inner, text="0",
                 font=ctk.CTkFont(size=16, weight="bold"), text_color="white"
             )
             val_lbl.grid(row=1, column=1, sticky="w")
+            if cmd:
+                card.bind("<Button-1>", lambda e, c=cmd: c())
+                inner.bind("<Button-1>", lambda e, c=cmd: c())
+                for w in (title_lbl, val_lbl):
+                    w.configure(cursor="hand2")
+                    w.bind("<Button-1>", lambda e, c=cmd: c())
             key = text.lower().replace(" ", "_")
             labels[key] = val_lbl
         

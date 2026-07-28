@@ -182,62 +182,16 @@ class PurchasesView:
         )
         payment_dropdown.pack(side="left", padx=5, pady=10)
 
-        delivery_label = ctk.CTkLabel(header_frame, text="Expected Delivery:", font=ctk.CTkFont(size=14, weight="bold"))
-        delivery_label.pack(side="left", padx=(20, 5), pady=10)
-
-        self.delivery_entry = ctk.CTkEntry(
-            header_frame,
-            placeholder_text="YYYY-MM-DD",
-            width=140
-        )
-        self.delivery_entry.pack(side="left", padx=5, pady=10)
-
-        # ── Content area (compact, no outer scrollable — po_items_scroll handles item scrolling) ──
+        # ── Content area (expands — po_scroll_body handles item scrolling) ──
         content_frame = ctk.CTkFrame(self.new_purchase_frame)
-        content_frame.pack(fill="x", padx=10, pady=(6, 0))
+        content_frame.pack(fill="both", expand=True, padx=10, pady=(10, 10))
         content_frame.grid_columnconfigure(0, weight=1)
+        content_frame.grid_rowconfigure(0, weight=1)
 
         # Product selection with embedded purchase order section
         self.create_product_selection(content_frame)
 
-        # ── Footer (packs directly below content, no expand) ──────────────
-        po_footer = ctk.CTkFrame(self.new_purchase_frame, fg_color=("#F0FDF4", "#0F172A"))
-        po_footer.pack(fill="x", padx=10, pady=(0, 10))
 
-        inner = ctk.CTkFrame(po_footer, fg_color="transparent")
-        inner.pack(fill="x", padx=12, pady=8)
-
-        def _summary_row(parent, label, color=None):
-            r = ctk.CTkFrame(parent, fg_color="transparent")
-            r.pack(fill="x", pady=(0, 2))
-            ctk.CTkLabel(r, text=label, font=ctk.CTkFont(size=12)).pack(side="left")
-            v = ctk.CTkLabel(r, text="Rs0.00", font=ctk.CTkFont(size=12, weight="bold"),
-                              anchor="e", text_color=color or ("gray10", "gray90"))
-            v.pack(side="right")
-            return v
-
-        self.subtotal_value = _summary_row(inner, "Subtotal")
-        ctk.CTkFrame(inner, height=1, fg_color=("#CBD5E1", "#334155")).pack(fill="x", pady=4)
-
-        total_row = ctk.CTkFrame(inner, fg_color="transparent")
-        total_row.pack(fill="x", pady=(2, 0))
-        ctk.CTkLabel(total_row, text="GRAND TOTAL", font=ctk.CTkFont(size=14, weight="bold")).pack(side="left")
-        self.total_value = ctk.CTkLabel(total_row, text="Rs 0.00",
-                                         font=ctk.CTkFont(size=16, weight="bold"),
-                                         text_color="#10b981", anchor="e")
-        self.total_value.pack(side="right")
-
-        self.create_po_btn = ctk.CTkButton(
-            po_footer, text="📋 Create Purchase Order",
-            command=self.create_purchase_order,
-            font=ctk.CTkFont(size=14, weight="bold"),
-            height=50,
-            state="disabled",
-            fg_color="#374151",
-            text_color="#9CA3AF",
-            hover_color="#374151"
-        )
-        self.create_po_btn.pack(fill="x", padx=12, pady=(0, 12))
     
     def create_purchase_history_interface(self):
         """Create the purchase history interface"""
@@ -393,6 +347,7 @@ class PurchasesView:
         product_frame = ctk.CTkFrame(parent, fg_color=("#F5F5F5", "#252535"), corner_radius=6)
         product_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=0)
         product_frame.grid_columnconfigure(0, weight=1)
+        product_frame.grid_rowconfigure(2, weight=1)
         self.product_frame = product_frame
 
         # Row 0: Title
@@ -459,15 +414,17 @@ class PurchasesView:
         self._build_purchase_order_in_product(product_frame)
 
     def _build_purchase_order_in_product(self, parent):
-        """Build the purchase-order cart — grid-aligned header, empty-state, inline clear."""
+        """Build the purchase-order cart — sales-style scrollable body with inline summary + button."""
         cart_outer = ctk.CTkFrame(parent, fg_color=("#F5F5F5", "#252535"),
                                    border_width=1, border_color=("#CBD5E1", "#334155"),
                                    corner_radius=6)
-        cart_outer.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 8))
+        cart_outer.grid(row=2, column=0, sticky="nsew", padx=10, pady=(0, 8))
+        cart_outer.grid_rowconfigure(1, weight=1)
+        cart_outer.grid_columnconfigure(0, weight=1)
 
         # Header row: title + badge (left), Clear Cart (right)
         header_frame = ctk.CTkFrame(cart_outer, fg_color="transparent")
-        header_frame.pack(fill="x", padx=12, pady=(8, 2))
+        header_frame.grid(row=0, column=0, sticky="ew", padx=12, pady=(8, 2))
         ctk.CTkLabel(header_frame, text="📋 Purchase Order Items",
                       font=ctk.CTkFont(size=15, weight="bold")).pack(side="left")
         self.po_badge = ctk.CTkLabel(
@@ -487,12 +444,12 @@ class PurchasesView:
             hover_color=("#CBD5E1", "#475569")
         ).pack(side="right")
 
-        # PO container (no scroll — main frame handles scrolling)
-        self.po_container = ctk.CTkFrame(cart_outer, fg_color="transparent")
-        self.po_container.pack(fill="x", padx=0, pady=0)
+        # Scrollable body — items, totals, proceed
+        self.po_scroll_body = ctk.CTkScrollableFrame(cart_outer, fg_color="transparent")
+        self.po_scroll_body.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
 
         # Column headers — uses same grid weights as item rows
-        po_header_frame = ctk.CTkFrame(self.po_container, fg_color=("#F1F5F9", "#0F172A"), height=28)
+        po_header_frame = ctk.CTkFrame(self.po_scroll_body, fg_color=("#F1F5F9", "#0F172A"), height=28)
         po_header_frame.pack(fill="x", padx=6, pady=(0, 2))
         po_header_frame.pack_propagate(False)
         po_header_frame.grid_columnconfigure(0, weight=4)
@@ -512,20 +469,56 @@ class PurchasesView:
         ctk.CTkLabel(po_header_frame, text="Remove", font=ctk.CTkFont(size=10, weight="bold"),
                       text_color=("#475569", "#94A3B8")).grid(row=0, column=4, sticky="e", padx=(0, 4))
 
-        # ── Items container (fixed 200px, never expands — scrolls if many) ──
-        self.po_items_scroll = ctk.CTkScrollableFrame(
-            self.po_container, fg_color=("#FFFFFF", "#1E1E2E"), height=200
-        )
-        self.po_items_scroll.pack(fill="x", expand=False, padx=6, pady=2)
+        # Items container (plain frame — po_scroll_body handles scrolling)
+        self.po_items_frame = ctk.CTkFrame(self.po_scroll_body, fg_color=("#FFFFFF", "#1E1E2E"))
+        self.po_items_frame.pack(fill="x", padx=6, pady=2)
 
         # Centered empty-state label (shown/hidden via place)
         self.po_empty_label = ctk.CTkLabel(
-            self.po_items_scroll,
+            self.po_items_frame,
             text="No items in purchase order. Search or browse products to add.",
             font=ctk.CTkFont(size=11),
             text_color=("#94A3B8", "#64748B"),
         )
         self.po_empty_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        # ── Summary section (inline inside scrollable body) ──
+        summary_frame = ctk.CTkFrame(self.po_scroll_body, fg_color=("#F0FDF4", "#0F172A"))
+        summary_frame.pack(fill="x", padx=8, pady=(5, 8))
+        inner = ctk.CTkFrame(summary_frame, fg_color="transparent")
+        inner.pack(fill="x", padx=12, pady=8)
+
+        def _summary_row(parent, label, color=None):
+            r = ctk.CTkFrame(parent, fg_color="transparent")
+            r.pack(fill="x", pady=(0, 2))
+            ctk.CTkLabel(r, text=label, font=ctk.CTkFont(size=12)).pack(side="left")
+            v = ctk.CTkLabel(r, text="Rs0.00", font=ctk.CTkFont(size=12, weight="bold"),
+                              anchor="e", text_color=color or ("gray10", "gray90"))
+            v.pack(side="right")
+            return v
+
+        self.subtotal_value = _summary_row(inner, "Subtotal")
+        ctk.CTkFrame(inner, height=1, fg_color=("#CBD5E1", "#334155")).pack(fill="x", pady=4)
+
+        total_row = ctk.CTkFrame(inner, fg_color="transparent")
+        total_row.pack(fill="x", pady=(2, 0))
+        ctk.CTkLabel(total_row, text="GRAND TOTAL", font=ctk.CTkFont(size=14, weight="bold")).pack(side="left")
+        self.total_value = ctk.CTkLabel(total_row, text="Rs 0.00",
+                                         font=ctk.CTkFont(size=16, weight="bold"),
+                                         text_color="#10b981", anchor="e")
+        self.total_value.pack(side="right")
+
+        self.create_po_btn = ctk.CTkButton(
+            self.po_scroll_body, text="📋 Create Purchase",
+            command=self.create_purchase_order,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            height=50,
+            state="disabled",
+            fg_color="#374151",
+            text_color="#9CA3AF",
+            hover_color="#374151"
+        )
+        self.create_po_btn.pack(fill="x", padx=8, pady=(5, 12))
 
     # ── Search Dropdown ──────────────────────────────────────────────
 
@@ -969,7 +962,7 @@ class PurchasesView:
         """Handle supplier selection"""
         self.current_supplier = self.suppliers_data.get(supplier_name)
         self.update_purchase_order_display()
-        self.po_items_scroll.update_idletasks()
+        self.po_items_frame.update_idletasks()
     
     def add_to_purchase_order(self, quantity=1, product=None, unit_cost=None):
         """Add a product to the purchase order. Product must be provided."""
@@ -1036,12 +1029,12 @@ class PurchasesView:
                 self.update_purchase_order_display()
     
     def update_purchase_order_display(self):
-        """Update cart display — centered empty label or item rows inside po_items_scroll."""
+        """Update cart display — centered empty label or item rows inside po_items_frame."""
         count = len(self.purchase_items)
         subtotal = 0
 
         # Destroy item rows but keep po_empty_label
-        for w in self.po_items_scroll.winfo_children():
+        for w in self.po_items_frame.winfo_children():
             if w != self.po_empty_label:
                 w.destroy()
 
@@ -1059,7 +1052,7 @@ class PurchasesView:
                 if is_dark:
                     bg = "#1E1E2E" if idx % 2 == 0 else "#1A1A2E"
 
-                row_frame = ctk.CTkFrame(self.po_items_scroll, fg_color=bg, height=34)
+                row_frame = ctk.CTkFrame(self.po_items_frame, fg_color=bg, height=34)
                 row_frame.pack(fill="x", padx=1, pady=(0, 1))
                 row_frame.pack_propagate(False)
 
@@ -1144,7 +1137,7 @@ class PurchasesView:
         # Enable/disable create button
         if count > 0:
             self.create_po_btn.configure(
-                text=f"📋 Create Purchase Order — Rs {subtotal:,.2f}",
+                text=f"📋 Create Purchase — Rs {subtotal:,.2f}",
                 state="normal",
                 fg_color="#10B981",
                 text_color="#FFFFFF",
@@ -1152,14 +1145,14 @@ class PurchasesView:
             )
         else:
             self.create_po_btn.configure(
-                text="📋 Create Purchase Order",
+                text="📋 Create Purchase",
                 state="disabled",
                 fg_color="#374151",
                 text_color="#9CA3AF",
                 hover_color="#374151"
             )
 
-        self.po_items_scroll.update_idletasks()
+        self.po_items_frame.update_idletasks()
     
     def create_purchase_order(self):
         """Create the purchase order"""
@@ -1185,16 +1178,6 @@ class PurchasesView:
             
             # Calculate totals
             subtotal = sum(item['unit_cost'] * item['quantity'] for item in self.purchase_items)
-            
-            # Get expected delivery date
-            expected_delivery = self.delivery_entry.get() or None
-            if expected_delivery:
-                try:
-                    # Validate date format
-                    datetime.strptime(expected_delivery, '%Y-%m-%d')
-                except ValueError:
-                    messagebox.showerror("Error", "Invalid date format. Please use YYYY-MM-DD.")
-                    return
             
             # Determine cash vs credit flow
             payment_method = self.payment_var.get().lower()
@@ -1234,7 +1217,7 @@ class PurchasesView:
                 paid_amount,
                 balance,
                 status,
-                f"Expected delivery: {expected_delivery}" if expected_delivery else None
+                None
             ))
             
             # Add purchase items
@@ -1271,7 +1254,6 @@ class PurchasesView:
             self.update_purchase_order_display()
             self.supplier_var.set("Select Supplier...")
             self.current_supplier = None
-            self.delivery_entry.delete(0, 'end')
             
             if status == "received":
                 messagebox.showinfo("Success", f"Purchase order created and received!\nPO Number: {po_number}\nStock levels updated.")
